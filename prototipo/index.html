@@ -540,8 +540,8 @@ dialog.zapd::backdrop{background:rgb(6 12 10 / .6)}
     <div class="hero-visual" aria-hidden="true">
       <div class="mini-phone"><div class="mini-screen">
         <span class="mini-house">Casa 47</span>
-        <span class="mini-title">Escolha até 3 candidatos</span>
-        <span class="mini-c on"><i></i><b>11</b>Marta Siqueira</span>
+        <span class="mini-title">Escolha 1 candidato</span>
+        <span class="mini-c"><i></i><b>11</b>Marta Siqueira</span>
         <span class="mini-c"><i></i><b>12</b>João B. Rezende</span>
         <span class="mini-c on"><i></i><b>13</b>Cláudia Fontes</span>
         <span class="mini-c"><i></i><b>14</b>Roberto Lacerda</span>
@@ -601,9 +601,9 @@ dialog.zapd::backdrop{background:rgb(6 12 10 / .6)}
         <p class="muted">Cada casa recebe um código de 8 letras, no privado do proprietário.</p>
       </div>
       <div class="step">
-        <span class="step-n">2</span><h3>Escolhe os candidatos</h3>
-        <div class="step-art"><span class="sc-line"><i class="on"></i>11 · Marta Siqueira</span><span class="sc-line"><i></i>12 · João B. Rezende</span><span class="sc-line"><i class="on"></i>13 · Cláudia Fontes</span></div>
-        <p class="muted">Cartões grandes. O sistema mostra quantos ainda podem ser escolhidos.</p>
+        <span class="step-n">2</span><h3>Escolhe o candidato</h3>
+        <div class="step-art"><span class="sc-line"><i></i>11 · Marta Siqueira</span><span class="sc-line"><i></i>12 · João B. Rezende</span><span class="sc-line"><i class="on"></i>13 · Cláudia Fontes</span></div>
+        <p class="muted">Cartões grandes. Um toque escolhe o nome, e dá para trocar antes de confirmar.</p>
       </div>
       <div class="step">
         <span class="step-n">3</span><h3>Confere e confirma</h3>
@@ -631,7 +631,7 @@ dialog.zapd::backdrop{background:rgb(6 12 10 / .6)}
         <div class="tz-cols">
           <div class="tz-box"><strong>Quem votou</strong><div>Casa 31 · 08:14<br>Casa 152 · 08:15<br>Casa 9 · 08:21</div></div>
           <div class="tz-mid">sem<br>ligação</div>
-          <div class="tz-box"><strong>Urna</strong><div>7204…2917 · 11 · 15<br>3381…0042 · 13<br>9915…6630 · Branco</div></div>
+          <div class="tz-box"><strong>Urna</strong><div>7204…2917 · 15<br>3381…0042 · 13<br>9915…6630 · Branco</div></div>
         </div>
         <p>A urna não tem horário nem casa, e as cédulas ficam embaralhadas. Veja ao vivo.</p>
         <a class="btn" href="#sigilo">Ver como o sigilo funciona</a>
@@ -804,27 +804,22 @@ function freshState(){
   votantes.forEach(function(v, i){ eleitores[v].votouEm = tempos[i]; });
 
   // urna inicial com empate na 3ª vaga (candidatos 15 e 17)
-  var alvo = [[11,41],[13,38],[15,30],[17,30],[12,22],[14,19],[16,17],[18,12],[19,9],[20,6]];
-  var caps = []; for(var i=0;i<62;i++) caps.push(3); for(i=0;i<18;i++) caps.push(2); caps.push(1,1);
-  var ced = caps.map(function(c){ return {cap:c, e:[]}; });
-  alvo.forEach(function(nk){
-    var idx = ced.map(function(c,i){ return i; }).filter(function(i){ return ced[i].e.length < ced[i].cap; })
-      .sort(function(a,b){ return ((ced[b].cap-ced[b].e.length) - (ced[a].cap-ced[a].e.length)) || a-b; });
-    idx.slice(0, nk[1]).forEach(function(i){ ced[i].e.push(nk[0]); });
-  });
-  var urna = ced.map(function(c){ return c.e.sort(function(a,b){ return a-b; }); });
+  // 1 candidato por cédula: 82 cédulas com nome + 4 em branco = 86 votantes
+  var alvo = [[11,18],[13,15],[15,11],[17,11],[12,8],[14,6],[16,5],[18,4],[19,2],[20,2]];
+  var urna = [];
+  alvo.forEach(function(nk){ for(var i=0;i<nk[1];i++) urna.push([nk[0]]); });
   urna.push('BRANCO','BRANCO','BRANCO','BRANCO');
   shuffle(urna, rnd);
   urna = urna.map(function(e){ return {id: novoId(rnd), esc: e}; });
 
   return {
     view:'apresentacao', clock:'aberta', minuto: 11*60+42,
-    config:{titulo:'Eleição da Comissão Eleitoral 2026', data:'2026-10-30', abre:'07:00', fecha:'17:00', vagas:3, max:3, branco:true, veVotantes:true, desempate:'idade', msg: MSG},
+    config:{titulo:'Eleição da Comissão Eleitoral 2026', data:'2026-10-30', abre:'07:00', fecha:'17:00', vagas:3, max:1, branco:true, veVotantes:true, desempate:'idade', msg: MSG},
     candidatos: CANDS.map(function(c){ return Object.assign({}, c); }),
     casas: casas, eleitores: eleitores, urna: urna,
     auditoria: [
       {q:'26/10 09:12', u:'Helena Prado', a:'Criou a eleição “Comissão Eleitoral 2026” para 30/10, das 7h às 17h'},
-      {q:'26/10 09:20', u:'Helena Prado', a:'Configurou: até 3 escolhas por casa, voto em branco permitido, desempate pelo candidato mais velho'},
+      {q:'26/10 09:20', u:'Helena Prado', a:'Configurou: 1 candidato por casa, voto em branco permitido, desempate pelo candidato mais velho'},
       {q:'26/10 09:41', u:'Marcos Vieira', a:'Cadastrou 10 candidatos'},
       {q:'27/10 14:05', u:'Marcos Vieira', a:'Importou a lista de casas: 220 casas aptas, 3 linhas corrigidas'},
       {q:'29/10 10:02', u:'Helena Prado', a:'Gerou e baixou o arquivo de envio dos códigos (220 casas), com Marcos Vieira presente'},
