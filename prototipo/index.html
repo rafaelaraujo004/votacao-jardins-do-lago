@@ -1,0 +1,1589 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Votação Jardins do Lago</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: cabeçalho fixo com 4 vistas — apresentação editorial, celular + console de demonstração, painel com barra lateral, dois livros-razão lado a lado */
+:root{
+  --bg:#F2F5F1; --surface:#FFFFFF; --surface-2:#E7EDE7; --line:#D3DDD5; --line-strong:#A9B8AD;
+  --fg:#15221C; --fg-2:#3F5047; --muted:#5F6F66;
+  --pine:#1D6B4E; --pine-strong:#14543C; --on-pine:#FFFFFF;
+  --lake:#1C5C78; --lake-soft:#DCEAF0;
+  --warn:#8A5200; --warn-soft:#FBEFD8;
+  --danger:#B42318; --danger-soft:#FBE4E1;
+  --ok-soft:#DDEFE4;
+  --ribbon-bg:#1D2A24; --ribbon-fg:#F3E3AE;
+  --device:#18221D;
+  --paper:#FFFFFF; --paper-fg:#1B211E; --paper-line:#C9CFCB; --paper-muted:#59645E;
+  --zap-head:#075E54; --zap-head-fg:#FFFFFF; --zap-av:#128C7E; --zap-bg:#EFE7DE; --zap-bubble:#FFFFFF; --zap-fg:#111B21; --zap-link:#027EB5; --zap-meta:#667781; --zap-day:#E1F2FB; --zap-day-fg:#3B4A54;
+  --shadow:0 1px 2px rgb(16 30 24 / .06), 0 8px 24px rgb(16 30 24 / .08);
+  --shadow-lg:0 2px 4px rgb(16 30 24 / .08), 0 24px 48px rgb(16 30 24 / .16);
+  --font-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --font-body:"Atkinson Hyperlegible","Segoe UI",system-ui,-apple-system,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  --hh:96px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1613; --surface:#152019; --surface-2:#1C2A23; --line:#2A3B32; --line-strong:#476052;
+  --fg:#E5EEE8; --fg-2:#B9C8BE; --muted:#93A59A;
+  --pine:#55C493; --pine-strong:#80D6AF; --on-pine:#05130D;
+  --lake:#74BCD8; --lake-soft:#16303B;
+  --warn:#F0B652; --warn-soft:#33270F;
+  --danger:#FF8D7E; --danger-soft:#3B1A16;
+  --ok-soft:#14301F;
+  --ribbon-bg:#F1DB92; --ribbon-fg:#1E1A0B;
+  --device:#000000;
+  --zap-head:#202C33; --zap-head-fg:#E9EDEF; --zap-av:#00A884; --zap-bg:#0B141A; --zap-bubble:#202C33; --zap-fg:#E9EDEF; --zap-link:#53BDEB; --zap-meta:#8696A0; --zap-day:#182229; --zap-day-fg:#8696A0;
+  --shadow:0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .3);
+  --shadow-lg:0 2px 4px rgb(0 0 0 / .4), 0 24px 48px rgb(0 0 0 / .5);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1613; --surface:#152019; --surface-2:#1C2A23; --line:#2A3B32; --line-strong:#476052;
+  --fg:#E5EEE8; --fg-2:#B9C8BE; --muted:#93A59A;
+  --pine:#55C493; --pine-strong:#80D6AF; --on-pine:#05130D;
+  --lake:#74BCD8; --lake-soft:#16303B;
+  --warn:#F0B652; --warn-soft:#33270F;
+  --danger:#FF8D7E; --danger-soft:#3B1A16;
+  --ok-soft:#14301F;
+  --ribbon-bg:#F1DB92; --ribbon-fg:#1E1A0B;
+  --device:#000000;
+  --zap-head:#202C33; --zap-head-fg:#E9EDEF; --zap-av:#00A884; --zap-bg:#0B141A; --zap-bubble:#202C33; --zap-fg:#E9EDEF; --zap-link:#53BDEB; --zap-meta:#8696A0; --zap-day:#182229; --zap-day-fg:#8696A0;
+  --shadow:0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .3);
+  --shadow-lg:0 2px 4px rgb(0 0 0 / .4), 0 24px 48px rgb(0 0 0 / .5);
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:17px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--ribbon-bg)}
+h1,h2,h3,h4{text-wrap:balance;margin:0}
+p{margin:0}
+a{color:var(--lake)}
+:focus-visible{outline:3px solid var(--lake);outline-offset:2px;border-radius:6px}
+.wrap{max-width:1200px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:.875rem;color:var(--muted)}
+.eyebrow{font-size:.8rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pine)}
+.nowrap{white-space:nowrap}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.row{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center}
+.stack{display:flex;flex-direction:column;gap:1rem}
+
+/* logo */
+.lg-bg{fill:var(--pine)} .lg-leaf{fill:var(--on-pine)} .lg-wave{fill:none;stroke:var(--on-pine);stroke-width:2.2;stroke-linecap:round}
+.logo{flex:none;display:block}
+
+/* botões */
+.btn{font:inherit;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:.5em;min-height:46px;padding:.6em 1.1em;border-radius:12px;border:2px solid transparent;cursor:pointer;text-decoration:none;line-height:1.2;text-align:center}
+.btn-primary{background:var(--pine);color:var(--on-pine)}
+.btn-primary:hover{background:var(--pine-strong)}
+.btn-ghost{background:var(--surface);color:var(--fg);border-color:var(--line-strong)}
+.btn-ghost:hover{border-color:var(--fg-2)}
+.btn-sm{min-height:36px;padding:.35em .75em;font-size:.875rem;border-radius:9px;border-width:1.5px}
+.btn-lg{min-height:56px;font-size:1.1rem;padding:.7em 1.4em}
+.btn-block{width:100%}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.danger{color:var(--danger)}
+.link{font:inherit;background:none;border:0;color:var(--lake);text-decoration:underline;cursor:pointer;padding:0}
+
+/* pílulas e alertas */
+.pill{display:inline-flex;align-items:center;gap:.35em;padding:.2em .7em;border-radius:999px;font-size:.82rem;font-weight:700;white-space:nowrap}
+.pill-ok{background:var(--ok-soft);color:var(--pine)}
+.pill-info{background:var(--lake-soft);color:var(--lake)}
+.pill-warn{background:var(--warn-soft);color:var(--warn)}
+.pill-muted{background:var(--surface-2);color:var(--fg-2)}
+.pill-dot::before{content:"";width:.55em;height:.55em;border-radius:50%;background:currentColor}
+.alert{display:flex;gap:.75rem;align-items:flex-start;padding:.9rem 1rem;border-radius:14px;border:1.5px solid}
+.alert svg{flex:none;margin-top:.1rem}
+.alert strong{display:block}
+.alert p{margin-top:.15rem}
+.alert-danger{background:var(--danger-soft);border-color:var(--danger);color:var(--fg)} .alert-danger svg{color:var(--danger)}
+.alert-warn{background:var(--warn-soft);border-color:var(--warn);color:var(--fg)} .alert-warn svg{color:var(--warn)}
+.alert-info{background:var(--lake-soft);border-color:var(--lake);color:var(--fg)} .alert-info svg{color:var(--lake)}
+.alert-ok{background:var(--ok-soft);border-color:var(--pine);color:var(--fg)} .alert-ok svg{color:var(--pine)}
+
+/* cabeçalho */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.ribbon{background:var(--ribbon-bg);color:var(--ribbon-fg);font-size:.8rem;font-weight:700;letter-spacing:.02em}
+.ribbon .wrap{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding-block:.3rem}
+.ribbon button{font:inherit;color:inherit;background:transparent;border:1px solid currentColor;border-radius:999px;padding:.1rem .7rem;cursor:pointer;white-space:nowrap}
+.bar .wrap{display:flex;align-items:center;gap:1.25rem;padding-block:.55rem}
+.brand{display:flex;align-items:center;gap:.6rem;text-decoration:none;color:var(--fg)}
+.brand strong{font-family:var(--font-display);font-size:1.15rem;display:block;line-height:1.1;font-weight:700}
+.brand small{display:block;color:var(--muted);font-size:.8rem}
+.tabs{display:flex;gap:.2rem;margin-left:auto;overflow-x:auto;scrollbar-width:none;min-width:0}
+.tabs::-webkit-scrollbar{display:none}
+.tabs a{padding:.5rem .9rem;border-radius:999px;text-decoration:none;color:var(--fg-2);font-weight:700;white-space:nowrap}
+.tabs a:hover{background:var(--surface-2)}
+.tabs a[aria-current="page"]{background:var(--fg);color:var(--bg)}
+.r-long{display:inline} .r-short{display:none}
+@media (max-width:719px){
+  .brand-text{display:none}
+  .bar .wrap{gap:.6rem}
+  .tabs a{padding:.45rem .7rem;font-size:.95rem}
+  .r-long{display:none} .r-short{display:inline}
+}
+
+/* ---------- apresentação ---------- */
+.hero{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:3rem;align-items:center;padding-block:3.5rem 3rem}
+.hero h1{font-family:var(--font-display);font-size:clamp(2.1rem,4.6vw,3.6rem);line-height:1.04;letter-spacing:-.025em;font-weight:700;margin:.6rem 0 1rem}
+.lead{font-size:1.2rem;color:var(--fg-2);max-width:34em}
+.cta{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:1.6rem}
+.hero-note{margin-top:1rem;color:var(--muted);font-size:.95rem}
+.hero-visual{position:relative;display:grid;justify-items:center;padding-bottom:1rem}
+.mini-phone{width:min(100%,310px);background:var(--device);border-radius:40px;padding:10px;box-shadow:var(--shadow-lg),0 0 0 1px var(--line)}
+.mini-screen{background:var(--surface);border-radius:31px;padding:1.2rem 1rem 1.3rem;display:flex;flex-direction:column;gap:.6rem}
+.mini-house{align-self:flex-start;font-weight:700;font-size:.85rem;background:var(--surface-2);padding:.2rem .6rem;border-radius:8px}
+.mini-title{font-weight:700;font-size:1.25rem;line-height:1.2}
+.mini-c{display:flex;align-items:center;gap:.6rem;border:2px solid var(--line);border-radius:12px;padding:.55rem .65rem;font-weight:700;font-size:.95rem}
+.mini-c.on{border-color:var(--pine);background:var(--ok-soft)}
+.mini-c i{width:22px;height:22px;border-radius:6px;border:2px solid var(--fg-2);flex:none;display:grid;place-items:center}
+.mini-c.on i{background:var(--pine);border-color:var(--pine)}
+.mini-c.on i::after{content:"";width:6px;height:11px;border:solid var(--on-pine);border-width:0 3px 3px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.mini-c b{font-family:var(--font-mono);font-size:.8rem;background:var(--surface-2);padding:.05rem .35rem;border-radius:6px}
+.mini-btn{margin-top:.3rem;background:var(--pine);color:var(--on-pine);border-radius:12px;text-align:center;font-weight:700;padding:.75rem}
+.mini-stat{position:absolute;left:0;bottom:2.5rem;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:.85rem 1rem;box-shadow:var(--shadow);width:210px}
+.mini-stat .n{font-family:var(--font-display);font-size:2rem;font-weight:700;line-height:1}
+.mini-stat .bar-s{height:8px;border-radius:99px;background:var(--surface-2);margin:.5rem 0 .3rem;overflow:hidden}
+.mini-stat .bar-s span{display:block;height:100%;background:var(--pine);border-radius:99px}
+.sec{padding-block:3rem;border-top:1px solid var(--line)}
+.sec-title{font-family:var(--font-display);font-size:clamp(1.6rem,3vw,2.3rem);line-height:1.1;letter-spacing:-.015em;font-weight:700;margin-bottom:.6rem}
+.sec-lead{color:var(--fg-2);max-width:40em;margin-bottom:2rem}
+.pillars{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2.25rem}
+.pi{width:50px;height:50px;border-radius:14px;display:grid;place-items:center;background:var(--ok-soft);color:var(--pine)}
+.pillar:nth-child(2) .pi{background:var(--lake-soft);color:var(--lake)}
+.pillar:nth-child(3) .pi{background:var(--warn-soft);color:var(--warn)}
+.pillar h3{font-family:var(--font-display);font-size:1.4rem;margin:.9rem 0 .4rem;font-weight:700}
+.pillar p{color:var(--fg-2)}
+.ticks{list-style:none;padding:0;margin:.9rem 0 0;display:flex;flex-direction:column;gap:.45rem}
+.ticks li{display:flex;gap:.55rem;align-items:flex-start}
+.ticks li svg{flex:none;color:var(--pine);margin-top:.2rem}
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.25rem;counter-reset:passo}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:1.25rem;display:flex;flex-direction:column;gap:.8rem}
+.step-n{font-family:var(--font-display);font-weight:800;font-size:2.4rem;line-height:1;color:var(--pine)}
+.step h3{font-size:1.2rem}
+.step-art{background:var(--surface-2);border-radius:12px;padding:.9rem;min-height:118px;display:flex;flex-direction:column;justify-content:center;gap:.4rem;font-size:.9rem}
+.bub{background:var(--zap-bubble);color:var(--zap-fg);border-radius:0 10px 10px 10px;padding:.5rem .65rem;box-shadow:0 1px 1px rgb(0 0 0 / .1);line-height:1.35}
+.bub b{font-family:var(--font-mono)}
+.sc-line{display:flex;align-items:center;gap:.4rem;font-weight:700}
+.sc-line i{width:16px;height:16px;border-radius:4px;border:2px solid var(--fg-2)}
+.sc-line i.on{background:var(--pine);border-color:var(--pine)}
+.done-art{display:flex;flex-direction:column;align-items:center;gap:.35rem;font-weight:700;text-align:center}
+.done-art span{width:44px;height:44px;border-radius:50%;background:var(--pine);color:var(--on-pine);display:grid;place-items:center}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:2.5rem;align-items:start}
+.teaser{background:var(--fg);color:var(--bg);border-radius:20px;padding:1.5rem;display:flex;flex-direction:column;gap:1rem}
+.teaser h3{font-family:var(--font-display);font-size:1.5rem}
+.teaser .tz-cols{display:grid;grid-template-columns:1fr auto 1fr;gap:.8rem;align-items:stretch}
+.tz-box{border:1px solid color-mix(in srgb,var(--bg) 25%,transparent);border-radius:12px;padding:.7rem;font-size:.9rem}
+.tz-box strong{display:block;margin-bottom:.35rem}
+.tz-box div{font-family:var(--font-mono);font-size:.8rem;opacity:.85;line-height:1.6}
+.tz-mid{display:grid;place-items:center;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.8;text-align:center}
+.teaser .btn{align-self:flex-start;background:var(--bg);color:var(--fg)}
+.timeline{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1rem;position:relative}
+.timeline li{position:relative;padding-top:1.6rem}
+.timeline li::before{content:"";position:absolute;top:.35rem;left:0;width:14px;height:14px;border-radius:50%;background:var(--surface);border:3px solid var(--pine)}
+.timeline li::after{content:"";position:absolute;top:.75rem;left:18px;right:-1rem;height:2px;background:var(--line)}
+.timeline li:last-child::after{display:none}
+.timeline li.today::before{background:var(--pine)}
+.timeline li.vote::before{background:var(--warn);border-color:var(--warn)}
+.tl-day{font-weight:700;font-family:var(--font-display);font-size:1.1rem}
+.tl-day small{display:inline-block;margin-left:.35rem;font-family:var(--font-body)}
+.timeline p{color:var(--fg-2);font-size:.95rem;margin-top:.2rem}
+.phase2{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.25rem}
+.phase2 div{border-left:3px solid var(--lake);padding-left:1rem}
+.phase2 h3{font-size:1.1rem;margin-bottom:.25rem}
+.phase2 p{color:var(--fg-2);font-size:.95rem}
+.foot{padding-block:2rem 3rem;border-top:1px solid var(--line);color:var(--muted);font-size:.9rem}
+@media (max-width:899px){
+  .hero{grid-template-columns:1fr;gap:2rem;padding-block:2rem}
+  .mini-stat{position:static;margin-top:-3rem;justify-self:start;z-index:1}
+  .pillars,.steps,.phase2,.split{grid-template-columns:1fr;gap:1.5rem}
+  .timeline{grid-template-columns:1fr;gap:1.1rem}
+  .timeline li{padding-top:0;padding-left:1.8rem}
+  .timeline li::before{top:.3rem}
+  .timeline li::after{top:1.4rem;left:6px;right:auto;width:2px;height:calc(100% - .2rem)}
+}
+
+/* ---------- vistas ---------- */
+.view-head{padding-block:2rem 1rem;display:flex;flex-direction:column;gap:.4rem}
+.h-view{font-family:var(--font-display);font-size:clamp(1.7rem,3.4vw,2.5rem);line-height:1.08;letter-spacing:-.02em;font-weight:700}
+.view-head .lead{font-size:1.05rem}
+
+/* ---------- morador ---------- */
+.morador{display:grid;grid-template-columns:minmax(0,410px) minmax(0,1fr);gap:2.5rem;align-items:start;padding-bottom:3rem}
+.phone{width:min(100%,410px);background:var(--device);border-radius:48px;padding:12px;box-shadow:var(--shadow-lg),0 0 0 1px var(--line)}
+.screen{background:var(--surface);border-radius:37px;overflow:hidden;height:780px;display:flex;flex-direction:column}
+.sb{display:flex;justify-content:space-between;align-items:center;padding:.6rem 1.6rem .25rem;font-size:.85rem;font-weight:700}
+.sb-r{display:flex;gap:.35rem;align-items:center}
+.va-top{display:flex;align-items:center;gap:.6rem;padding:.7rem 1.1rem;border-bottom:1px solid var(--line);font-weight:700;font-size:1rem}
+.screen-scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column}
+.va{font-size:1.25rem;line-height:1.5;flex:1;display:flex;flex-direction:column}
+.va-pad{padding:1.25rem 1.15rem 1.25rem;display:flex;flex-direction:column;gap:1rem;flex:1}
+.va-step{font-size:.92rem;color:var(--muted);font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.va-title{font-family:var(--font-body);font-size:1.75rem;line-height:1.2;font-weight:700}
+.va-when{display:grid;grid-template-columns:auto 1fr;gap:.2rem .75rem;align-items:center;background:var(--surface-2);border-radius:14px;padding:.85rem 1rem}
+.va-when svg{grid-row:span 2;color:var(--pine)}
+.va-when strong{font-size:1.15rem;line-height:1.2}
+.va-when span{font-size:1.05rem;color:var(--fg-2)}
+.va-when .pill{grid-column:2;justify-self:start;margin-top:.3rem;font-size:.9rem}
+.va-form{display:flex;flex-direction:column;gap:.6rem}
+.va-label{font-weight:700}
+.va-input{font-family:var(--font-mono);font-size:1.85rem;font-weight:600;letter-spacing:.14em;text-align:center;padding:.55rem .4rem;border:2.5px solid var(--line-strong);border-radius:14px;width:100%;background:var(--bg);color:var(--fg);text-transform:uppercase}
+.va-input:focus{border-color:var(--pine);outline:none;box-shadow:0 0 0 4px var(--ok-soft)}
+.va-input::placeholder{color:var(--line-strong)}
+.va-help{font-size:1.05rem;color:var(--fg-2)}
+.va-btn{width:100%;min-height:62px;font-size:1.3rem;border-radius:14px}
+.va-foot{font-size:1rem;color:var(--muted);margin-top:auto;padding-top:.5rem}
+.va .alert{font-size:1.1rem;line-height:1.4}
+.va-house{align-self:flex-start;display:inline-flex;align-items:center;gap:.4rem;font-weight:700;font-size:1.05rem;background:var(--surface-2);padding:.3rem .8rem;border-radius:10px}
+.va-counter{font-size:1.15rem}
+.va-counter strong{font-size:1.4rem;color:var(--pine)}
+.cands{display:flex;flex-direction:column;gap:.6rem}
+.cand{position:relative;display:grid;grid-template-columns:auto auto minmax(0,1fr);align-items:center;gap:.8rem;padding:.8rem .9rem;border:2.5px solid var(--line);border-radius:16px;background:var(--surface);cursor:pointer;min-height:76px}
+.cand input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.cand.is-on{border-color:var(--pine);background:var(--ok-soft)}
+.cand.is-off{opacity:.45;cursor:not-allowed}
+.cand:has(input:focus-visible){outline:3px solid var(--lake);outline-offset:2px}
+.box{width:36px;height:36px;border:3px solid var(--fg-2);border-radius:10px;display:grid;place-items:center;flex:none}
+.cand.is-radio .box{border-radius:50%}
+.cand.is-on .box{background:var(--pine);border-color:var(--pine)}
+.cand.is-on .box::after{content:"";width:10px;height:19px;border:solid var(--on-pine);border-width:0 4px 4px 0;transform:rotate(45deg) translate(-1px,-2px)}
+.cand.is-radio.is-on .box::after{width:14px;height:14px;border:0;border-radius:50%;background:var(--on-pine);transform:none}
+.num{font-family:var(--font-mono);font-weight:600;font-size:1.05rem;background:var(--surface-2);border-radius:8px;padding:.1rem .45rem;color:var(--fg)}
+.cand .name{font-weight:700;line-height:1.25;min-width:0}
+.cand .name small{display:block;font-weight:400;font-size:1rem;color:var(--muted)}
+.va-limit{font-size:1.05rem;color:var(--warn);font-weight:700}
+.va-actions{position:sticky;bottom:0;background:var(--surface);padding:.8rem 0 .2rem;margin-top:auto;display:grid;gap:.6rem;box-shadow:0 -14px 14px -14px rgb(0 0 0 / .25)}
+.rv{border:2.5px solid var(--pine);border-radius:16px;padding:1rem;background:var(--ok-soft)}
+.rv-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.7rem}
+.rv-list li{display:flex;align-items:center;gap:.7rem;font-weight:700;font-size:1.35rem;line-height:1.25}
+.rv-branco{font-weight:700;font-size:1.4rem;text-align:center;padding:.6rem}
+.va-warn{display:flex;gap:.5rem;align-items:flex-start;font-size:1.05rem;color:var(--fg-2)}
+.va-warn svg{flex:none;margin-top:.2rem;color:var(--lake)}
+.va-done{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:1rem;padding:2rem 1.2rem}
+.done-mark{width:110px;height:110px;border-radius:50%;background:var(--pine);color:var(--on-pine);display:grid;place-items:center;animation:pop .5s ease-out}
+@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
+.va-note{font-size:1rem;color:var(--muted)}
+.console{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:0;position:sticky;top:calc(var(--hh) + 16px)}
+.console summary{list-style:none;cursor:pointer;padding:1.1rem 1.25rem;display:flex;flex-direction:column;gap:.1rem;font-family:var(--font-display);font-weight:700;font-size:1.2rem}
+.console summary::-webkit-details-marker{display:none}
+.console summary span{font-family:var(--font-body);font-weight:400;font-size:.92rem;color:var(--muted)}
+.console[open] summary{border-bottom:1px solid var(--line)}
+.cons-body{padding:1.1rem 1.25rem 1.3rem;display:flex;flex-direction:column;gap:1.4rem}
+.cons-body h4{font-size:.8rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:.6rem}
+.codes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.5rem}
+.code-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem;padding:.6rem .7rem;border:1px solid var(--line);border-radius:12px}
+.code-row .code{font-size:1.1rem;font-weight:600;letter-spacing:.06em;display:block}
+.code-meta{font-size:.85rem;color:var(--muted)}
+.code-row.is-used .code{text-decoration:line-through;text-decoration-color:var(--muted)}
+.code-btns{display:flex;gap:.4rem}
+.tips{margin:0;padding-left:1.1rem;color:var(--fg-2);display:flex;flex-direction:column;gap:.35rem;font-size:.95rem}
+.seg{display:flex;flex-wrap:wrap;gap:.4rem}
+.seg-btn,.seg-radio span{display:inline-flex;align-items:center;min-height:40px;padding:.35rem .8rem;border:1.5px solid var(--line-strong);border-radius:10px;background:var(--surface);color:var(--fg);font:inherit;font-weight:700;font-size:.9rem;cursor:pointer}
+.seg-btn[aria-pressed="true"],.seg-radio input:checked + span{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.seg-radio{position:relative}
+.seg-radio input{position:absolute;opacity:0;width:1px;height:1px}
+.seg-radio input:focus-visible + span{outline:3px solid var(--lake);outline-offset:2px}
+.seg-radio input:disabled + span{opacity:.5;cursor:not-allowed}
+@media (max-width:899px){
+  .morador{grid-template-columns:1fr;gap:1rem}
+  .console{order:-1;position:static}
+  .phone{width:100%;padding:0;background:none;box-shadow:none;border-radius:0}
+  .screen{height:auto;border-radius:20px;border:1px solid var(--line)}
+  .sb{display:none}
+  .screen-scroll{overflow:visible}
+  .va-actions{bottom:env(safe-area-inset-bottom,0px)}
+}
+
+/* ---------- comissão ---------- */
+.login{display:grid;place-items:center;padding-block:3rem 4rem}
+.login-card{width:min(100%,440px);background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:2rem;display:flex;flex-direction:column;gap:1rem;box-shadow:var(--shadow)}
+.login-card h2{font-family:var(--font-display);font-size:1.8rem}
+.form-stack{display:flex;flex-direction:column;gap:.9rem}
+.field{display:flex;flex-direction:column;gap:.35rem;min-width:0}
+.field label,.flabel{font-weight:700;font-size:.95rem}
+.help{font-size:.88rem;color:var(--muted)}
+.help.err{color:var(--danger);font-weight:700}
+input.in,select.in,textarea.in{font:inherit;font-size:1rem;padding:.55rem .75rem;border:1.5px solid var(--line-strong);border-radius:10px;background:var(--surface);color:var(--fg);min-height:44px;width:100%}
+textarea.in{min-height:150px;resize:vertical;line-height:1.45}
+input.in:focus,select.in:focus,textarea.in:focus{border-color:var(--pine);outline:none;box-shadow:0 0 0 3px var(--ok-soft)}
+input.in[readonly]{background:var(--surface-2)}
+fieldset{border:0;margin:0;padding:0;min-width:0;display:flex;flex-direction:column;gap:1.1rem}
+fieldset:disabled .in{background:var(--surface-2);color:var(--muted)}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.8rem;align-items:end}
+.field-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.8rem}
+.form-err{color:var(--danger);font-weight:700}
+.admin{display:grid;grid-template-columns:236px minmax(0,1fr);gap:2rem;align-items:start;padding-block:1.75rem 3rem}
+.side{position:sticky;top:calc(var(--hh) + 16px);display:flex;flex-direction:column;gap:.2rem}
+.side-user{display:flex;gap:.6rem;align-items:center;padding:.6rem .7rem 1rem;border-bottom:1px solid var(--line);margin-bottom:.5rem}
+.side-user strong{display:block;line-height:1.2}
+.side-user small{color:var(--muted);font-size:.82rem}
+.side-btn{font:inherit;display:flex;align-items:center;gap:.65rem;padding:.6rem .75rem;border-radius:10px;border:0;background:transparent;color:var(--fg-2);font-weight:700;cursor:pointer;text-align:left;white-space:nowrap}
+.side-btn:hover{background:var(--surface-2)}
+.side-btn[aria-current="page"]{background:var(--surface);color:var(--fg);box-shadow:var(--shadow)}
+.side-btn .lk{margin-left:auto;opacity:.6}
+.side-out{margin-top:.6rem;color:var(--muted)}
+.adm-main{display:flex;flex-direction:column;gap:1.25rem;min-width:0}
+.adm-clock{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;font-size:.9rem;color:var(--muted);padding:.6rem .8rem;border:1px dashed var(--line-strong);border-radius:12px}
+.adm-clock strong{color:var(--fg)}
+.adm-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:.8rem}
+.adm-head h2{font-family:var(--font-display);font-size:clamp(1.6rem,3vw,2.1rem);line-height:1.1;font-weight:700}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:1.25rem;min-width:0}
+.card h3{font-size:1.2rem;margin-bottom:.35rem}
+.label{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:.5rem}
+.card-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.4rem;align-items:baseline}
+.panel-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1rem}
+.span-2{grid-column:span 2}.span-3{grid-column:span 3}.span-4{grid-column:span 4}.span-6{grid-column:span 6}
+.card-hero{background:var(--ok-soft);border-color:color-mix(in srgb,var(--pine) 35%,var(--line))}
+.big{display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap}
+.num-xl{font-family:var(--font-display);font-size:clamp(3rem,7vw,4.6rem);font-weight:800;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.of{font-size:1.4rem;color:var(--fg-2);font-weight:700}
+.meter{height:14px;border-radius:99px;background:color-mix(in srgb,var(--pine) 14%,var(--surface));margin:1rem 0 .55rem;overflow:hidden}
+.meter span{display:block;height:100%;background:var(--pine);border-radius:99px;transition:width .6s ease}
+.chart{width:100%;height:auto;display:block}
+.ch-bar{fill:var(--lake)} .ch-bar.now{fill:var(--pine)}
+.ch-lbl{fill:var(--muted);font-size:13px;font-family:var(--font-body)}
+.ch-val{fill:var(--fg);font-size:13px;font-weight:700;font-family:var(--font-body)}
+.ch-base{stroke:var(--line-strong);stroke-width:1}
+.mini-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.45rem;font-size:.95rem}
+.demo-bar{display:flex;flex-wrap:wrap;gap:.8rem;align-items:center}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.tbl{width:100%;border-collapse:collapse;font-size:.95rem;font-variant-numeric:tabular-nums}
+.tbl th{text-align:left;font-size:.76rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:.6rem .8rem;border-bottom:1px solid var(--line);background:var(--surface-2);white-space:nowrap}
+.tbl td{padding:.55rem .8rem;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.tbl .actions{white-space:nowrap;text-align:right}
+.tbl-scroll{max-height:460px;overflow:auto}
+.chips{display:flex;flex-wrap:wrap;gap:.5rem}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:.55rem .85rem;display:flex;flex-direction:column}
+.chip strong{font-family:var(--font-display);font-size:1.5rem;line-height:1.1}
+.chip span{font-size:.85rem;color:var(--muted)}
+.report{display:flex;flex-direction:column;gap:.6rem}
+.rep-line{display:flex;gap:.6rem;align-items:flex-start;font-size:.95rem}
+.rep-line svg{flex:none;margin-top:.15rem}
+.rep-line.ok svg{color:var(--pine)} .rep-line.warn svg{color:var(--warn)}
+.file{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:1rem}
+.file-head{background:var(--surface-2);padding:.6rem .9rem;font-family:var(--font-mono);font-size:.85rem;display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap}
+.file-row{display:grid;grid-template-columns:5.5rem minmax(0,1fr) auto auto;gap:.6rem;align-items:center;padding:.55rem .9rem;border-top:1px solid var(--line);font-size:.95rem}
+.file-row .mono{font-weight:600;letter-spacing:.04em}
+.file-more{padding:.6rem .9rem;border-top:1px solid var(--line);color:var(--muted);font-size:.9rem}
+.sent{display:inline-flex;align-items:center;gap:.3rem;font-size:.85rem;color:var(--muted);white-space:nowrap}
+.reem-card{border:2px solid var(--pine);border-radius:16px;padding:1.2rem;background:var(--ok-soft);display:flex;flex-direction:column;gap:.6rem}
+.code-xl{font-size:clamp(1.8rem,5vw,2.6rem);font-weight:600;letter-spacing:.12em}
+.switch{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);gap:.8rem;align-items:start;cursor:pointer}
+.switch input{position:absolute;opacity:0;width:1px;height:1px}
+.sw{width:50px;height:28px;border-radius:999px;background:var(--line-strong);position:relative;transition:background .2s;margin-top:.05rem}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--surface);transition:transform .2s;box-shadow:0 1px 2px rgb(0 0 0 / .3)}
+.switch input:checked + .sw{background:var(--pine)}
+.switch input:checked + .sw::after{transform:translateX(22px)}
+.switch input:focus-visible + .sw{outline:3px solid var(--lake);outline-offset:2px}
+.switch input:disabled ~ *{opacity:.6;cursor:not-allowed}
+.switch strong{display:block}
+.switch small{display:block;color:var(--muted);font-size:.9rem}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:1rem 1.1rem}
+.kpi strong{display:block;font-family:var(--font-display);font-size:2rem;line-height:1.05;font-variant-numeric:tabular-nums}
+.kpi span{color:var(--muted);font-size:.9rem}
+.rank{list-style:none;margin:.8rem 0 0;padding:0;display:flex;flex-direction:column;gap:.35rem}
+.rank li{display:grid;grid-template-columns:2.4rem minmax(0,1fr) 2.8rem 6rem;align-items:center;gap:.7rem;padding:.55rem .7rem;border-radius:12px}
+.rank li.is-eleito{background:var(--ok-soft)}
+.rank li.is-tie{background:var(--warn-soft)}
+.pos{font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.rname{display:flex;gap:.5rem;align-items:center;font-weight:700;min-width:0}
+.rname span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rbar{height:8px;border-radius:99px;background:var(--surface-2);margin-top:.35rem;overflow:hidden}
+.rbar span{display:block;height:100%;border-radius:99px;background:var(--lake)}
+.is-eleito .rbar span{background:var(--pine)}
+.rv-n{font-family:var(--font-display);font-weight:700;font-size:1.3rem;text-align:right;font-variant-numeric:tabular-nums}
+.rtag{justify-self:end}
+.lockbox{display:flex;flex-direction:column;align-items:flex-start;gap:.7rem;padding:2rem 1.5rem}
+.lockbox .lk-ic{width:58px;height:58px;border-radius:16px;background:var(--surface-2);display:grid;place-items:center;color:var(--fg-2)}
+.lockbox h3{font-family:var(--font-display);font-size:1.5rem}
+.lockbox p{max-width:36em;color:var(--fg-2)}
+.paper-wrap{padding:.5rem 0 1rem}
+.paper{--pine:#1D6B4E;--on-pine:#FFFFFF;background:var(--paper);color:var(--paper-fg);width:100%;max-width:780px;margin:0 auto;padding:clamp(22px,5vw,60px);box-shadow:var(--shadow-lg);border-radius:4px;font-size:15px;line-height:1.6}
+.paper-head{display:flex;gap:.9rem;align-items:center;padding-bottom:1rem;border-bottom:2px solid var(--paper-fg);margin-bottom:1.2rem}
+.paper-kicker{font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--paper-muted)}
+.paper h3{font-family:var(--font-display);font-size:1.35rem;line-height:1.2}
+.paper h4{font-size:.85rem;text-transform:uppercase;letter-spacing:.07em;margin:1.4rem 0 .4rem}
+.paper-tbl{width:100%;border-collapse:collapse;margin:.6rem 0;font-variant-numeric:tabular-nums}
+.paper-tbl td,.paper-tbl th{border:1px solid var(--paper-line);padding:.35rem .6rem;text-align:left}
+.paper-tbl th{background:color-mix(in srgb,var(--paper-line) 30%,var(--paper))}
+.paper-tbl td.r{text-align:right}
+.paper-lines{display:flex;flex-direction:column;gap:1.4rem;margin-top:.8rem}
+.paper-lines span{border-bottom:1px solid var(--paper-line);display:block}
+.paper-small{font-size:.82rem;color:var(--paper-muted);margin-top:1.2rem}
+.signs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:2.2rem 1.5rem;margin-top:3rem}
+.sign{display:flex;flex-direction:column;align-items:center;text-align:center}
+.sign-line{width:100%;border-top:1.5px solid var(--paper-fg);margin-bottom:.4rem}
+.sign small{color:var(--paper-muted)}
+@media (max-width:899px){
+  .admin{grid-template-columns:1fr;gap:1rem;padding-block:1rem 2.5rem}
+  .side{position:static;flex-direction:row;overflow-x:auto;gap:.3rem;padding-bottom:.3rem;scrollbar-width:thin}
+  .side-user,.side-out{display:none}
+  .side-btn{border:1px solid var(--line);background:var(--surface)}
+  .side-btn[aria-current="page"]{background:var(--fg);color:var(--bg);box-shadow:none}
+  .panel-grid{grid-template-columns:1fr}
+  .span-2,.span-3,.span-4,.span-6{grid-column:auto}
+  .field-row{grid-template-columns:1fr}
+  .kpis{grid-template-columns:1fr}
+}
+@media (max-width:520px){
+  .rank li{grid-template-columns:2rem minmax(0,1fr) 2.4rem}
+  .rtag{grid-column:2 / -1;justify-self:start}
+  .file-row{grid-template-columns:4.2rem minmax(0,1fr)}
+  .file-row .sent,.file-row .btn{grid-column:2}
+}
+
+/* ---------- sigilo ---------- */
+.sig-intro{padding-block:2.2rem 1.5rem;display:flex;flex-direction:column;gap:.8rem;max-width:52rem}
+.ledgers{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:1rem;align-items:stretch}
+.ledger{background:var(--surface);border:1px solid var(--line);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.ledger header{padding:1.1rem 1.2rem;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:.3rem}
+.ledger h2{font-family:var(--font-display);font-size:1.45rem;display:flex;justify-content:space-between;gap:.5rem;align-items:baseline}
+.ledger header p{color:var(--fg-2);font-size:.95rem}
+.ledger-count{font-family:var(--font-body);font-size:.9rem;color:var(--muted);font-weight:700;white-space:nowrap}
+.ledger-cols{display:flex;gap:.4rem;flex-wrap:wrap;padding:.6rem 1.2rem;background:var(--surface-2);font-size:.82rem}
+.ledger-cols code{font-family:var(--font-mono);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:.05rem .4rem}
+.ledger .tbl-scroll{max-height:420px}
+.ledger .tbl td{padding:.45rem 1.2rem}
+.ledger-urna{border-color:color-mix(in srgb,var(--lake) 40%,var(--line))}
+.ledger-urna header{background:var(--lake-soft)}
+tr.is-new td{background:var(--warn-soft);font-weight:700}
+.wall{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;width:5.5rem;text-align:center;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.wall-line{flex:1;width:2px;background:repeating-linear-gradient(to bottom,var(--line-strong) 0 6px,transparent 6px 12px)}
+.wall-ic{width:44px;height:44px;border-radius:50%;border:2px solid var(--line-strong);display:grid;place-items:center;color:var(--fg-2);background:var(--bg)}
+.sig-eq{display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:.8rem;font-family:var(--font-display);font-size:clamp(1.2rem,2.6vw,1.6rem);font-weight:700;padding:1.4rem 0}
+.sig-eq span{color:var(--pine);font-size:1.6em;line-height:1}
+.sig-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:2.5rem;padding-block:2rem}
+.sig-grid h2{font-family:var(--font-display);font-size:1.5rem;margin-bottom:.9rem}
+.olist{margin:0;padding-left:1.3rem;display:flex;flex-direction:column;gap:.55rem;color:var(--fg-2)}
+.olist li::marker{font-weight:700;color:var(--pine)}
+.honest{margin-bottom:3rem;border-left:4px solid var(--warn)}
+@media (max-width:899px){
+  .ledgers{grid-template-columns:1fr}
+  .wall{flex-direction:row;width:auto;padding:.2rem 0}
+  .wall-line{height:2px;width:auto;background:repeating-linear-gradient(to right,var(--line-strong) 0 6px,transparent 6px 12px)}
+  .sig-grid{grid-template-columns:1fr;gap:1.5rem}
+}
+
+/* ---------- WhatsApp ---------- */
+dialog.zapd{border:0;padding:0;border-radius:22px;width:min(420px,calc(100vw - 32px));max-height:calc(100vh - 40px);background:var(--surface);color:var(--fg);box-shadow:var(--shadow-lg);overflow:auto}
+dialog.zapd::backdrop{background:rgb(6 12 10 / .6)}
+.zap-head{display:flex;align-items:center;gap:.7rem;padding:.75rem 1rem;background:var(--zap-head);color:var(--zap-head-fg)}
+.zap-head strong{display:block;line-height:1.2}
+.zap-head small{font-size:.8rem;opacity:.85}
+.zap-x{all:unset;cursor:pointer;width:32px;height:32px;display:grid;place-items:center;border-radius:50%}
+.zap-x:focus-visible{outline:3px solid var(--zap-head-fg)}
+.zap-av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--zap-av);color:var(--zap-head-fg);font-weight:700;flex:none}
+.zap-chat{background:var(--zap-bg);padding:1rem;display:flex;flex-direction:column;gap:.7rem;min-height:250px}
+.zap-day{align-self:center;background:var(--zap-day);color:var(--zap-day-fg);font-size:.76rem;padding:.2rem .6rem;border-radius:8px}
+.zap-bubble{align-self:flex-start;max-width:94%;background:var(--zap-bubble);color:var(--zap-fg);padding:.55rem .7rem 1.35rem;border-radius:0 12px 12px 12px;font-size:.98rem;line-height:1.45;position:relative;box-shadow:0 1px 1px rgb(0 0 0 / .14);overflow-wrap:anywhere}
+.zap-link{all:unset;color:var(--zap-link);text-decoration:underline;cursor:pointer;overflow-wrap:anywhere}
+.zap-link:focus-visible{outline:2px solid var(--zap-link);outline-offset:2px}
+.zap-time{position:absolute;right:.6rem;bottom:.3rem;font-size:.7rem;color:var(--zap-meta)}
+.zap-foot{padding:1rem;display:flex;flex-direction:column;gap:.7rem}
+.zap-foot p{font-size:.9rem;color:var(--muted)}
+
+/* aviso flutuante */
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:.7rem 1.1rem;border-radius:12px;font-weight:700;box-shadow:var(--shadow-lg);z-index:50;max-width:calc(100vw - 32px);text-align:center}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"></svg>
+
+<header class="topbar" id="topbar">
+  <div class="ribbon"><div class="wrap">
+    <span><span class="r-long">Demonstração com dados fictícios · não é a votação oficial</span><span class="r-short">Demonstração · dados fictícios</span></span>
+    <button type="button" data-action="reset">Reiniciar</button>
+  </div></div>
+  <div class="bar"><div class="wrap">
+    <a class="brand" href="#apresentacao" aria-label="Jardins do Lago, início">
+      <svg class="logo" width="36" height="36" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="20" class="lg-bg"/><path class="lg-leaf" d="M21 7.5c6.2 3 7.6 8.6 4.8 13.3-5.6-.8-8.6-5.6-4.8-13.3z"/><path class="lg-wave" d="M7.5 25.5c3.1-2.3 6.1-2.3 9.2 0s6.1 2.3 9.2 0 4.6-2 6.6-.8"/><path class="lg-wave" d="M10 31c2.5-1.7 5-1.7 7.5 0s5 1.7 7.5 0 3.7-1.5 5.2-.6"/></svg>
+      <span class="brand-text"><strong>Jardins do Lago</strong><small>Votação online</small></span>
+    </a>
+    <nav class="tabs" aria-label="Seções da demonstração">
+      <a href="#apresentacao" data-view="apresentacao">Apresentação</a>
+      <a href="#morador" data-view="morador">Morador</a>
+      <a href="#comissao" data-view="comissao">Comissão</a>
+      <a href="#sigilo" data-view="sigilo">Sigilo</a>
+    </nav>
+  </div></div>
+</header>
+
+<main>
+<!-- APRESENTAÇÃO -->
+<section id="v-apresentacao" class="view">
+  <div class="wrap hero">
+    <div>
+      <p class="eyebrow">Condomínio Jardins do Lago · proposta de plataforma</p>
+      <h1>Cada casa vota pelo celular, em três toques, com voto secreto.</h1>
+      <p class="lead">Plataforma feita para a eleição da Comissão Eleitoral de sexta, 30 de outubro, e pronta para ser usada depois na eleição geral do condomínio.</p>
+      <div class="cta">
+        <a class="btn btn-primary btn-lg" href="#morador">Votar como morador</a>
+        <a class="btn btn-ghost btn-lg" href="#comissao">Abrir o painel da comissão</a>
+      </div>
+      <p class="hero-note">Tudo nesta página funciona: vote, veja o painel mudar, apure e gere a ata. Os nomes e números são fictícios.</p>
+    </div>
+    <div class="hero-visual" aria-hidden="true">
+      <div class="mini-phone"><div class="mini-screen">
+        <span class="mini-house">Casa 47</span>
+        <span class="mini-title">Escolha até 3 candidatos</span>
+        <span class="mini-c on"><i></i><b>11</b>Marta Siqueira</span>
+        <span class="mini-c"><i></i><b>12</b>João B. Rezende</span>
+        <span class="mini-c on"><i></i><b>13</b>Cláudia Fontes</span>
+        <span class="mini-c"><i></i><b>14</b>Roberto Lacerda</span>
+        <span class="mini-btn">Revisar meu voto</span>
+      </div></div>
+      <div class="mini-stat">
+        <p class="label">Agora no painel</p>
+        <p><span class="n" data-live="votaram">86</span> <span class="muted">de 220 casas</span></p>
+        <div class="bar-s"><span data-live-bar style="width:39.1%"></span></div>
+        <p class="small"><span data-live="pct">39,1%</span> de participação</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap sec">
+    <div class="pillars">
+      <article class="pillar">
+        <div class="pi"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18.5h2"/></svg></div>
+        <h3>Fácil para todas as idades</h3>
+        <p>Feito pensando nos moradores mais velhos. Sem cadastro e sem senha.</p>
+        <ul class="ticks">
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Letras e botões grandes, fonte feita para baixa visão</li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Só 3 telas: código, escolha e confirmação</li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>O link do WhatsApp já abre com o código preenchido</li>
+        </ul>
+      </article>
+      <article class="pillar">
+        <div class="pi"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></div>
+        <h3>Voto secreto de verdade</h3>
+        <p>A lista de quem votou e a urna ficam separadas, sem nada que ligue uma à outra.</p>
+        <ul class="ticks">
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>A urna não guarda horário nem ordem de chegada</li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Nem a comissão nem o técnico conseguem saber o voto</li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Uma casa, um voto, garantido pelo sistema</li>
+        </ul>
+      </article>
+      <article class="pillar">
+        <div class="pi"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>
+        <h3>Controle da comissão</h3>
+        <p>Tudo o que a comissão precisa para conduzir e prestar contas da eleição.</p>
+        <ul class="ticks">
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Participação ao vivo e reemissão de código perdido</li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Resultado só depois do encerramento</li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Ata pronta para assinar e registro de todas as ações</li>
+        </ul>
+      </article>
+    </div>
+  </div>
+
+  <div class="wrap sec">
+    <h2 class="sec-title">Como o morador vota</h2>
+    <p class="sec-lead">Leva menos de um minuto. A pessoa não precisa instalar nada nem criar conta.</p>
+    <div class="steps">
+      <div class="step">
+        <span class="step-n">1</span><h3>Recebe o código no WhatsApp</h3>
+        <div class="step-art"><div class="bub">O código de votação da Casa 47 é: <b>KMRT-WXPA</b><br><u>Toque aqui para votar</u></div></div>
+        <p class="muted">Cada casa recebe um código de 8 letras, no privado do proprietário.</p>
+      </div>
+      <div class="step">
+        <span class="step-n">2</span><h3>Escolhe os candidatos</h3>
+        <div class="step-art"><span class="sc-line"><i class="on"></i>11 · Marta Siqueira</span><span class="sc-line"><i></i>12 · João B. Rezende</span><span class="sc-line"><i class="on"></i>13 · Cláudia Fontes</span></div>
+        <p class="muted">Cartões grandes. O sistema mostra quantos ainda podem ser escolhidos.</p>
+      </div>
+      <div class="step">
+        <span class="step-n">3</span><h3>Confere e confirma</h3>
+        <div class="step-art"><div class="done-art"><span><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Voto registrado com sucesso</div></div>
+        <p class="muted">A tela final não repete o voto, para ninguém ver por cima do ombro.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap sec">
+    <div class="split">
+      <div>
+        <h2 class="sec-title">Segurança em cada etapa</h2>
+        <ul class="ticks">
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Código individual de 8 letras, sem O nem I, que se confundem com números.</li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>O sistema guarda só uma impressão digital do código, nunca o código em si.</li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Tentativas erradas em sequência são bloqueadas.</li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Confirmar o voto e marcar "já votou" acontecem juntos, num passo só.</li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Conexão segura e senha individual para cada membro da comissão.</li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Toda ação da comissão fica registrada, e o registro não pode ser apagado.</li>
+        </ul>
+      </div>
+      <div class="teaser">
+        <h3>Duas listas que não se encontram</h3>
+        <div class="tz-cols">
+          <div class="tz-box"><strong>Quem votou</strong><div>Casa 31 · 08:14<br>Casa 152 · 08:15<br>Casa 9 · 08:21</div></div>
+          <div class="tz-mid">sem<br>ligação</div>
+          <div class="tz-box"><strong>Urna</strong><div>7204…2917 · 11 · 15<br>3381…0042 · 13<br>9915…6630 · Branco</div></div>
+        </div>
+        <p>A urna não tem horário nem casa, e as cédulas ficam embaralhadas. Veja ao vivo.</p>
+        <a class="btn" href="#sigilo">Ver como o sigilo funciona</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap sec">
+    <h2 class="sec-title">Até a votação</h2>
+    <p class="sec-lead">Cronograma possível para votar sexta-feira, com um ensaio geral antes.</p>
+    <ol class="timeline">
+      <li class="today"><span class="tl-day">Seg 26/10 <small class="pill pill-ok">hoje</small></span><p>Protótipo aprovado. Comissão envia a lista de casas e de candidatos.</p></li>
+      <li><span class="tl-day">Ter 27/10</span><p>Sistema no ar para testes. Aviso no grupo do condomínio.</p></li>
+      <li><span class="tl-day">Qua 28/10</span><p>Teste com 220 votos simultâneos e ensaio geral às 19h.</p></li>
+      <li><span class="tl-day">Qui 29/10</span><p>Códigos gerados e enviados pelo WhatsApp.</p></li>
+      <li class="vote"><span class="tl-day">Sex 30/10</span><p>Votação das 7h às 17h. Apuração e ata no mesmo dia.</p></li>
+    </ol>
+  </div>
+
+  <div class="wrap sec">
+    <h2 class="sec-title">Pronta para a eleição geral</h2>
+    <div class="phase2">
+      <div><h3>Procuração</h3><p>O código da casa vai para o procurador, com o documento registrado pela comissão.</p></div>
+      <div><h3>Vários cargos</h3><p>Síndico, subsíndico e conselho na mesma votação.</p></div>
+      <div><h3>Urna cifrada</h3><p>Os votos só abrem com uma senha que fica com a comissão.</p></div>
+    </div>
+  </div>
+  <footer class="wrap foot">Protótipo navegável com dados fictícios · preparado em 26 de outubro de 2026 por Rafael Araújo.</footer>
+</section>
+
+<!-- MORADOR -->
+<section id="v-morador" class="view" hidden>
+  <div class="wrap">
+    <div class="view-head">
+      <p class="eyebrow">O que o morador vê</p>
+      <h1 class="h-view">Votar leva menos de um minuto</h1>
+      <p class="lead">Use um dos códigos de teste ou abra a mensagem do WhatsApp. Tudo funciona como no dia da votação.</p>
+    </div>
+    <div class="morador">
+      <div class="phone"><div class="screen">
+        <div class="sb" aria-hidden="true"><span data-sb-time>11:42</span><span class="sb-r">4G <svg width="22" height="12" viewBox="0 0 22 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="18" height="10" rx="2.5"/><rect x="3" y="3" width="11" height="6" rx="1" fill="currentColor" stroke="none"/><path d="M21 4v4"/></svg></span></div>
+        <div class="va-top">
+          <svg class="logo" width="30" height="30" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="20" class="lg-bg"/><path class="lg-leaf" d="M21 7.5c6.2 3 7.6 8.6 4.8 13.3-5.6-.8-8.6-5.6-4.8-13.3z"/><path class="lg-wave" d="M7.5 25.5c3.1-2.3 6.1-2.3 9.2 0s6.1 2.3 9.2 0 4.6-2 6.6-.8"/><path class="lg-wave" d="M10 31c2.5-1.7 5-1.7 7.5 0s5 1.7 7.5 0 3.7-1.5 5.2-.6"/></svg>
+          Condomínio Jardins do Lago
+        </div>
+        <div class="screen-scroll" id="va-scroll"><div id="va" class="va" aria-live="polite"></div></div>
+      </div></div>
+      <details class="console" id="console">
+        <summary>Painel da demonstração<span>Códigos de teste, horário e dicas</span></summary>
+        <div class="cons-body" id="console-body"></div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- COMISSÃO -->
+<section id="v-comissao" class="view" hidden><div class="wrap" id="adm-root"></div></section>
+
+<!-- SIGILO -->
+<section id="v-sigilo" class="view" hidden><div class="wrap" id="sig-root"></div></section>
+</main>
+
+<dialog class="zapd" id="zap" aria-labelledby="zap-title">
+  <div class="zap-head">
+    <button type="button" class="zap-x" data-action="zap-close" aria-label="Fechar"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <span class="zap-av">CJ</span>
+    <div><strong id="zap-title">Comissão Jardins do Lago</strong><small>para <span data-zap-to></span></small></div>
+  </div>
+  <div class="zap-chat">
+    <span class="zap-day">Quinta, 29 de outubro</span>
+    <div class="zap-bubble" data-zap-msg></div>
+  </div>
+  <div class="zap-foot">
+    <p>Prévia. No sistema real, o botão abre o WhatsApp com esta mensagem pronta para enviar.</p>
+    <button type="button" class="btn btn-primary" data-action="zap-open">Abrir o link como o morador</button>
+    <button type="button" class="btn btn-ghost" data-action="zap-close">Fechar</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function(){
+'use strict';
+var $ = function(s, r){ return (r||document).querySelector(s); };
+var $$ = function(s, r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+function esc(v){ return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function mulberry32(a){ return function(){ a|=0; a=(a+0x6D2B79F5)|0; var t=Math.imul(a^(a>>>15),1|a); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }; }
+function shuffle(a, r){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(r()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+
+var ALFA = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // 24 letras, sem I e sem O
+var DEMO = [47, 108, 12, 31];
+var LINK = 'https://votacao.jardinsdolago.exemplo/#';
+var VIEWS = ['apresentacao','morador','comissao','sigilo'];
+var FIRST = ['Ana','Beatriz','Carlos','Daniel','Eduardo','Fernanda','Gabriel','Helena','Igor','Juliana','Lucas','Mariana','Nelson','Olívia','Paulo','Renata','Sérgio','Tereza','Vinícius','Wagner','Yara','Zélia','Antônio','Cecília','Diogo','Elisa','Fábio','Glória','Hugo','Irene','Jorge','Lúcia','Márcio','Neide','Otávio','Patrícia','Rui','Sônia','Tiago','Vera','Rosana','Alberto','Cristina','Mauro','Laura','Henrique'];
+var LAST = ['Almeida','Barros','Campos','Duarte','Esteves','Fontes','Guedes','Henriques','Lacerda','Macedo','Nogueira','Oliveira','Pacheco','Queiroz','Rezende','Siqueira','Teixeira','Valente','Xavier','Zanetti','Moura','Brandão','Cardoso','Freitas','Prates','Viana','Lima','Rocha','Bastos','Leal'];
+var CANDS = [
+  {n:11, nome:'Marta Siqueira', casa:14, insc:'2026-10-05', nasc:'1966-03-12'},
+  {n:12, nome:'João Batista Rezende', casa:203, insc:'2026-10-06', nasc:'1952-07-30'},
+  {n:13, nome:'Cláudia Fontes', casa:87, insc:'2026-10-06', nasc:'1971-11-08'},
+  {n:14, nome:'Roberto Lacerda', casa:152, insc:'2026-10-08', nasc:'1963-01-25'},
+  {n:15, nome:'Silvana Moura', casa:45, insc:'2026-10-09', nasc:'1961-04-02'},
+  {n:16, nome:'Antônio Valente', casa:119, insc:'2026-10-10', nasc:'1949-12-14'},
+  {n:17, nome:'Lúcia Brandão', casa:66, insc:'2026-10-13', nasc:'1958-09-17'},
+  {n:18, nome:'Paulo Henriques', casa:178, insc:'2026-10-14', nasc:'1975-06-03'},
+  {n:19, nome:'Denise Queiroz', casa:9, insc:'2026-10-15', nasc:'1980-02-21'},
+  {n:20, nome:'Edson Teixeira', casa:131, insc:'2026-10-16', nasc:'1957-10-10'}
+];
+var MEMBROS = [{nome:'Helena Prado', papel:'Presidente da comissão'},{nome:'Marcos Vieira', papel:'Secretário'},{nome:'Rosa Amaral', papel:'Membro'}];
+var DES = {inscricao:'Candidato inscrito primeiro', idade:'Candidato mais velho', sorteio:'Sorteio na reunião da comissão', nova:'Nova votação entre os empatados'};
+var MSG = 'Olá, {nome}! Aqui é a Comissão do Condomínio Jardins do Lago.\nO código de votação da Casa {casa} é: *{codigo}*\nA votação é {data}, das {abre} às {fecha}.\nPara votar, toque no link:\n{link}\nNão passe este código para ninguém.';
+var MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+var DIAS = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+function hhmm(m){ return pad2(Math.floor(m/60)) + ':' + pad2(m%60); }
+function toMin(s){ var p = String(s).split(':'); return (+p[0])*60 + (+p[1]||0); }
+function horaCurta(s){ var p = String(s).split(':'); var h = +p[0], m = +p[1]; return m ? h + 'h' + pad2(m) : h + 'h'; }
+function pct(a, b){ return b ? (a/b*100).toLocaleString('pt-BR',{minimumFractionDigits:1, maximumFractionDigits:1}) + '%' : '0%'; }
+function normCode(v){ return String(v).toUpperCase().normalize('NFD').replace(/[^A-Z]/g,'').slice(0,8); }
+function fmtCode(c){ return c.length > 4 ? c.slice(0,4) + '-' + c.slice(4) : c; }
+function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+function dataLonga(iso){ var p = iso.split('-').map(Number); var d = new Date(p[0], p[1]-1, p[2]); return DIAS[d.getDay()] + ', ' + p[2] + ' de ' + MESES[p[1]-1]; }
+function dataCurta(iso){ var p = iso.split('-'); return p[2] + '/' + p[1]; }
+function dataBR(iso){ if(!iso) return '—'; var p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+function novoId(r){ r = r || Math.random; var s = String(1 + Math.floor(r()*9)); for(var i=0;i<18;i++) s += Math.floor(r()*10); return s; }
+
+var IC = {
+  cal:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  lock:'<rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  alert:'<path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.5h.01"/>',
+  info:'<circle cx="12" cy="12" r="9.5"/><path d="M12 11v6M12 7.5h.01"/>',
+  home:'<path d="M3.5 11L12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/>',
+  chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.8c1.6.8 2.6 2.5 3 5.2"/>',
+  key:'<circle cx="8" cy="15" r="4.5"/><path d="M11.5 11.5L20 3M16 7l3 3"/>',
+  gear:'<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
+  trophy:'<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H4.5a3.5 3.5 0 0 0 3.8 3.5M16 6h3.5a3.5 3.5 0 0 1-3.8 3.5M12 13v4M8 20h8"/>',
+  doc:'<path d="M6 2.5h8l4 4V21.5H6z"/><path d="M14 2.5v4h4M9 12h6M9 16h6"/>',
+  list:'<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',
+  clock:'<circle cx="12" cy="12" r="9.5"/><path d="M12 7v5l3.5 2"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  zap:'<path d="M4 20l1.3-3.9A8.5 8.5 0 1 1 8 19z"/>'
+};
+function ico(n, s, w){ return '<svg width="'+(s||24)+'" height="'+(s||24)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(w||2)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + IC[n] + '</svg>'; }
+
+var S;
+function freshState(){
+  var rnd = mulberry32(20261030);
+  var pick = function(a){ return a[Math.floor(rnd()*a.length)]; };
+  var casas = [];
+  for(var n=1; n<=220; n++) casas.push({n:n, nome: pick(FIRST) + ' ' + pick(LAST), fim: String(1000 + Math.floor(rnd()*9000)), zap:true});
+  var nomesDemo = {47:'Ana Prates', 108:'Jorge Viana', 12:'Cecília Rocha', 31:'Mauro Bastos'};
+  Object.keys(nomesDemo).forEach(function(k){ casas[k-1].nome = nomesDemo[k]; });
+  [23,58,96,141,177,204].forEach(function(k){ casas[k-1].zap = false; });
+  var fixos = {47:'KMRTWXPA', 108:'HBZQNCEU', 12:'PDLSAVKY', 31:'RGEMTWJF'};
+  var usados = {}; Object.keys(fixos).forEach(function(k){ usados[fixos[k]] = 1; });
+  function gerar(){ var c; do { c=''; for(var i=0;i<8;i++) c += ALFA[Math.floor(rnd()*ALFA.length)]; } while(usados[c]); usados[c]=1; return c; }
+  var eleitores = {};
+  casas.forEach(function(c){ eleitores[c.n] = {codigo: fixos[c.n] || gerar(), versao:1, votouEm:null, reemitido:false}; });
+  eleitores[73].reemitido = true; eleitores[73].versao = 2;
+
+  var pool = []; for(n=1;n<=220;n++) if(DEMO.indexOf(n) < 0) pool.push(n);
+  shuffle(pool, rnd);
+  var votantes = pool.slice(0,85); votantes.splice(Math.floor(rnd()*86), 0, 31);
+  var tempos = [];
+  [[7,22],[8,18],[9,14],[10,17],[11,15]].forEach(function(hk){ for(var i=0;i<hk[1];i++) tempos.push(hk[0]*60 + Math.floor(rnd()*(hk[0]===11 ? 41 : 60))); });
+  tempos.sort(function(a,b){ return a-b; });
+  votantes.forEach(function(v, i){ eleitores[v].votouEm = tempos[i]; });
+
+  // urna inicial com empate na 3ª vaga (candidatos 15 e 17)
+  var alvo = [[11,41],[13,38],[15,30],[17,30],[12,22],[14,19],[16,17],[18,12],[19,9],[20,6]];
+  var caps = []; for(var i=0;i<62;i++) caps.push(3); for(i=0;i<18;i++) caps.push(2); caps.push(1,1);
+  var ced = caps.map(function(c){ return {cap:c, e:[]}; });
+  alvo.forEach(function(nk){
+    var idx = ced.map(function(c,i){ return i; }).filter(function(i){ return ced[i].e.length < ced[i].cap; })
+      .sort(function(a,b){ return ((ced[b].cap-ced[b].e.length) - (ced[a].cap-ced[a].e.length)) || a-b; });
+    idx.slice(0, nk[1]).forEach(function(i){ ced[i].e.push(nk[0]); });
+  });
+  var urna = ced.map(function(c){ return c.e.sort(function(a,b){ return a-b; }); });
+  urna.push('BRANCO','BRANCO','BRANCO','BRANCO');
+  shuffle(urna, rnd);
+  urna = urna.map(function(e){ return {id: novoId(rnd), esc: e}; });
+
+  return {
+    view:'apresentacao', clock:'aberta', minuto: 11*60+42,
+    config:{titulo:'Eleição da Comissão Eleitoral 2026', data:'2026-10-30', abre:'07:00', fecha:'17:00', vagas:3, max:3, branco:true, veVotantes:true, desempate:'idade', msg: MSG},
+    candidatos: CANDS.map(function(c){ return Object.assign({}, c); }),
+    casas: casas, eleitores: eleitores, urna: urna,
+    auditoria: [
+      {q:'26/10 09:12', u:'Helena Prado', a:'Criou a eleição “Comissão Eleitoral 2026” para 30/10, das 7h às 17h'},
+      {q:'26/10 09:20', u:'Helena Prado', a:'Configurou: até 3 escolhas por casa, voto em branco permitido, desempate pelo candidato mais velho'},
+      {q:'26/10 09:41', u:'Marcos Vieira', a:'Cadastrou 10 candidatos'},
+      {q:'27/10 14:05', u:'Marcos Vieira', a:'Importou a lista de casas: 220 casas aptas, 3 linhas corrigidas'},
+      {q:'29/10 10:02', u:'Helena Prado', a:'Gerou e baixou o arquivo de envio dos códigos (220 casas), com Marcos Vieira presente'},
+      {q:'29/10 16:48', u:'Marcos Vieira', a:'Reemitiu o código da casa 73 (motivo: perdeu a mensagem). O código anterior foi invalidado'},
+      {q:'30/10 07:00', u:'Sistema', a:'Votação aberta automaticamente'},
+      {q:'30/10 09:15', u:'Rosa Amaral', a:'Entrou no painel da comissão'}
+    ],
+    antigos: [], falhas:0, bloqueadoAte:0, bloqueios:3,
+    logado:false, secao:'painel',
+    voter: novoVoter(),
+    candEdit:null, candDel:null, candErro:null,
+    verArquivo:false, reem:null, reemErro:null,
+    cfgErro:null, prorErro:null, resVisto:false, ataVista:false,
+    ultimo:null, busca:''
+  };
+}
+function novoVoter(codigo){ return {tela:1, casa:null, versao:0, escolhas:[], branco:false, erro:null, codigo: codigo || '', casaUsada:null}; }
+
+function status(){ return S.clock; }
+function agoraMin(){
+  var a = toMin(S.config.abre), f = toMin(S.config.fecha);
+  if(S.clock === 'antes') return Math.max(0, a - 20);
+  if(S.clock === 'encerrada') return f + 5;
+  return Math.min(Math.max(S.minuto, a), f - 1);
+}
+function agoraTxt(){ return dataCurta(S.config.data) + ' ' + hhmm(agoraMin()); }
+function audit(a, u){ S.auditoria.push({q: agoraTxt(), u: u || 'Helena Prado', a: a}); }
+function votantesN(){ var k = 0; for(var n in S.eleitores) if(S.eleitores[n].votouEm !== null) k++; return k; }
+function acharCasa(cod){ for(var n in S.eleitores) if(S.eleitores[n].codigo === cod) return +n; return null; }
+function candPorN(n){ for(var i=0;i<S.candidatos.length;i++) if(S.candidatos[i].n === n) return S.candidatos[i]; return null; }
+function votosDe(n){ var k = 0; S.urna.forEach(function(b){ if(b.esc !== 'BRANCO' && b.esc.indexOf(n) >= 0) k++; }); return k; }
+function gerarCodigo(){ var c; do { c=''; for(var i=0;i<8;i++) c += ALFA[Math.floor(Math.random()*ALFA.length)]; } while(acharCasa(c)); return c; }
+function inserirCedula(esc){ S.urna.splice(Math.floor(Math.random()*(S.urna.length+1)), 0, {id: novoId(), esc: esc}); }
+function avancarRelogio(max){ S.minuto = Math.min(S.minuto + 1 + Math.floor(Math.random()*(max||2)), toMin(S.config.fecha) - 1); }
+
+/* ---------- navegação ---------- */
+function go(v){
+  if(VIEWS.indexOf(v) < 0) v = 'apresentacao';
+  try { if(location.hash !== '#' + v) history.replaceState(null, '', '#' + v); } catch(e){}
+  showView(v);
+}
+function showView(v){
+  S.view = v;
+  VIEWS.forEach(function(x){ $('#v-' + x).hidden = x !== v; });
+  $$('.tabs a').forEach(function(a){ if(a.dataset.view === v) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
+  render();
+  window.scrollTo(0, 0);
+}
+function render(){
+  renderLive();
+  if(S.view === 'morador'){ renderVoter(); renderConsole(); }
+  if(S.view === 'comissao') renderComissao();
+  if(S.view === 'sigilo') renderSigilo();
+}
+function renderLive(){
+  var n = votantesN();
+  $$('[data-live="votaram"]').forEach(function(e){ e.textContent = n; });
+  $$('[data-live="pct"]').forEach(function(e){ e.textContent = pct(n, S.casas.length); });
+  $$('[data-live-bar]').forEach(function(e){ e.style.width = (n/S.casas.length*100).toFixed(1) + '%'; });
+}
+var toastT;
+function toast(msg){ var t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(function(){ t.hidden = true; }, 2800); }
+
+/* ---------- morador ---------- */
+function janelaTxt(){ return 'das ' + horaCurta(S.config.abre) + ' às ' + horaCurta(S.config.fecha); }
+function pillStatus(){
+  if(status() === 'aberta') return '<span class="pill pill-ok pill-dot">Aberta agora</span>';
+  if(status() === 'antes') return '<span class="pill pill-info">Abre às ' + horaCurta(S.config.abre) + '</span>';
+  return '<span class="pill pill-muted">Encerrada</span>';
+}
+function erroInfo(k){
+  var c = S.config;
+  switch(k){
+    case 'formato': return ['danger','O código tem 8 letras','Confira a mensagem do WhatsApp e digite as 8 letras.'];
+    case 'naoencontrado': return ['danger','Não encontramos este código','Confira as letras e tente de novo. Se a mensagem sumiu, a comissão pode mandar um código novo.'];
+    case 'usado': return ['warn','Este código já foi usado','A casa ' + S.voter.casaUsada + ' já votou. Se não foi você, procure a comissão.'];
+    case 'antes': return ['info','A votação ainda não começou','Ela abre ' + dataLonga(c.data) + ', às ' + horaCurta(c.abre) + '.'];
+    case 'encerrada': return ['info','A votação foi encerrada','Encerrou às ' + horaCurta(c.fecha) + '. Obrigado pela participação.'];
+    case 'bloqueado': return ['danger','Muitas tentativas erradas','Aguarde 15 minutos e tente de novo. (Na demonstração, libera em 10 segundos.)'];
+    case 'trocado': return ['warn','Este código foi trocado','A comissão emitiu um código novo para esta casa. Use o código da mensagem mais recente.'];
+    case 'fechouAntes': return ['danger','A votação encerrou antes da confirmação','O voto não foi registrado.'];
+  }
+  return ['danger','Algo deu errado','Tente de novo.'];
+}
+function alertBox(tone, title, text, icn){
+  return '<div class="alert alert-' + tone + '" role="' + (tone === 'danger' ? 'alert' : 'status') + '">' + ico(icn || (tone === 'info' ? 'info' : 'alert'), 24) + '<div><strong>' + esc(title) + '</strong><p>' + esc(text) + '</p></div></div>';
+}
+function erroBox(k){ var e = erroInfo(k); return alertBox(e[0], e[1], e[2]); }
+
+function renderVoter(top){
+  var el = $('#va'); if(!el) return;
+  var v = S.voter, c = S.config, h = '';
+  $$('[data-sb-time]').forEach(function(x){ x.textContent = hhmm(agoraMin()); });
+  if(v.tela === 1){
+    var aviso = '';
+    if(!v.erro && status() === 'antes') aviso = erroBox('antes');
+    if(!v.erro && status() === 'encerrada') aviso = erroBox('encerrada');
+    h = '<p class="va-step">Passo 1 de 3</p>' +
+      '<h2 class="va-title">' + esc(c.titulo) + '</h2>' +
+      '<div class="va-when">' + ico('cal', 30) + '<strong>' + cap(dataLonga(c.data)) + '</strong><span>' + janelaTxt() + '</span>' + pillStatus() + '</div>' +
+      aviso + (v.erro ? erroBox(v.erro) : '') +
+      '<form class="va-form" data-form="codigo" novalidate autocomplete="off">' +
+        '<label for="va-cod" class="va-label">Digite o seu código</label>' +
+        '<input id="va-cod" class="va-input" value="' + esc(v.codigo) + '" placeholder="ABCD-EFGH" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" maxlength="12" aria-describedby="va-cod-ajuda">' +
+        '<p id="va-cod-ajuda" class="va-help">Está na mensagem que a comissão mandou no seu WhatsApp. São 8 letras.</p>' +
+        '<button class="btn btn-primary va-btn" type="submit">Continuar</button>' +
+      '</form>' +
+      '<p class="va-foot">Precisa de ajuda? A comissão atende na portaria ' + janelaTxt() + '.</p>';
+  } else if(v.tela === 2){
+    var multi = c.max > 1, n = v.escolhas.length;
+    var lista = S.candidatos.slice().sort(function(a,b){ return a.n - b.n; }).map(function(cd){
+      var on = v.escolhas.indexOf(cd.n) >= 0, off = multi && !on && n >= c.max;
+      return '<label class="cand' + (on ? ' is-on' : '') + (off ? ' is-off' : '') + (multi ? '' : ' is-radio') + '">' +
+        '<input type="' + (multi ? 'checkbox' : 'radio') + '" name="cand" value="' + cd.n + '"' + (on ? ' checked' : '') + (off ? ' disabled' : '') + '>' +
+        '<span class="box" aria-hidden="true"></span><span class="num">' + cd.n + '</span>' +
+        '<span class="name">' + esc(cd.nome) + '<small>' + (cd.casa ? 'Casa ' + cd.casa : 'Morador') + '</small></span></label>';
+    }).join('');
+    h = '<span class="va-house">' + ico('home', 22) + ' Casa ' + v.casa + '</span>' +
+      '<p class="va-step">Passo 2 de 3</p>' +
+      '<h2 class="va-title">' + (multi ? 'Escolha até ' + c.max + ' candidatos' : 'Escolha 1 candidato') + '</h2>' +
+      (multi ? '<p class="va-counter">Você escolheu <strong>' + n + '</strong> de ' + c.max + '</p>' : '<p class="va-help">Toque no nome para escolher.</p>') +
+      '<div class="cands" role="group" aria-label="Candidatos">' + lista + '</div>' +
+      (multi && n >= c.max ? '<p class="va-limit">Você já escolheu ' + c.max + '. Para trocar, desmarque um nome.</p>' : '') +
+      '<div class="va-actions">' +
+        '<button type="button" class="btn btn-primary va-btn" data-action="revisar"' + (n ? '' : ' disabled') + '>Revisar meu voto</button>' +
+        (c.branco ? '<button type="button" class="btn btn-ghost va-btn" data-action="branco">Votar em branco</button>' : '') +
+      '</div>';
+  } else if(v.tela === 3){
+    var itens = v.branco ? '<p class="rv-branco">Voto em branco</p>' :
+      '<ul class="rv-list">' + v.escolhas.map(function(k){ var cd = candPorN(k); return '<li><span class="num">' + k + '</span><span>' + esc(cd ? cd.nome : '') + '</span></li>'; }).join('') + '</ul>';
+    h = '<span class="va-house">' + ico('home', 22) + ' Casa ' + v.casa + '</span>' +
+      '<p class="va-step">Passo 3 de 3</p>' +
+      '<h2 class="va-title">Confira o seu voto</h2>' +
+      (v.erro ? erroBox(v.erro) : '') +
+      '<div class="rv">' + itens + '</div>' +
+      '<p class="va-warn">' + ico('info', 22) + '<span>Depois de confirmar, não dá para mudar o voto.</span></p>' +
+      '<div class="va-actions">' +
+        '<button type="button" class="btn btn-primary va-btn" data-action="confirmar">' + ico('check', 26, 3) + ' Confirmar voto</button>' +
+        '<button type="button" class="btn btn-ghost va-btn" data-action="voltar">Voltar e corrigir</button>' +
+      '</div>';
+  } else {
+    h = '<div class="va-done">' +
+      '<div class="done-mark">' + ico('check', 60, 3) + '</div>' +
+      '<h2 class="va-title">Voto registrado com sucesso</h2>' +
+      '<p>Obrigado! A casa ' + v.casa + ' já votou. Você pode fechar esta página.</p>' +
+      '<p class="va-note">Por segurança, esta tela não mostra em quem você votou.</p>' +
+      '<button type="button" class="btn btn-ghost" data-action="novo">Votar com outro código de teste</button>' +
+      '<a class="small" href="#sigilo">Ver o que aconteceu na urna</a>' +
+    '</div>';
+  }
+  el.innerHTML = v.tela === 4 ? h : '<div class="va-pad">' + h + '</div>';
+  if(top){ var sc = $('#va-scroll'); if(sc) sc.scrollTop = 0; }
+}
+
+function clockSeg(){
+  var a = toMin(S.config.abre), f = toMin(S.config.fecha);
+  var aberta = Math.min(Math.max(S.minuto, a), f - 1);
+  var opts = [['antes', hhmm(Math.max(0, a-20)) + ' · antes de abrir'], ['aberta', hhmm(aberta) + ' · aberta'], ['encerrada', hhmm(f+5) + ' · encerrada']];
+  return '<div class="seg" role="group" aria-label="Horário simulado">' + opts.map(function(o){
+    return '<button type="button" class="seg-btn" data-action="clock" data-clock="' + o[0] + '" aria-pressed="' + (S.clock === o[0]) + '">' + o[1] + '</button>';
+  }).join('') + '</div>';
+}
+function renderConsole(){
+  var el = $('#console-body'); if(!el) return;
+  var rows = DEMO.map(function(n){
+    var e = S.eleitores[n], voted = e.votouEm !== null;
+    return '<li class="code-row' + (voted ? ' is-used' : '') + '"><div><span class="mono code">' + fmtCode(e.codigo) + '</span>' +
+      '<span class="code-meta">Casa ' + n + ' · ' + (voted ? 'já votou às ' + hhmm(e.votouEm) : 'ainda não votou') + '</span></div>' +
+      '<div class="code-btns"><button type="button" class="btn btn-sm btn-ghost" data-action="usar" data-code="' + e.codigo + '">Usar</button>' +
+      '<button type="button" class="btn btn-sm btn-ghost" data-action="zap" data-casa="' + n + '">' + ico('zap', 16) + ' WhatsApp</button></div></li>';
+  }).join('');
+  rows += '<li class="code-row"><div><span class="mono code">KMRT-WXPZ</span><span class="code-meta">Código que não existe</span></div><div class="code-btns"><button type="button" class="btn btn-sm btn-ghost" data-action="usar" data-code="KMRTWXPZ">Usar</button></div></li>';
+  S.antigos.forEach(function(a){
+    rows += '<li class="code-row is-used"><div><span class="mono code">' + fmtCode(a.codigo) + '</span><span class="code-meta">Código antigo da casa ' + a.casa + ' (foi reemitido)</span></div><div class="code-btns"><button type="button" class="btn btn-sm btn-ghost" data-action="usar" data-code="' + a.codigo + '">Usar</button></div></li>';
+  });
+  var c = S.config;
+  el.innerHTML =
+    '<div><h4>Horário simulado · ' + cap(dataLonga(c.data)) + '</h4>' + clockSeg() + '</div>' +
+    '<div><h4>Códigos para testar</h4><ul class="codes">' + rows + '</ul></div>' +
+    '<div><h4>Regras desta eleição</h4><p>' + (c.max > 1 ? 'Até ' + c.max + ' candidatos por casa' : '1 candidato por casa') + ' · ' + (c.branco ? 'voto em branco permitido' : 'sem voto em branco') + '. Dá para mudar em <a href="#comissao">Comissão › Configurações</a>.</p></div>' +
+    '<div><h4>O que observar</h4><ol class="tips">' +
+      '<li>Tente votar duas vezes com o mesmo código.</li>' +
+      '<li>Erre o código 5 vezes seguidas para ver o bloqueio.</li>' +
+      '<li>Depois de votar, abra a aba <a href="#comissao">Comissão</a>: o painel já conta o seu voto.</li>' +
+      '<li>Na aba <a href="#sigilo">Sigilo</a>, procure a sua cédula na urna.</li>' +
+    '</ol></div>';
+}
+
+function enviarCodigo(raw){
+  var v = S.voter, cod = normCode(raw);
+  v.codigo = fmtCode(cod); v.casaUsada = null; v.erro = null;
+  if(Date.now() < S.bloqueadoAte){ v.erro = 'bloqueado'; return renderVoter(true); }
+  if(status() === 'antes') v.erro = 'antes';
+  else if(status() === 'encerrada') v.erro = 'encerrada';
+  else if(cod.length !== 8){ v.erro = 'formato'; falha(); }
+  else {
+    var casa = acharCasa(cod);
+    if(!casa){ v.erro = 'naoencontrado'; falha(); }
+    else if(S.eleitores[casa].votouEm !== null){ v.erro = 'usado'; v.casaUsada = casa; }
+    else { v.tela = 2; v.casa = casa; v.versao = S.eleitores[casa].versao; v.escolhas = []; v.branco = false; }
+  }
+  renderVoter(true);
+}
+function falha(){
+  S.falhas++;
+  if(S.falhas >= 5){
+    S.falhas = 0; S.bloqueadoAte = Date.now() + 10000; S.bloqueios++; S.voter.erro = 'bloqueado';
+    setTimeout(function(){ if(S.voter.erro === 'bloqueado'){ S.voter.erro = null; if(S.view === 'morador') renderVoter(); } }, 10100);
+  }
+}
+function toggleCand(input){
+  var n = +input.value, v = S.voter, max = S.config.max;
+  if(max === 1) v.escolhas = [n];
+  else if(input.checked){ if(v.escolhas.length < max && v.escolhas.indexOf(n) < 0) v.escolhas.push(n); }
+  else v.escolhas = v.escolhas.filter(function(x){ return x !== n; });
+  v.escolhas.sort(function(a,b){ return a-b; });
+  renderVoter();
+  var again = $('#va input[value="' + n + '"]'); if(again && !again.disabled) again.focus({preventScroll:true});
+}
+function confirmar(){
+  var v = S.voter, e = S.eleitores[v.casa];
+  if(status() !== 'aberta'){ v.erro = status() === 'antes' ? 'antes' : 'fechouAntes'; return renderVoter(); }
+  if(e.versao !== v.versao){ S.voter = novoVoter(); S.voter.erro = 'trocado'; return renderVoter(true); }
+  if(e.votouEm !== null){ var c = v.casa; S.voter = novoVoter(); S.voter.erro = 'usado'; S.voter.casaUsada = c; return renderVoter(true); }
+  // registro e marcação de "já votou" no mesmo passo
+  e.votouEm = agoraMin(); avancarRelogio();
+  inserirCedula(v.branco ? 'BRANCO' : v.escolhas.slice());
+  S.ultimo = v.casa;
+  v.escolhas = []; v.branco = false; v.tela = 4; v.erro = null;
+  renderVoter(true); renderConsole(); renderLive();
+  toast('O painel da comissão já contou este voto.');
+}
+
+/* ---------- WhatsApp ---------- */
+var zapCasa = null;
+function msgTexto(n){
+  var casa = S.casas[n-1], e = S.eleitores[n], c = S.config, cod = fmtCode(e.codigo);
+  return c.msg.replace(/\{nome\}/g, casa.nome.split(' ')[0]).replace(/\{casa\}/g, n).replace(/\{codigo\}/g, cod)
+    .replace(/\{data\}/g, dataLonga(c.data)).replace(/\{abre\}/g, horaCurta(c.abre)).replace(/\{fecha\}/g, horaCurta(c.fecha)).replace(/\{link\}/g, LINK + cod);
+}
+function msgHtml(n){
+  var h = esc(msgTexto(n));
+  h = h.replace(/\*([^*\n]+)\*/g, '<strong>$1</strong>');
+  h = h.replace(/(https:\/\/[^\s<]+)/g, '<button type="button" class="zap-link" data-action="zap-open">$1</button>');
+  return h.replace(/\n/g, '<br>') + '<span class="zap-time">10:14 ✓✓</span>';
+}
+function abrirZap(n){
+  zapCasa = n;
+  $('[data-zap-to]').textContent = S.casas[n-1].nome + ' · Casa ' + n;
+  $('[data-zap-msg]').innerHTML = msgHtml(n);
+  var d = $('#zap');
+  try { d.showModal(); } catch(e){ d.setAttribute('open', ''); }
+}
+function fecharZap(){ var d = $('#zap'); if(d.open){ try { d.close(); } catch(e){ d.removeAttribute('open'); } } }
+
+/* ---------- comissão ---------- */
+var SECOES = [['painel','Painel ao vivo','chart'],['candidatos','Candidatos','users'],['casas','Casas','home'],['codigos','Códigos','key'],['config','Configurações','gear'],['resultado','Resultado','trophy'],['ata','Ata','doc'],['auditoria','Auditoria','list']];
+function head(eyebrow, title, extra){ return '<div class="adm-head"><div><p class="eyebrow">' + esc(eyebrow) + '</p><h2>' + esc(title) + '</h2></div>' + (extra || '') + '</div>'; }
+function pillAdm(){
+  if(status() === 'aberta') return '<span class="pill pill-ok pill-dot">Votação aberta · encerra às ' + horaCurta(S.config.fecha) + '</span>';
+  if(status() === 'antes') return '<span class="pill pill-info">Abre às ' + horaCurta(S.config.abre) + '</span>';
+  return '<span class="pill pill-muted">Encerrada às ' + horaCurta(S.config.fecha) + '</span>';
+}
+function lockBanner(title, text, showBtn){
+  return '<div class="alert alert-info">' + ico('lock', 24) + '<div><strong>' + esc(title) + '</strong><p>' + esc(text) + '</p>' +
+    (showBtn ? '<p style="margin-top:.6rem"><button type="button" class="btn btn-sm btn-ghost" data-action="clock" data-clock="antes">Simular antes da abertura para editar</button></p>' : '') + '</div></div>';
+}
+function renderComissao(){
+  var el = $('#adm-root'); if(!el) return;
+  if(!S.logado){
+    el.innerHTML = '<div class="login"><div class="login-card">' +
+      '<svg class="logo" width="48" height="48" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="20" class="lg-bg"/><path class="lg-leaf" d="M21 7.5c6.2 3 7.6 8.6 4.8 13.3-5.6-.8-8.6-5.6-4.8-13.3z"/><path class="lg-wave" d="M7.5 25.5c3.1-2.3 6.1-2.3 9.2 0s6.1 2.3 9.2 0 4.6-2 6.6-.8"/><path class="lg-wave" d="M10 31c2.5-1.7 5-1.7 7.5 0s5 1.7 7.5 0 3.7-1.5 5.2-.6"/></svg>' +
+      '<h2>Painel da comissão</h2>' +
+      '<p class="muted">Cada membro tem e-mail e senha próprios. Não existe cadastro aberto: as contas são criadas pelo administrador.</p>' +
+      '<form data-form="login" class="form-stack">' +
+        '<div class="field"><label for="lg-email">E-mail</label><input class="in" id="lg-email" type="email" value="helena.prado@jardinsdolago.exemplo" readonly></div>' +
+        '<div class="field"><label for="lg-senha">Senha</label><input class="in" id="lg-senha" type="password" value="demonstracao" readonly></div>' +
+        '<button class="btn btn-primary btn-block btn-lg" type="submit">Entrar</button>' +
+      '</form>' +
+      '<p class="small">Na demonstração o acesso já vem preenchido. No sistema real, 5 senhas erradas seguidas bloqueiam o acesso por 15 minutos.</p>' +
+    '</div></div>';
+    return;
+  }
+  var nav = SECOES.map(function(s){
+    return '<button type="button" class="side-btn" data-action="secao" data-secao="' + s[0] + '"' + (S.secao === s[0] ? ' aria-current="page"' : '') + '>' + ico(s[2], 20) + '<span>' + s[1] + '</span>' +
+      ((s[0] === 'resultado' || s[0] === 'ata') && status() !== 'encerrada' ? '<span class="lk">' + ico('lock', 15) + '</span>' : '') + '</button>';
+  }).join('');
+  el.innerHTML = '<div class="admin">' +
+    '<nav class="side" aria-label="Seções do painel">' +
+      '<div class="side-user">' + ico('users', 22) + '<div><strong>Helena Prado</strong><small>Presidente da comissão</small></div></div>' +
+      nav + '<button type="button" class="side-btn side-out" data-action="sair">Sair</button>' +
+    '</nav>' +
+    '<div class="adm-main">' +
+      '<div class="adm-clock">' + ico('clock', 18) + '<span>Horário simulado:</span>' + clockSeg() + '</div>' +
+      SEC[S.secao]() +
+    '</div></div>';
+}
+
+function chartHoras(){
+  var horas = []; for(var h = Math.floor(toMin(S.config.abre)/60); h < Math.ceil(toMin(S.config.fecha)/60); h++) horas.push(h);
+  var cont = horas.map(function(h){ var k = 0; for(var n in S.eleitores){ var t = S.eleitores[n].votouEm; if(t !== null && Math.floor(t/60) === h) k++; } return k; });
+  var max = Math.max.apply(null, [5].concat(cont));
+  var W = 560, H = 210, pb = 28, pt = 24, bw = W / horas.length, nowH = Math.floor(agoraMin()/60);
+  var s = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Votos por hora">';
+  horas.forEach(function(hr, i){
+    var hgt = cont[i] / max * (H - pb - pt), x = i*bw + bw*.18, y = H - pb - hgt;
+    s += '<rect class="ch-bar' + (hr === nowH && status() === 'aberta' ? ' now' : '') + '" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + (bw*.64).toFixed(1) + '" height="' + Math.max(hgt, 0).toFixed(1) + '" rx="4"/>';
+    if(cont[i]) s += '<text class="ch-val" x="' + (i*bw + bw/2).toFixed(1) + '" y="' + (y - 6).toFixed(1) + '" text-anchor="middle">' + cont[i] + '</text>';
+    s += '<text class="ch-lbl" x="' + (i*bw + bw/2).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle">' + hr + 'h</text>';
+  });
+  s += '<line class="ch-base" x1="0" x2="' + W + '" y1="' + (H - pb) + '" y2="' + (H - pb) + '"/></svg>';
+  return s;
+}
+function listaVotantes(){
+  var vs = []; for(var n in S.eleitores) if(S.eleitores[n].votouEm !== null) vs.push({n:+n, t:S.eleitores[n].votouEm});
+  vs.sort(function(a,b){ return b.t - a.t || a.n - b.n; });
+  return vs;
+}
+
+var SEC = {
+  painel: function(){
+    var N = votantesN(), A = S.casas.length, vs = listaVotantes().slice(0, 8);
+    var tabela = S.config.veVotantes ?
+      '<div class="table-wrap"><table class="tbl"><thead><tr><th>Casa</th><th>Votou às</th></tr></thead><tbody>' +
+      vs.map(function(r){ return '<tr><td>Casa ' + r.n + '</td><td class="mono">' + hhmm(r.t) + '</td></tr>'; }).join('') +
+      '</tbody></table></div><p class="small" style="margin-top:.6rem">E mais ' + Math.max(0, N - vs.length) + ' casas. A lista completa fica em Casas.</p>' :
+      '<p class="muted">Desligado em Configurações. Quando ligado, mostra só a casa e o horário.</p>';
+    return head(S.config.titulo, 'Painel ao vivo', pillAdm()) +
+      '<div class="panel-grid">' +
+        '<section class="card card-hero span-3"><p class="label">Casas que já votaram</p>' +
+          '<p class="big"><span class="num-xl">' + N + '</span><span class="of">de ' + A + '</span></p>' +
+          '<div class="meter" role="img" aria-label="' + pct(N, A) + ' de participação"><span style="width:' + (N/A*100).toFixed(1) + '%"></span></div>' +
+          '<p><strong>' + pct(N, A) + '</strong> de participação · faltam ' + (A - N) + ' casas</p></section>' +
+        '<section class="card span-3"><p class="label">Votos por hora</p>' + chartHoras() + '</section>' +
+        '<section class="card span-4"><div class="card-head"><p class="label">Quem já votou</p><span class="small">Mostra a casa e o horário, nunca o voto</span></div>' + tabela + '</section>' +
+        '<div class="span-2 stack">' +
+          '<section class="card"><p class="label">Resultado</p>' + (status() === 'encerrada' ?
+            '<p>Votação encerrada. <button type="button" class="link" data-action="secao" data-secao="resultado">Ver resultado</button></p>' :
+            '<p>' + ico('lock', 18) + ' Fica disponível depois das ' + horaCurta(S.config.fecha) + ', quando a votação encerrar.</p>') + '</section>' +
+          '<section class="card"><p class="label">Segurança hoje</p><ul class="mini-list">' +
+            '<li><strong>' + S.bloqueios + '</strong> bloqueios por tentativas erradas</li>' +
+            '<li>Nenhuma alteração no sistema desde ' + horaCurta(S.config.abre) + '</li>' +
+            '<li>Versão v1.0-piloto</li></ul></section>' +
+        '</div>' +
+      '</div>' +
+      '<div class="demo-bar"><button type="button" class="btn btn-ghost" data-action="simular">' + ico('plus', 20) + ' Simular mais 10 votos</button>' +
+      '<span class="small">O painel atualiza sozinho a cada 30 segundos. Aqui ele também muda quando você vota na aba <a href="#morador">Morador</a>.</span></div>';
+  },
+
+  candidatos: function(){
+    var locked = status() !== 'antes';
+    var rows = S.candidatos.slice().sort(function(a,b){ return a.n - b.n; }).map(function(c){
+      if(S.candDel === c.n) return '<tr><td colspan="5"><div class="row"><strong>Remover ' + esc(c.nome) + '?</strong>' +
+        '<button type="button" class="btn btn-sm btn-ghost danger" data-action="cand-del-sim">Sim, remover</button>' +
+        '<button type="button" class="btn btn-sm btn-ghost" data-action="cand-del-nao">Cancelar</button></div></td></tr>';
+      return '<tr><td class="mono"><strong>' + c.n + '</strong></td><td>' + esc(c.nome) + '</td><td>' + (c.casa ? 'Casa ' + c.casa : '—') + '</td><td class="mono">' + dataBR(c.insc) + '</td>' +
+        '<td class="actions">' + (locked ? '' : '<button type="button" class="btn btn-sm btn-ghost" data-action="cand-edit" data-n="' + c.n + '">Editar</button> <button type="button" class="btn btn-sm btn-ghost danger" data-action="cand-del" data-n="' + c.n + '">Remover</button>') + '</td></tr>';
+    }).join('');
+    var ed = S.candEdit !== null ? candPorN(S.candEdit) : null;
+    var form = locked ? '' :
+      '<form class="card" data-form="cand"><h3>' + (ed ? 'Editar candidato ' + ed.n : 'Adicionar candidato') + '</h3>' +
+      '<div class="form-grid" style="margin-top:.7rem">' +
+        '<div class="field"><label for="cand-num">Número</label><input class="in" id="cand-num" inputmode="numeric" maxlength="2" value="' + (ed ? ed.n : '') + '" placeholder="21"></div>' +
+        '<div class="field" style="grid-column:span 2"><label for="cand-nome">Nome completo</label><input class="in" id="cand-nome" value="' + (ed ? esc(ed.nome) : '') + '" placeholder="Nome como vai aparecer na tela"></div>' +
+        '<div class="field"><label for="cand-casa">Casa</label><input class="in" id="cand-casa" inputmode="numeric" maxlength="3" value="' + (ed && ed.casa ? ed.casa : '') + '" placeholder="Opcional"></div>' +
+      '</div>' +
+      (S.candErro ? '<p class="form-err" role="alert" style="margin-top:.6rem">' + esc(S.candErro) + '</p>' : '') +
+      '<div class="row" style="margin-top:.9rem"><button class="btn btn-primary" type="submit">' + (ed ? 'Salvar alteração' : 'Adicionar candidato') + '</button>' +
+      (ed ? '<button type="button" class="btn btn-ghost" data-action="cand-cancel">Cancelar</button>' : '') + '</div></form>';
+    return head('Cadastro', 'Candidatos', '<span class="pill pill-muted">' + S.candidatos.length + ' candidatos</span>') +
+      (locked ? lockBanner('Lista travada', status() === 'aberta' ? 'A votação já abriu. Ninguém pode incluir, mudar ou remover candidatos até o fim.' : 'A votação terminou. A lista fica guardada como estava.', status() === 'aberta') : '') +
+      '<div class="table-wrap"><table class="tbl"><thead><tr><th>Nº</th><th>Nome</th><th>Casa</th><th>Inscrição</th><th><span class="sr">Ações</span></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      form;
+  },
+
+  casas: function(){
+    var A = S.casas.length, comZap = S.casas.filter(function(c){ return c.zap; }).length;
+    return head('Cadastro', 'Casas') +
+      '<div class="chips"><div class="chip"><strong>' + A + '</strong><span>casas aptas</span></div><div class="chip"><strong>' + comZap + '</strong><span>recebem pelo WhatsApp</span></div><div class="chip"><strong>' + (A - comZap) + '</strong><span>recebem envelope</span></div><div class="chip"><strong>' + votantesN() + '</strong><span>já votaram</span></div></div>' +
+      '<section class="card"><div class="card-head"><h3>Última importação</h3><span class="small">27/10 às 14:05 · Marcos Vieira</span></div>' +
+        '<p class="small mono" style="margin:.2rem 0 .9rem">lista-casas-jardins.csv · 223 linhas · separador “;” · acentos convertidos</p>' +
+        '<div class="report">' +
+          '<div class="rep-line ok">' + ico('check', 20, 3) + '<span><strong>220 casas</strong> importadas sem problema</span></div>' +
+          '<div class="rep-line warn">' + ico('alert', 20) + '<span>Linha 58: telefone sem DDD (98765-4321). Corrigido para DDD 11 depois de confirmar com o morador.</span></div>' +
+          '<div class="rep-line warn">' + ico('alert', 20) + '<span>Linha 141: a casa 87 aparecia duas vezes. Ficou a linha com o proprietário atual.</span></div>' +
+          '<div class="rep-line warn">' + ico('alert', 20) + '<span>Linha 203: casa 204 sem telefone. O código vai em envelope lacrado.</span></div>' +
+        '</div>' +
+        '<div class="row" style="margin-top:1rem"><button type="button" class="btn btn-ghost" disabled>Importar nova lista</button><span class="small">Bloqueado porque os códigos já foram gerados.</span></div>' +
+      '</section>' +
+      '<div class="field"><label for="casa-busca">Buscar casa</label><input class="in" id="casa-busca" type="search" placeholder="Número da casa ou nome do proprietário" value="' + esc(S.busca) + '"></div>' +
+      '<div class="table-wrap tbl-scroll"><table class="tbl"><thead><tr><th>Casa</th><th>Proprietário</th><th>WhatsApp</th><th>Código</th>' + (S.config.veVotantes ? '<th>Situação</th>' : '') + '</tr></thead><tbody id="casas-tbody">' + casasRows() + '</tbody></table></div>' +
+      (S.config.veVotantes ? '' : '<p class="small">A coluna “Situação” está escondida porque a comissão escolheu não ver quem votou.</p>');
+  },
+
+  codigos: function(){
+    var arquivo = '';
+    if(S.verArquivo){
+      arquivo = '<div class="file"><div class="file-head"><span>envio-codigos.html</span><span>220 casas · baixado 1 vez</span></div>' +
+        [1,2,3,4,5,6].map(function(n){ var c = S.casas[n-1];
+          return '<div class="file-row"><strong>Casa ' + n + '</strong><span>' + esc(c.nome) + '<br><span class="mono">' + fmtCode(S.eleitores[n].codigo) + '</span></span>' +
+            (c.zap ? '<button type="button" class="btn btn-sm btn-primary" data-action="zap" data-casa="' + n + '">' + ico('zap', 16) + ' Enviar no WhatsApp</button>' : '<span class="small">Envelope</span>') +
+            '<span class="sent">' + ico('check', 16, 3) + ' enviado</span></div>';
+        }).join('') + '<div class="file-more">… e mais 214 casas. Cada botão abre o WhatsApp com a mensagem pronta para aquela casa.</div></div>';
+    }
+    var reem = S.reem ?
+      '<div class="reem-card"><p class="label">Novo código da casa ' + S.reem.casa + '</p><p class="code-xl mono">' + fmtCode(S.reem.codigo) + '</p>' +
+        '<p>Este código aparece só agora. Envie para o proprietário e feche esta caixa. O código antigo já não funciona.</p>' +
+        '<div class="row"><button type="button" class="btn btn-primary" data-action="zap" data-casa="' + S.reem.casa + '">' + ico('zap', 18) + ' Enviar no WhatsApp</button><button type="button" class="btn btn-ghost" data-action="reem-fechar">Fechar</button></div></div>' :
+      '<form data-form="reem"><div class="form-grid">' +
+        '<div class="field"><label for="reem-casa">Número da casa</label><input class="in" id="reem-casa" inputmode="numeric" maxlength="3" placeholder="47"></div>' +
+        '<div class="field"><label for="reem-motivo">Motivo</label><select class="in" id="reem-motivo"><option>Perdeu a mensagem</option><option>Trocou de celular</option><option>A mensagem não chegou</option><option>Procuração (fase 2)</option></select></div>' +
+        '<button class="btn btn-primary" type="submit">Reemitir código</button></div>' +
+        (S.reemErro ? '<p class="form-err" role="alert" style="margin-top:.6rem">' + esc(S.reemErro) + '</p>' : '') +
+        '<p class="small" style="margin-top:.6rem">Teste com a casa 47. Depois tente usar o código antigo na aba Morador.</p></form>';
+    return head('Distribuição', 'Códigos') +
+      '<section class="card"><div class="rep-line ok">' + ico('check', 22, 3) + '<div><strong>220 códigos gerados e enviados</strong><p class="muted">Gerados em 29/10 às 10:02 por Helena Prado, com Marcos Vieira presente. O arquivo de envio foi baixado uma única vez e depois apagado.</p></div></div>' +
+        '<p style="margin-top:.8rem">O sistema não guarda os códigos. Guarda só uma impressão digital de cada um, que serve para conferir o código digitado. Nem a comissão nem o técnico conseguem ver os códigos depois do envio.</p>' +
+        '<div class="row" style="margin-top:1rem"><button type="button" class="btn btn-ghost" data-action="arquivo">' + (S.verArquivo ? 'Esconder' : 'Ver como era') + ' o arquivo de envio</button></div>' + arquivo + '</section>' +
+      '<section class="card"><h3>Reemitir código perdido</h3><p class="muted" style="margin-bottom:.9rem">Para quem perdeu a mensagem. Confirme antes que o pedido veio do telefone cadastrado.</p>' + reem + '</section>';
+  },
+
+  config: function(){
+    var c = S.config, locked = status() !== 'antes', lim = toMin(c.abre) + 720;
+    var opts = Object.keys(DES).map(function(k){ return '<option value="' + k + '"' + (c.desempate === k ? ' selected' : '') + '>' + DES[k] + '</option>'; }).join('');
+    var pr = status() === 'aberta' ?
+      '<section class="card"><h3>Prorrogar o encerramento</h3><p class="muted" style="margin-bottom:.9rem">Só para emergência, como o sistema fora do ar. O motivo vai para a ata e para a auditoria. Limite: ' + horaCurta(hhmm(Math.min(lim, 1439))) + ', 12 horas depois da abertura.</p>' +
+      '<form data-form="prorrogar"><div class="form-grid"><div class="field"><label for="pr-hora">Novo encerramento</label><input class="in" id="pr-hora" type="time" value="' + c.fecha + '"></div>' +
+      '<div class="field" style="grid-column:span 2"><label for="pr-motivo">Motivo</label><input class="in" id="pr-motivo" placeholder="Ex.: sistema fora do ar das 9h10 às 9h50"></div>' +
+      '<button class="btn btn-ghost" type="submit">Prorrogar</button></div>' +
+      (S.prorErro ? '<p class="form-err" role="alert" style="margin-top:.6rem">' + esc(S.prorErro) + '</p>' : '') + '</form></section>' : '';
+    return head('Regras da eleição', 'Configurações') +
+      (locked ? lockBanner('Configuração travada', status() === 'aberta' ? 'Depois que a votação abre, as regras não mudam mais. Só dá para prorrogar o encerramento em caso de emergência.' : 'A votação terminou.', status() === 'aberta') : '') +
+      '<form class="card" data-form="config"><fieldset' + (locked ? ' disabled' : '') + '>' +
+        '<div class="field"><label for="cfg-titulo">Nome da eleição</label><input class="in" id="cfg-titulo" value="' + esc(c.titulo) + '"></div>' +
+        '<div class="field-row"><div class="field"><label for="cfg-data">Dia</label><input class="in" id="cfg-data" type="date" value="' + c.data + '"></div>' +
+          '<div class="field"><label for="cfg-abre">Abre às</label><input class="in" id="cfg-abre" type="time" value="' + c.abre + '"></div>' +
+          '<div class="field"><label for="cfg-fecha">Encerra às</label><input class="in" id="cfg-fecha" type="time" value="' + c.fecha + '"></div></div>' +
+        '<p class="help" id="cfg-dur">' + duracaoTxt(c.abre, c.fecha) + '</p>' +
+        '<div class="field-row"><div class="field"><label for="cfg-vagas">Vagas</label><input class="in" id="cfg-vagas" type="number" min="1" max="5" value="' + c.vagas + '"></div>' +
+          '<div class="field" style="grid-column:span 2"><span class="flabel">Quantos candidatos cada casa escolhe</span><div class="seg">' +
+          '<label class="seg-radio"><input type="radio" name="cfg-max" value="1"' + (c.max === 1 ? ' checked' : '') + '><span>1 candidato</span></label>' +
+          '<label class="seg-radio"><input type="radio" name="cfg-max" value="multi"' + (c.max > 1 ? ' checked' : '') + '><span>Até ' + Math.min(3, c.vagas) + ' candidatos</span></label></div></div></div>' +
+        '<label class="switch"><input type="checkbox" id="cfg-branco"' + (c.branco ? ' checked' : '') + '><span class="sw"></span><span><strong>Permitir voto em branco</strong><small>Aparece o botão “Votar em branco” na tela de escolha.</small></span></label>' +
+        '<label class="switch"><input type="checkbox" id="cfg-vevot"' + (c.veVotantes ? ' checked' : '') + '><span class="sw"></span><span><strong>A comissão pode ver quais casas já votaram</strong><small>Mostra só a casa e o horário. Nunca o voto.</small></span></label>' +
+        '<div class="field"><label for="cfg-desempate">Regra de desempate</label><select class="in" id="cfg-desempate">' + opts + '</select></div>' +
+        '<div class="field"><label for="cfg-msg">Mensagem do WhatsApp</label><textarea class="in" id="cfg-msg" rows="7">' + esc(c.msg) + '</textarea><p class="help">Use {nome}, {casa}, {codigo}, {data}, {abre}, {fecha} e {link}. O sistema troca pelos dados de cada casa.</p></div>' +
+      '</fieldset>' +
+      (S.cfgErro ? '<p class="form-err" role="alert" style="margin-top:.8rem">' + esc(S.cfgErro) + '</p>' : '') +
+      '<div class="row" style="margin-top:1rem"><button class="btn btn-primary" type="submit"' + (locked ? ' disabled' : '') + '>Salvar configurações</button></div></form>' + pr;
+  },
+
+  resultado: function(){
+    if(status() !== 'encerrada') return head('Apuração', 'Resultado') + lockCard('O resultado só aparece depois do encerramento', 'Nem a comissão consegue ver os votos antes das ' + horaCurta(S.config.fecha) + '. É o servidor que confere o horário, não o computador de quem está olhando.');
+    if(!S.resVisto){ S.resVisto = true; audit('Abriu o resultado da apuração'); }
+    var R = apurar(), max = Math.max.apply(null, [1].concat(R.ranking.map(function(c){ return c.v; })));
+    var ok = R.cedulas === R.votantes;
+    var rank = R.ranking.map(function(c){
+      var vaga = R.eleitos.indexOf(c.n), tie = R.empate && !R.decididoPor && R.empate.grupo.some(function(g){ return g.n === c.n; });
+      var pos = 1 + R.ranking.filter(function(x){ return x.v > c.v; }).length;
+      return '<li class="' + (vaga >= 0 ? 'is-eleito' : (tie ? 'is-tie' : '')) + '"><span class="pos">' + pos + 'º</span>' +
+        '<div style="min-width:0"><div class="rname"><span class="num">' + c.n + '</span><span>' + esc(c.nome) + '</span></div><div class="rbar"><span style="width:' + (c.v/max*100).toFixed(1) + '%"></span></div></div>' +
+        '<span class="rv-n">' + c.v + '</span><span class="rtag">' + (vaga >= 0 ? '<span class="pill pill-ok">Vaga ' + (vaga + 1) + '</span>' : (tie ? '<span class="pill pill-warn">Empate</span>' : '')) + '</span></li>';
+    }).join('');
+    return head('Apuração', 'Resultado', '<span class="pill pill-muted">Encerrada às ' + horaCurta(S.config.fecha) + '</span>') +
+      (ok ? alertBox('ok', 'Conferência: ' + R.cedulas + ' cédulas na urna = ' + R.votantes + ' casas que votaram', 'Nenhuma cédula a mais, nenhuma a menos.', 'check') :
+            alertBox('danger', 'Diferença entre cédulas e votantes', R.cedulas + ' cédulas para ' + R.votantes + ' votantes.')) +
+      '<div class="kpis"><div class="kpi"><strong>' + R.votantes + '</strong><span>de ' + S.casas.length + ' casas votaram (' + pct(R.votantes, S.casas.length) + ')</span></div>' +
+        '<div class="kpi"><strong>' + (R.cedulas - R.brancos) + '</strong><span>cédulas com candidatos</span></div><div class="kpi"><strong>' + R.brancos + '</strong><span>votos em branco</span></div></div>' +
+      (R.empate ? empateBox(R) : '') +
+      '<section class="card"><h3>Votos por candidato</h3><p class="muted">' + (S.config.max > 1 ? 'Cada casa podia escolher até ' + S.config.max + ' nomes. ' : '') + 'Os ' + S.config.vagas + ' mais votados ocupam as vagas.</p><ol class="rank">' + rank + '</ol></section>' +
+      '<div class="row"><button type="button" class="btn btn-primary" data-action="secao" data-secao="ata">' + ico('doc', 20) + ' Gerar a ata</button></div>';
+  },
+
+  ata: function(){
+    if(status() !== 'encerrada') return head('Documento oficial', 'Ata') + lockCard('A ata fica pronta depois do encerramento', 'Ela é montada com os números finais da apuração, prontos para imprimir e assinar.');
+    if(!S.ataVista){ S.ataVista = true; audit('Gerou a ata da eleição'); }
+    var R = apurar(), c = S.config, d = c.data.split('-');
+    var tbl = R.ranking.map(function(x){ return '<tr><td>' + x.n + '</td><td>' + esc(x.nome) + '</td><td class="r">' + x.v + '</td></tr>'; }).join('');
+    var eleitos = R.eleitos.map(function(n){ var x = candPorN(n); return '<li>' + esc(x.nome) + ' (nº ' + n + ')</li>'; }).join('');
+    var nota = R.empate ? '<p>' + esc(empateTexto(R)) + '</p>' : '';
+    return head('Documento oficial', 'Ata') +
+      '<p class="muted">Pronta para imprimir e assinar. No sistema real, o botão “Salvar como PDF” gera este documento.</p>' +
+      '<div class="paper-wrap"><article class="paper">' +
+        '<header class="paper-head"><svg class="logo" width="42" height="42" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="20" class="lg-bg"/><path class="lg-leaf" d="M21 7.5c6.2 3 7.6 8.6 4.8 13.3-5.6-.8-8.6-5.6-4.8-13.3z"/><path class="lg-wave" d="M7.5 25.5c3.1-2.3 6.1-2.3 9.2 0s6.1 2.3 9.2 0 4.6-2 6.6-.8"/><path class="lg-wave" d="M10 31c2.5-1.7 5-1.7 7.5 0s5 1.7 7.5 0 3.7-1.5 5.2-.6"/></svg>' +
+          '<div><p class="paper-kicker">Condomínio Jardins do Lago</p><h3>Ata da ' + esc(c.titulo) + '</h3></div></header>' +
+        '<p>Aos ' + (+d[2]) + ' dias do mês de ' + MESES[+d[1]-1] + ' de ' + d[0] + ', realizou-se, por meio da plataforma de votação online do Condomínio Jardins do Lago, conforme autoriza a convenção do condomínio, a ' + esc(c.titulo.charAt(0).toLowerCase() + c.titulo.slice(1)) + ', com voto secreto e um voto por casa, registrando-se o que segue.</p>' +
+        '<table class="paper-tbl"><tbody>' +
+          '<tr><th>Abertura</th><td>' + c.abre + '</td></tr><tr><th>Encerramento</th><td>' + c.fecha + '</td></tr>' +
+          '<tr><th>Casas aptas</th><td>' + S.casas.length + '</td></tr><tr><th>Casas que votaram</th><td>' + R.votantes + '</td></tr>' +
+          '<tr><th>Participação</th><td>' + pct(R.votantes, S.casas.length) + '</td></tr>' +
+          '<tr><th>Cédulas na urna</th><td>' + R.cedulas + (R.cedulas === R.votantes ? ' (confere com o número de votantes)' : ' (DIVERGENTE)') + '</td></tr>' +
+          '<tr><th>Votos em branco</th><td>' + R.brancos + '</td></tr>' +
+          '<tr><th>Regra de escolha</th><td>' + (c.max > 1 ? 'Até ' + c.max + ' candidatos por casa' : '1 candidato por casa') + ', ' + c.vagas + ' vagas</td></tr>' +
+          '<tr><th>Regra de desempate</th><td>' + DES[c.desempate] + '</td></tr>' +
+        '</tbody></table>' +
+        '<h4>Votos por candidato</h4><table class="paper-tbl"><thead><tr><th>Nº</th><th>Candidato</th><th class="r">Votos</th></tr></thead><tbody>' + tbl + '</tbody></table>' +
+        '<h4>Eleitos</h4><ol>' + eleitos + '</ol>' + nota +
+        '<h4>Ocorrências</h4><div class="paper-lines"><span></span><span></span><span></span></div>' +
+        '<p class="paper-small">Versão do sistema: v1.0-piloto (a3f9c21), sem alterações durante a votação. Registro de auditoria anexo.</p>' +
+        '<p style="margin-top:1rem">Jardins do Lago, ' + (+d[2]) + ' de ' + MESES[+d[1]-1] + ' de ' + d[0] + '.</p>' +
+        '<div class="signs">' + MEMBROS.map(function(m){ return '<div class="sign"><span class="sign-line"></span><strong>' + m.nome + '</strong><small>' + m.papel + '</small></div>'; }).join('') + '</div>' +
+      '</article></div>';
+  },
+
+  auditoria: function(){
+    return head('Prestação de contas', 'Auditoria') +
+      '<p class="muted">Registro permanente de tudo o que a comissão faz no sistema. Ninguém pode alterar nem apagar uma linha. Votos nunca aparecem aqui.</p>' +
+      '<div class="table-wrap"><table class="tbl"><thead><tr><th>Quando</th><th>Quem</th><th>O que aconteceu</th></tr></thead><tbody>' +
+      S.auditoria.slice().reverse().map(function(a){ return '<tr><td class="mono nowrap">' + a.q + '</td><td class="nowrap">' + esc(a.u) + '</td><td>' + esc(a.a) + '</td></tr>'; }).join('') +
+      '</tbody></table></div>';
+  }
+};
+function lockCard(t, p){
+  return '<section class="card lockbox"><span class="lk-ic">' + ico('lock', 28) + '</span><h3>' + esc(t) + '</h3><p>' + esc(p) + '</p>' +
+    '<button type="button" class="btn btn-primary" data-action="clock" data-clock="encerrada">Simular o encerramento (' + hhmm(toMin(S.config.fecha) + 5) + ')</button></section>';
+}
+function casasRows(){
+  var q = S.busca.trim().toLowerCase();
+  return S.casas.filter(function(c){ return !q || String(c.n) === q || String(c.n).indexOf(q) === 0 || c.nome.toLowerCase().indexOf(q) >= 0; }).map(function(c){
+    var e = S.eleitores[c.n];
+    return '<tr><td><strong>' + c.n + '</strong></td><td>' + esc(c.nome) + '</td><td class="mono nowrap">' + (c.zap ? '(11) 9••••-' + c.fim : '—') + '</td>' +
+      '<td class="nowrap">' + (!c.zap ? 'Envelope' : e.reemitido ? 'Reemitido' : 'Enviado 29/10') + '</td>' +
+      (S.config.veVotantes ? '<td class="nowrap">' + (e.votouEm !== null ? '<span class="pill pill-ok">Votou ' + hhmm(e.votouEm) + '</span>' : '<span class="muted">Ainda não</span>') + '</td>' : '') + '</tr>';
+  }).join('') || '<tr><td colspan="5" class="muted">Nenhuma casa encontrada.</td></tr>';
+}
+function duracaoTxt(a, f){
+  if(!a || !f) return 'Preencha os horários.';
+  var d = toMin(f) - toMin(a);
+  if(d <= 0) return '⚠ O encerramento precisa ser depois da abertura.';
+  if(d > 720) return '⚠ A votação pode durar no máximo 12 horas.';
+  return 'Duração: ' + Math.floor(d/60) + ' horas' + (d % 60 ? ' e ' + (d % 60) + ' min' : '') + '. O máximo é 12 horas.';
+}
+
+function apurar(){
+  var votos = {}, brancos = 0;
+  S.candidatos.forEach(function(c){ votos[c.n] = 0; });
+  S.urna.forEach(function(b){ if(b.esc === 'BRANCO') brancos++; else b.esc.forEach(function(n){ if(n in votos) votos[n]++; }); });
+  var ranking = S.candidatos.map(function(c){ return Object.assign({}, c, {v: votos[c.n]}); }).sort(function(a,b){ return b.v - a.v || a.n - b.n; });
+  var vagas = S.config.vagas, eleitos = ranking.slice(0, vagas).map(function(c){ return c.n; }), empate = null, decididoPor = null;
+  if(ranking.length > vagas && ranking[vagas-1].v === ranking[vagas].v && ranking[vagas].v > 0){
+    var v = ranking[vagas-1].v;
+    var grupo = ranking.filter(function(c){ return c.v === v; });
+    var acima = ranking.filter(function(c){ return c.v > v; }).map(function(c){ return c.n; });
+    var restantes = vagas - acima.length, ord = null;
+    if(S.config.desempate === 'idade') ord = grupo.slice().sort(function(a,b){ return (a.nasc || '9999').localeCompare(b.nasc || '9999'); });
+    if(S.config.desempate === 'inscricao') ord = grupo.slice().sort(function(a,b){ return (a.insc || '9999').localeCompare(b.insc || '9999'); });
+    empate = {grupo: grupo, restantes: restantes, v: v, vaga: acima.length + 1};
+    if(ord){ decididoPor = ord.slice(0, restantes); eleitos = acima.concat(decididoPor.map(function(c){ return c.n; })); }
+    else eleitos = acima;
+  }
+  var vot = votantesN();
+  return {votos: votos, brancos: brancos, ranking: ranking, eleitos: eleitos, empate: empate, decididoPor: decididoPor, cedulas: S.urna.length, votantes: vot};
+}
+function empateTexto(R){
+  var nomes = R.empate.grupo.map(function(c){ return c.nome + ' (' + c.n + ')'; }).join(' e ');
+  var t = 'Empate na ' + R.empate.vaga + 'ª vaga: ' + nomes + ' tiveram ' + R.empate.v + ' votos cada. Regra: ' + DES[S.config.desempate].toLowerCase() + '. ';
+  if(R.decididoPor){
+    var w = R.decididoPor[0];
+    t += 'Fica com a vaga: ' + R.decididoPor.map(function(x){ return x.nome; }).join(', ') + (S.config.desempate === 'idade' ? ' (nascimento em ' + dataBR(w.nasc) + ').' : ' (inscrição em ' + dataBR(w.insc) + ').');
+  } else t += S.config.desempate === 'sorteio' ? 'A comissão faz o sorteio na reunião de apuração e registra o resultado nesta ata.' : 'Será feita uma nova votação só entre os empatados.';
+  return t;
+}
+function empateBox(R){ return alertBox('warn', 'Empate na ' + R.empate.vaga + 'ª vaga', empateTexto(R)); }
+
+function simular10(){
+  if(status() !== 'aberta'){ toast('Escolha “aberta” no horário simulado para receber votos.'); return; }
+  var livres = Object.keys(S.eleitores).map(Number).filter(function(n){ return S.eleitores[n].votouEm === null && DEMO.indexOf(n) < 0; });
+  if(!livres.length){ toast('Todas as casas já votaram.'); return; }
+  shuffle(livres, Math.random);
+  var pesos = [[11,.55],[13,.5],[15,.42],[17,.4],[12,.3],[14,.27],[16,.24],[18,.17],[19,.12],[20,.09]].filter(function(p){ return candPorN(p[0]); });
+  var feitos = livres.slice(0, 10);
+  feitos.forEach(function(n){
+    var escolha;
+    if(S.config.branco && Math.random() < .05) escolha = 'BRANCO';
+    else if(S.config.max === 1) escolha = [pesos[Math.floor(Math.random()*Math.min(4, pesos.length))][0]];
+    else {
+      escolha = pesos.filter(function(p){ return Math.random() < p[1]; }).map(function(p){ return p[0]; }).slice(0, S.config.max);
+      if(!escolha.length) escolha = [pesos[0] ? pesos[0][0] : S.candidatos[0].n];
+      escolha.sort(function(a,b){ return a-b; });
+    }
+    S.eleitores[n].votouEm = agoraMin(); avancarRelogio(3);
+    inserirCedula(escolha);
+  });
+  render(); toast('Mais ' + feitos.length + ' casas votaram.');
+}
+
+function salvarCand(){
+  var num = +$('#cand-num').value, nome = $('#cand-nome').value.trim(), casa = +$('#cand-casa').value || null;
+  var err = null, ed = S.candEdit;
+  if(!(num >= 10 && num <= 99)) err = 'O número precisa ter 2 dígitos, de 10 a 99.';
+  else if(S.candidatos.some(function(c){ return c.n === num && c.n !== ed; })) err = 'Já existe candidato com o número ' + num + '.';
+  else if(nome.length < 3) err = 'Escreva o nome completo do candidato.';
+  else if(casa && (casa < 1 || casa > 220)) err = 'A casa precisa ser de 1 a 220.';
+  else if(ed !== null && num !== ed && votosDe(ed) > 0) err = 'Este candidato já tem votos simulados nesta demonstração. Mude só o nome.';
+  if(err){ S.candErro = err; return renderComissao(); }
+  if(ed !== null){ var c = candPorN(ed); c.n = num; c.nome = nome; c.casa = casa; audit('Alterou o candidato ' + num + ' – ' + nome); toast('Candidato atualizado.'); }
+  else { S.candidatos.push({n:num, nome:nome, casa:casa, insc:'2026-10-29', nasc:''}); audit('Cadastrou o candidato ' + num + ' – ' + nome); toast('Candidato adicionado.'); }
+  S.candEdit = null; S.candErro = null; renderComissao();
+}
+function reemitir(){
+  var n = +$('#reem-casa').value, motivo = $('#reem-motivo').value, e = S.eleitores[n];
+  if(!e) S.reemErro = 'Não existe casa com esse número. As casas vão de 1 a 220.';
+  else if(status() === 'encerrada') S.reemErro = 'A votação já foi encerrada.';
+  else if(e.votouEm !== null) S.reemErro = 'A casa ' + n + ' já votou. Não é possível emitir outro código.';
+  else {
+    var antigo = e.codigo, novo = gerarCodigo();
+    e.codigo = novo; e.versao++; e.reemitido = true;
+    if(DEMO.indexOf(n) >= 0) S.antigos.push({codigo: antigo, casa: n});
+    S.reem = {casa: n, codigo: novo}; S.reemErro = null;
+    audit('Reemitiu o código da casa ' + n + ' (motivo: ' + motivo.toLowerCase() + '). O código anterior foi invalidado');
+  }
+  renderComissao();
+}
+function salvarConfig(){
+  var c = S.config;
+  var titulo = $('#cfg-titulo').value.trim(), data = $('#cfg-data').value, abre = $('#cfg-abre').value, fecha = $('#cfg-fecha').value;
+  var vagas = +$('#cfg-vagas').value, multi = ($('input[name="cfg-max"]:checked') || {}).value === 'multi';
+  var branco = $('#cfg-branco').checked, ve = $('#cfg-vevot').checked, des = $('#cfg-desempate').value, msg = $('#cfg-msg').value;
+  var d = toMin(fecha) - toMin(abre), err = null;
+  if(!titulo) err = 'Dê um nome para a eleição.';
+  else if(!data) err = 'Escolha o dia da votação.';
+  else if(!abre || !fecha) err = 'Preencha os horários de abertura e encerramento.';
+  else if(d <= 0) err = 'O encerramento precisa ser depois da abertura.';
+  else if(d > 720) err = 'A votação pode durar no máximo 12 horas.';
+  else if(!(vagas >= 1 && vagas <= 5)) err = 'O número de vagas vai de 1 a 5.';
+  else if(msg.indexOf('{codigo}') < 0) err = 'A mensagem precisa ter {codigo}. Sem isso, o morador não recebe o código.';
+  if(err){ S.cfgErro = err; return renderComissao(); }
+  var max = multi ? Math.min(3, vagas) : 1, mud = [];
+  if(c.titulo !== titulo) mud.push('nome da eleição');
+  if(c.data !== data) mud.push('dia ' + dataBR(data));
+  if(c.abre !== abre || c.fecha !== fecha) mud.push('horário ' + horaCurta(abre) + ' às ' + horaCurta(fecha));
+  if(c.vagas !== vagas) mud.push(vagas + ' vagas');
+  if(c.max !== max) mud.push(max === 1 ? '1 escolha por casa' : 'até ' + max + ' escolhas');
+  if(c.branco !== branco) mud.push(branco ? 'voto em branco permitido' : 'sem voto em branco');
+  if(c.veVotantes !== ve) mud.push(ve ? 'comissão vê quem votou' : 'comissão não vê quem votou');
+  if(c.desempate !== des) mud.push('desempate: ' + DES[des].toLowerCase());
+  if(c.msg !== msg) mud.push('mensagem do WhatsApp');
+  Object.assign(c, {titulo:titulo, data:data, abre:abre, fecha:fecha, vagas:vagas, max:max, branco:branco, veVotantes:ve, desempate:des, msg:msg});
+  if(S.voter.escolhas.length > max) S.voter.escolhas = S.voter.escolhas.slice(0, max);
+  audit(mud.length ? 'Alterou as configurações: ' + mud.join(', ') : 'Salvou as configurações sem mudanças');
+  S.cfgErro = null; toast('Configurações salvas.'); renderComissao();
+}
+function prorrogar(){
+  var c = S.config, nova = $('#pr-hora').value, motivo = $('#pr-motivo').value.trim(), lim = toMin(c.abre) + 720, err = null;
+  if(!nova || toMin(nova) <= toMin(c.fecha)) err = 'Escolha um horário depois do encerramento atual (' + horaCurta(c.fecha) + ').';
+  else if(toMin(nova) > lim) err = 'O limite é ' + horaCurta(hhmm(lim)) + ': a votação não pode passar de 12 horas.';
+  else if(motivo.length < 5) err = 'Escreva o motivo. Ele vai para a ata.';
+  if(err){ S.prorErro = err; return renderComissao(); }
+  var antes = c.fecha; c.fecha = nova;
+  audit('Prorrogou o encerramento de ' + horaCurta(antes) + ' para ' + horaCurta(nova) + ' (motivo: ' + motivo + ')');
+  S.prorErro = null; toast('Encerramento prorrogado para ' + horaCurta(nova) + '.'); renderComissao();
+}
+
+/* ---------- sigilo ---------- */
+function renderSigilo(){
+  var el = $('#sig-root'); if(!el) return;
+  var vs = listaVotantes();
+  var quem = vs.map(function(r){ return '<tr' + (r.n === S.ultimo ? ' class="is-new"' : '') + '><td>Casa ' + r.n + '</td><td class="mono">' + hhmm(r.t) + '</td></tr>'; }).join('');
+  var urna = S.urna.map(function(b){ return '<tr><td class="mono small">' + b.id + '</td><td class="mono">' + (b.esc === 'BRANCO' ? 'Branco' : b.esc.join(' · ')) + '</td></tr>'; }).join('');
+  el.innerHTML =
+    '<div class="sig-intro"><p class="eyebrow">Voto secreto</p>' +
+      '<h1 class="h-view">Quem votou e em quem votou ficam em lugares separados.</h1>' +
+      '<p class="lead">O sistema guarda duas listas que não se ligam. Uma diz quais casas já votaram. A outra é a urna, com as cédulas embaralhadas e sem horário. Vote na aba Morador e volte aqui para ver.</p>' +
+      '<div class="row"><a class="btn btn-primary" href="#morador">Votar agora como morador</a></div></div>' +
+    (S.ultimo ? alertBox('info', 'A casa ' + S.ultimo + ' acabou de votar.', 'Ela aparece no topo de “Quem votou”, em destaque. A cédula dela entrou numa posição sorteada da urna. Dá para descobrir qual é? Nem a comissão, nem o técnico.') : '') +
+    '<div class="ledgers" style="margin-top:1.2rem">' +
+      '<section class="ledger"><header><h2>Quem votou <span class="ledger-count">' + vs.length + ' casas</span></h2><p>Serve para impedir voto duplo e medir a participação.</p></header>' +
+        '<div class="ledger-cols">Guarda: <code>casa</code><code>horário</code></div>' +
+        '<div class="tbl-scroll" tabindex="0" aria-label="Lista de casas que votaram"><table class="tbl"><thead class="sr"><tr><th>Casa</th><th>Horário</th></tr></thead><tbody>' + quem + '</tbody></table></div></section>' +
+      '<div class="wall" aria-hidden="true"><span class="wall-line"></span><span class="wall-ic">' + ico('lock', 22) + '</span><span>Nenhuma<br>ligação</span><span class="wall-line"></span></div>' +
+      '<section class="ledger ledger-urna"><header><h2>Urna <span class="ledger-count">' + S.urna.length + ' cédulas</span></h2><p>Só as escolhas, com número aleatório. Sem casa, sem horário, sem ordem de chegada.</p></header>' +
+        '<div class="ledger-cols">Guarda: <code>número aleatório</code><code>números dos candidatos</code></div>' +
+        '<div class="tbl-scroll" tabindex="0" aria-label="Cédulas da urna"><table class="tbl"><thead class="sr"><tr><th>Cédula</th><th>Escolhas</th></tr></thead><tbody>' + urna + '</tbody></table></div></section>' +
+    '</div>' +
+    '<p class="sig-eq">' + vs.length + ' casas votaram <span>=</span> ' + S.urna.length + ' cédulas na urna</p>' +
+    '<div class="sig-grid">' +
+      '<section><h2>O que garante o sigilo</h2><ul class="ticks">' +
+        ['A urna não guarda horário, endereço de internet nem número em sequência.','As cédulas entram em posições sorteadas, não na ordem em que chegam.','A escolha nunca aparece no endereço da página nem nos registros do sistema.','Confirmar o voto e marcar “já votou” acontecem juntos, num passo só.','Ninguém vê o resultado antes do encerramento, nem a comissão.','Depois de votar, a tela não mostra em quem a pessoa votou.']
+        .map(function(t){ return '<li>' + ico('check', 18, 3) + '<span>' + t + '</span></li>'; }).join('') + '</ul></section>' +
+      '<section><h2>Como a comissão pode comprovar</h2><ol class="olist">' +
+        '<li>No ensaio geral, 5 membros votam numa ordem anotada em papel.</li>' +
+        '<li>Recebem uma cópia completa do banco de dados e tentam descobrir quem votou em quem.</li>' +
+        '<li>Veem que a urna está embaralhada e sem horário.</li>' +
+        '<li>Conferem na ata que o número de cédulas é igual ao de casas que votaram.</li>' +
+        '<li>Conferem que a versão do sistema não mudou durante a votação.</li></ol></section>' +
+    '</div>' +
+    '<section class="card honest"><h3>O que fica combinado para o dia</h3><p>Ninguém acessa o banco de dados durante a votação, nem o técnico. A versão do sistema fica congelada das ' + horaCurta(S.config.abre) + ' às ' + horaCurta(S.config.fecha) + ' e o número dela vai para a ata. Numa fase seguinte, a urna pode ser cifrada com uma senha que só a comissão conhece.</p></section>';
+}
+
+/* ---------- eventos ---------- */
+document.addEventListener('click', function(e){
+  var a = e.target.closest('a[href^="#"]');
+  if(a){ var v = a.getAttribute('href').slice(1); if(VIEWS.indexOf(v) >= 0){ e.preventDefault(); fecharZap(); go(v); return; } }
+  if(e.target.id === 'zap'){ fecharZap(); return; }
+  var b = e.target.closest('[data-action]'); if(!b || b.disabled) return;
+  var act = b.dataset.action, v2 = S.voter;
+  switch(act){
+    case 'reset': S = freshState(); S.view = VIEWS.indexOf((location.hash || '').slice(1)) >= 0 ? location.hash.slice(1) : 'apresentacao'; fecharZap(); showView(S.view); toast('Demonstração reiniciada.'); break;
+    case 'clock':
+      S.clock = b.dataset.clock;
+      if(['antes','encerrada'].indexOf(v2.erro) >= 0) v2.erro = null;
+      render(); toast('Horário simulado: ' + hhmm(agoraMin()) + '.'); break;
+    case 'usar':
+      S.voter = novoVoter(fmtCode(b.dataset.code));
+      if(S.view !== 'morador') go('morador'); else { renderVoter(true); }
+      var inp = $('#va-cod'); if(inp){ inp.focus({preventScroll:true}); inp.scrollIntoView({block:'center', behavior:'smooth'}); }
+      break;
+    case 'zap': abrirZap(+b.dataset.casa); break;
+    case 'zap-close': fecharZap(); break;
+    case 'zap-open':
+      fecharZap();
+      if(zapCasa){ S.voter = novoVoter(fmtCode(S.eleitores[zapCasa].codigo)); }
+      go('morador');
+      setTimeout(function(){ var i = $('#va-cod'); if(i) i.focus({preventScroll:true}); }, 50);
+      break;
+    case 'revisar': if(v2.escolhas.length){ v2.tela = 3; v2.branco = false; v2.erro = null; renderVoter(true); } break;
+    case 'branco': v2.tela = 3; v2.branco = true; v2.escolhas = []; v2.erro = null; renderVoter(true); break;
+    case 'voltar': v2.tela = 2; v2.branco = false; v2.erro = null; renderVoter(true); break;
+    case 'confirmar': confirmar(); break;
+    case 'novo': S.voter = novoVoter(); renderVoter(true); break;
+    case 'secao': S.secao = b.dataset.secao; S.candEdit = null; S.candDel = null; S.candErro = null; S.reemErro = null; S.cfgErro = null; S.prorErro = null; renderComissao(); if(window.innerWidth < 900){ var m = $('.adm-main'); if(m) m.scrollIntoView({block:'start'}); } else window.scrollTo(0, 0); break;
+    case 'sair': S.logado = false; audit('Saiu do painel da comissão'); renderComissao(); break;
+    case 'simular': simular10(); break;
+    case 'cand-edit': S.candEdit = +b.dataset.n; S.candDel = null; S.candErro = null; renderComissao(); var f = $('#cand-nome'); if(f){ f.focus(); } break;
+    case 'cand-cancel': S.candEdit = null; S.candErro = null; renderComissao(); break;
+    case 'cand-del': S.candDel = +b.dataset.n; S.candEdit = null; renderComissao(); break;
+    case 'cand-del-nao': S.candDel = null; renderComissao(); break;
+    case 'cand-del-sim':
+      var cd = candPorN(S.candDel);
+      if(cd && votosDe(cd.n) > 0){ toast('Na demonstração este candidato já tem votos simulados. No sistema real, a lista trava às ' + horaCurta(S.config.abre) + ', antes de qualquer voto.'); }
+      else if(cd){ S.candidatos = S.candidatos.filter(function(x){ return x.n !== cd.n; }); audit('Removeu o candidato ' + cd.n + ' – ' + cd.nome); toast('Candidato removido.'); }
+      S.candDel = null; renderComissao(); break;
+    case 'arquivo': S.verArquivo = !S.verArquivo; renderComissao(); break;
+    case 'reem-fechar': S.reem = null; renderComissao(); renderConsole(); break;
+  }
+});
+document.addEventListener('submit', function(e){
+  var f = e.target.closest('form[data-form]'); if(!f) return;
+  e.preventDefault();
+  switch(f.dataset.form){
+    case 'codigo': enviarCodigo($('#va-cod').value); break;
+    case 'login': S.logado = true; S.secao = 'painel'; audit('Entrou no painel da comissão'); renderComissao(); break;
+    case 'cand': salvarCand(); break;
+    case 'reem': reemitir(); break;
+    case 'config': salvarConfig(); break;
+    case 'prorrogar': prorrogar(); break;
+  }
+});
+document.addEventListener('change', function(e){ if(e.target.name === 'cand' && e.target.closest('#va')) toggleCand(e.target); });
+document.addEventListener('input', function(e){
+  var t = e.target;
+  if(t.id === 'va-cod'){ var f = fmtCode(normCode(t.value)); if(t.value !== f) t.value = f; S.voter.codigo = f; }
+  if(t.id === 'casa-busca'){ S.busca = t.value; var tb = $('#casas-tbody'); if(tb) tb.innerHTML = casasRows(); }
+  if(t.id === 'cfg-abre' || t.id === 'cfg-fecha'){ var dd = $('#cfg-dur'); if(dd){ var txt = duracaoTxt($('#cfg-abre').value, $('#cfg-fecha').value); dd.textContent = txt; dd.classList.toggle('err', txt.charAt(0) === '⚠'); } }
+});
+window.addEventListener('hashchange', function(){ var v = (location.hash || '').slice(1); if(VIEWS.indexOf(v) >= 0 && v !== S.view) showView(v); });
+function medirHeader(){ var h = $('#topbar'); if(h) document.documentElement.style.setProperty('--hh', h.offsetHeight + 'px'); }
+window.addEventListener('resize', medirHeader);
+
+S = freshState();
+if(window.innerWidth >= 900) $('#console').setAttribute('open', '');
+medirHeader();
+var inicial = (location.hash || '').slice(1);
+showView(VIEWS.indexOf(inicial) >= 0 ? inicial : 'apresentacao');
+})();
+</script>
