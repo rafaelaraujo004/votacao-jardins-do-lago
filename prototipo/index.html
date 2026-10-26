@@ -28,6 +28,7 @@
   --font-body:"Atkinson Hyperlegible","Segoe UI",system-ui,-apple-system,sans-serif;
   --font-mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
   --hh:96px;
+  --logo-bg:#FFFFFF;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0E1613; --surface:#152019; --surface-2:#1C2A23; --line:#2A3B32; --line-strong:#476052;
@@ -77,7 +78,10 @@ a{color:var(--lake)}
 .row{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center}
 .stack{display:flex;flex-direction:column;gap:1rem}
 
-/* logo */
+/* logo: a arte tem fundo branco, então fica num selo branco nos dois temas */
+.logo-chip{display:inline-flex;align-items:center;background:var(--logo-bg);border-radius:10px;padding:3px 6px;flex:none;box-shadow:0 0 0 1px var(--line)}
+.logo-chip img{display:block;height:auto}
+.brand-logo{width:81px}
 .lg-bg{fill:var(--pine)} .lg-leaf{fill:var(--on-pine)} .lg-wave{fill:none;stroke:var(--on-pine);stroke-width:2.2;stroke-linecap:round}
 .logo{flex:none;display:block}
 
@@ -506,9 +510,9 @@ dialog.zapd::backdrop{background:rgb(6 12 10 / .6)}
     <button type="button" data-action="reset">Reiniciar</button>
   </div></div>
   <div class="bar"><div class="wrap">
-    <a class="brand" href="#apresentacao" aria-label="Jardins do Lago, início">
-      <svg class="logo" width="36" height="36" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="20" class="lg-bg"/><path class="lg-leaf" d="M21 7.5c6.2 3 7.6 8.6 4.8 13.3-5.6-.8-8.6-5.6-4.8-13.3z"/><path class="lg-wave" d="M7.5 25.5c3.1-2.3 6.1-2.3 9.2 0s6.1 2.3 9.2 0 4.6-2 6.6-.8"/><path class="lg-wave" d="M10 31c2.5-1.7 5-1.7 7.5 0s5 1.7 7.5 0 3.7-1.5 5.2-.6"/></svg>
-      <span class="brand-text"><strong>Jardins do Lago</strong><small>Votação online</small></span>
+    <a class="brand" href="#apresentacao" aria-label="Residencial Jardins do Lago, início">
+      <span class="logo-chip"><img class="brand-logo" src="logo-jardins-do-lago.png" alt="Residencial Jardins do Lago" width="81" height="46"></span>
+      <span class="brand-text"><strong>Votação online</strong><small>Comissão Eleitoral 2026</small></span>
     </a>
     <nav class="tabs" aria-label="Seções da demonstração">
       <a href="#apresentacao" data-view="apresentacao">Apresentação</a>
@@ -524,7 +528,7 @@ dialog.zapd::backdrop{background:rgb(6 12 10 / .6)}
 <section id="v-apresentacao" class="view">
   <div class="wrap hero">
     <div>
-      <p class="eyebrow">Condomínio Jardins do Lago · proposta de plataforma</p>
+      <p class="eyebrow">Residencial Jardins do Lago · proposta de plataforma</p>
       <h1>Cada casa vota pelo celular, em três toques, com voto secreto.</h1>
       <p class="lead">Plataforma feita para a eleição da Comissão Eleitoral de sexta, 30 de outubro, e pronta para ser usada depois na eleição geral do condomínio.</p>
       <div class="cta">
@@ -670,8 +674,8 @@ dialog.zapd::backdrop{background:rgb(6 12 10 / .6)}
       <div class="phone"><div class="screen">
         <div class="sb" aria-hidden="true"><span data-sb-time>11:42</span><span class="sb-r">4G <svg width="22" height="12" viewBox="0 0 22 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="18" height="10" rx="2.5"/><rect x="3" y="3" width="11" height="6" rx="1" fill="currentColor" stroke="none"/><path d="M21 4v4"/></svg></span></div>
         <div class="va-top">
-          <svg class="logo" width="30" height="30" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="20" class="lg-bg"/><path class="lg-leaf" d="M21 7.5c6.2 3 7.6 8.6 4.8 13.3-5.6-.8-8.6-5.6-4.8-13.3z"/><path class="lg-wave" d="M7.5 25.5c3.1-2.3 6.1-2.3 9.2 0s6.1 2.3 9.2 0 4.6-2 6.6-.8"/><path class="lg-wave" d="M10 31c2.5-1.7 5-1.7 7.5 0s5 1.7 7.5 0 3.7-1.5 5.2-.6"/></svg>
-          Condomínio Jardins do Lago
+          <span class="logo-chip"><img src="logo-jardins-do-lago.png" alt="Residencial Jardins do Lago" width="70" height="40"></span>
+          <span>Votação online</span>
         </div>
         <div class="screen-scroll" id="va-scroll"><div id="va" class="va" aria-live="polite"></div></div>
       </div></div>
@@ -738,7 +742,7 @@ var CANDS = [
 ];
 var MEMBROS = [{nome:'Helena Prado', papel:'Presidente da comissão'},{nome:'Marcos Vieira', papel:'Secretário'},{nome:'Rosa Amaral', papel:'Membro'}];
 var DES = {inscricao:'Candidato inscrito primeiro', idade:'Candidato mais velho', sorteio:'Sorteio na reunião da comissão', nova:'Nova votação entre os empatados'};
-var MSG = 'Olá, {nome}! Aqui é a Comissão do Condomínio Jardins do Lago.\nO código de votação da Casa {casa} é: *{codigo}*\nA votação é {data}, das {abre} às {fecha}.\nPara votar, toque no link:\n{link}\nNão passe este código para ninguém.';
+var MSG = 'Olá, {nome}! Aqui é a Comissão do Residencial Jardins do Lago.\nO código de votação da Casa {casa} é: *{codigo}*\nA votação é {data}, das {abre} às {fecha}.\nPara votar, toque no link:\n{link}\nNão passe este código para ninguém.';
 var MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 var DIAS = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 
@@ -1092,7 +1096,7 @@ function renderComissao(){
   var el = $('#adm-root'); if(!el) return;
   if(!S.logado){
     el.innerHTML = '<div class="login"><div class="login-card">' +
-      '<svg class="logo" width="48" height="48" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="20" class="lg-bg"/><path class="lg-leaf" d="M21 7.5c6.2 3 7.6 8.6 4.8 13.3-5.6-.8-8.6-5.6-4.8-13.3z"/><path class="lg-wave" d="M7.5 25.5c3.1-2.3 6.1-2.3 9.2 0s6.1 2.3 9.2 0 4.6-2 6.6-.8"/><path class="lg-wave" d="M10 31c2.5-1.7 5-1.7 7.5 0s5 1.7 7.5 0 3.7-1.5 5.2-.6"/></svg>' +
+      '<span class="logo-chip" style="align-self:flex-start"><img src="logo-jardins-do-lago.png" alt="Residencial Jardins do Lago" width="141" height="80"></span>' +
       '<h2>Painel da comissão</h2>' +
       '<p class="muted">Cada membro tem e-mail e senha próprios. Não existe cadastro aberto: as contas são criadas pelo administrador.</p>' +
       '<form data-form="login" class="form-stack">' +
@@ -1304,9 +1308,9 @@ var SEC = {
     return head('Documento oficial', 'Ata') +
       '<p class="muted">Pronta para imprimir e assinar. No sistema real, o botão “Salvar como PDF” gera este documento.</p>' +
       '<div class="paper-wrap"><article class="paper">' +
-        '<header class="paper-head"><svg class="logo" width="42" height="42" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="20" class="lg-bg"/><path class="lg-leaf" d="M21 7.5c6.2 3 7.6 8.6 4.8 13.3-5.6-.8-8.6-5.6-4.8-13.3z"/><path class="lg-wave" d="M7.5 25.5c3.1-2.3 6.1-2.3 9.2 0s6.1 2.3 9.2 0 4.6-2 6.6-.8"/><path class="lg-wave" d="M10 31c2.5-1.7 5-1.7 7.5 0s5 1.7 7.5 0 3.7-1.5 5.2-.6"/></svg>' +
-          '<div><p class="paper-kicker">Condomínio Jardins do Lago</p><h3>Ata da ' + esc(c.titulo) + '</h3></div></header>' +
-        '<p>Aos ' + (+d[2]) + ' dias do mês de ' + MESES[+d[1]-1] + ' de ' + d[0] + ', realizou-se, por meio da plataforma de votação online do Condomínio Jardins do Lago, conforme autoriza a convenção do condomínio, a ' + esc(c.titulo.charAt(0).toLowerCase() + c.titulo.slice(1)) + ', com voto secreto e um voto por casa, registrando-se o que segue.</p>' +
+        '<header class="paper-head"><img src="logo-jardins-do-lago.png" alt="Residencial Jardins do Lago" width="113" height="64">' +
+          '<div><p class="paper-kicker">Residencial Jardins do Lago</p><h3>Ata da ' + esc(c.titulo) + '</h3></div></header>' +
+        '<p>Aos ' + (+d[2]) + ' dias do mês de ' + MESES[+d[1]-1] + ' de ' + d[0] + ', realizou-se, por meio da plataforma de votação online do Residencial Jardins do Lago, conforme autoriza a convenção do condomínio, a ' + esc(c.titulo.charAt(0).toLowerCase() + c.titulo.slice(1)) + ', com voto secreto e um voto por casa, registrando-se o que segue.</p>' +
         '<table class="paper-tbl"><tbody>' +
           '<tr><th>Abertura</th><td>' + c.abre + '</td></tr><tr><th>Encerramento</th><td>' + c.fecha + '</td></tr>' +
           '<tr><th>Casas aptas</th><td>' + S.casas.length + '</td></tr><tr><th>Casas que votaram</th><td>' + R.votantes + '</td></tr>' +
