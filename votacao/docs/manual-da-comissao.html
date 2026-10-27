@@ -1,0 +1,270 @@
+<title>Manual da Comissão Jardins do Lago</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: manual de bolso — capa curta, índice fixo de 5 etapas na ordem real da eleição, cada etapa como uma "ficha" com passos numerados e um quadro "atenção" */
+:root{
+  --bg:#F2F5F1; --surface:#FFFFFF; --surface-2:#E7EDE7; --line:#D3DDD5; --line-strong:#A9B8AD;
+  --fg:#15221C; --fg-2:#3F5047; --muted:#5F6F66;
+  --pine:#1D6B4E; --on-pine:#FFFFFF; --lake:#1C5C78; --lake-soft:#DCEAF0;
+  --plum:#8B2A5C; --plum-soft:#F6E6EE;
+  --warn:#8A5200; --warn-soft:#FBEFD8; --danger:#B42318; --danger-soft:#FBE4E1; --ok-soft:#DDEFE4;
+  --logo-bg:#FFFFFF;
+  --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1613; --surface:#152019; --surface-2:#1C2A23; --line:#2A3B32; --line-strong:#476052;
+  --fg:#E5EEE8; --fg-2:#B9C8BE; --muted:#93A59A; --pine:#55C493; --on-pine:#05130D;
+  --lake:#74BCD8; --lake-soft:#16303B; --plum:#E58BB8; --plum-soft:#35182A;
+  --warn:#F0B652; --warn-soft:#33270F; --danger:#FF8D7E; --danger-soft:#3B1A16; --ok-soft:#14301F; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1613; --surface:#152019; --surface-2:#1C2A23; --line:#2A3B32; --line-strong:#476052;
+  --fg:#E5EEE8; --fg-2:#B9C8BE; --muted:#93A59A; --pine:#55C493; --on-pine:#05130D;
+  --lake:#74BCD8; --lake-soft:#16303B; --plum:#E58BB8; --plum-soft:#35182A;
+  --warn:#F0B652; --warn-soft:#33270F; --danger:#FF8D7E; --danger-soft:#3B1A16; --ok-soft:#14301F; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:17px;line-height:1.6}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+h1,h2,h3{margin:0;text-wrap:balance;font-family:var(--display);letter-spacing:-.015em}
+p{margin:0}
+a{color:var(--lake)}
+:focus-visible{outline:3px solid var(--lake);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}
+
+/* capa */
+.capa{padding-block:2.6rem 2rem;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2rem;align-items:end;border-bottom:1px solid var(--line)}
+.logo{display:inline-flex;background:var(--logo-bg);border-radius:14px;padding:6px 10px;box-shadow:0 0 0 1px var(--line)}
+.logo img{display:block;width:150px;height:auto}
+.kicker{font-size:.8rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--plum);margin-top:1.4rem}
+.capa h1{font-size:clamp(2.2rem,5.5vw,3.8rem);line-height:1;margin-top:.5rem;font-weight:800}
+.capa h1 em{font-style:normal;color:var(--pine)}
+.capa .lead{font-size:1.15rem;color:var(--fg-2);max-width:38em;margin-top:1rem}
+.enderecos{display:grid;gap:.7rem;min-width:280px}
+.end{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:.8rem 1rem}
+.end span{display:block;font-size:.78rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.end a{font-family:var(--mono);font-weight:600;font-size:.92rem;word-break:break-all;text-decoration:none}
+
+/* índice */
+.indice{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.indice ol{list-style:none;margin:0;padding:.6rem 0;display:flex;gap:.4rem;overflow-x:auto;scrollbar-width:none}
+.indice ol::-webkit-scrollbar{display:none}
+.indice a{display:flex;gap:.45rem;align-items:center;white-space:nowrap;text-decoration:none;color:var(--fg-2);font-weight:700;padding:.4rem .8rem;border-radius:999px;border:1px solid var(--line);background:var(--surface)}
+.indice a b{font-family:var(--mono);color:var(--pine)}
+
+/* etapas */
+.etapa{padding-block:2.6rem;border-bottom:1px solid var(--line);display:grid;grid-template-columns:200px minmax(0,1fr);gap:2rem}
+.etapa-lado{position:relative}
+.etapa-n{font-family:var(--display);font-weight:800;font-size:4.2rem;line-height:.9;color:var(--pine);letter-spacing:-.04em}
+.quando{display:inline-block;margin-top:.7rem;font-weight:700;font-size:.85rem;background:var(--plum-soft);color:var(--plum);padding:.2rem .65rem;border-radius:999px}
+.etapa h2{font-size:clamp(1.6rem,3vw,2.2rem);line-height:1.1}
+.etapa .intro{color:var(--fg-2);margin-top:.5rem;max-width:42em}
+.corpo{min-width:0;display:flex;flex-direction:column;gap:1.4rem}
+.passos{list-style:none;margin:0;padding:0;counter-reset:p;display:flex;flex-direction:column;gap:.75rem}
+.passos li{counter-increment:p;display:grid;grid-template-columns:2.3rem minmax(0,1fr);gap:.8rem;align-items:start}
+.passos li::before{content:counter(p);font-family:var(--mono);font-weight:600;width:2.3rem;height:2.3rem;border-radius:50%;display:grid;place-items:center;background:var(--surface);border:1.5px solid var(--line-strong);color:var(--fg)}
+.passos strong{display:block}
+.passos p{color:var(--fg-2)}
+.onde{font-family:var(--mono);font-size:.86rem;background:var(--surface-2);border-radius:6px;padding:.05rem .4rem;white-space:nowrap}
+.quadro{border-radius:16px;padding:1rem 1.15rem;border:1.5px solid;display:flex;flex-direction:column;gap:.35rem}
+.quadro strong{font-family:var(--display);font-size:1.05rem}
+.quadro ul{margin:.2rem 0 0;padding-left:1.1rem;display:flex;flex-direction:column;gap:.25rem}
+.atencao{background:var(--warn-soft);border-color:var(--warn)}
+.atencao strong{color:var(--warn)}
+.dica{background:var(--lake-soft);border-color:var(--lake)}
+.dica strong{color:var(--lake)}
+.proibido{background:var(--danger-soft);border-color:var(--danger)}
+.proibido strong{color:var(--danger)}
+
+/* tabela de atendimento */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:.97rem}
+th{text-align:left;font-size:.76rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);background:var(--surface-2);padding:.65rem .9rem}
+td{padding:.75rem .9rem;border-top:1px solid var(--line);vertical-align:top}
+td:first-child{font-weight:700;width:34%}
+.fala{font-style:italic;color:var(--fg-2)}
+
+/* horário do dia */
+.horas{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.8rem}
+.horas li{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:.85rem 1rem}
+.horas b{font-family:var(--mono);font-size:1.3rem;display:block;color:var(--pine)}
+.horas li.chave{border-color:var(--pine);background:var(--ok-soft)}
+
+/* checklist */
+.check{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.45rem}
+.check label{display:flex;gap:.7rem;align-items:flex-start;cursor:pointer;padding:.55rem .7rem;border-radius:10px;background:var(--surface);border:1px solid var(--line)}
+.check input{width:22px;height:22px;accent-color:var(--pine);flex:none;margin-top:.15rem}
+.check input:checked + span{color:var(--muted);text-decoration:line-through}
+
+/* telas do morador */
+.telas{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem}
+.tela{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:.9rem 1rem}
+.tela b{display:block;font-family:var(--display);font-size:1.05rem}
+.tela span{color:var(--fg-2);font-size:.95rem}
+.sigilo{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:.8rem;align-items:stretch}
+.caixa{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1rem}
+.caixa b{font-family:var(--display);font-size:1.15rem;display:block}
+.caixa code{font-family:var(--mono);font-size:.82rem;background:var(--surface-2);padding:.05rem .35rem;border-radius:5px}
+.muro{display:grid;place-items:center;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);text-align:center}
+.rodape{padding-block:2rem 3rem;color:var(--muted);font-size:.92rem}
+@media (max-width:820px){
+  .capa{grid-template-columns:1fr}
+  .enderecos{min-width:0}
+  .etapa{grid-template-columns:1fr;gap:1rem;padding-block:2rem}
+  .etapa-n{font-size:3rem}
+  .sigilo{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
+.etapa{scroll-margin-top:60px}
+</style>
+
+<header class="wrap capa">
+  <div>
+    <span class="logo"><img src="__LOGO__" alt="Residencial Jardins do Lago" width="150" height="85"></span>
+    <p class="kicker">Manual da comissão · Eleição da Comissão Eleitoral 2026</p>
+    <h1>Como conduzir a <em>votação online</em>, do cadastro à ata.</h1>
+    <p class="lead">Cinco etapas, na ordem em que acontecem. Cada uma diz o que fazer, onde clicar e o que nunca fazer. Votação: <strong>sexta, 30 de outubro, das 7h às 17h</strong>.</p>
+  </div>
+  <div class="enderecos">
+    <div class="end"><span>Moradores votam em</span><a href="https://rafaelaraujo004.pythonanywhere.com/">rafaelaraujo004.pythonanywhere.com</a></div>
+    <div class="end"><span>Comissão entra em</span><a href="https://rafaelaraujo004.pythonanywhere.com/comissao/">…pythonanywhere.com/comissao/</a></div>
+  </div>
+</header>
+
+<nav class="indice" aria-label="Etapas"><div class="wrap"><ol>
+  <li><a href="#preparar"><b>1</b> Preparar</a></li>
+  <li><a href="#codigos"><b>2</b> Códigos</a></li>
+  <li><a href="#dia"><b>3</b> Dia da votação</a></li>
+  <li><a href="#apuracao"><b>4</b> Apuração e ata</a></li>
+  <li><a href="#sigilo"><b>5</b> Voto secreto</a></li>
+</ol></div></nav>
+
+<main class="wrap">
+
+<section class="etapa" id="preparar">
+  <div class="etapa-lado"><span class="etapa-n">1</span><span class="quando">até quarta, 28/10</span></div>
+  <div class="corpo">
+    <div><h2>Preparar a eleição</h2><p class="intro">Tudo isto pode ser mudado quantas vezes for preciso até as 7h de sexta. Depois que a votação abre, o sistema trava regras e candidatos, inclusive para o administrador.</p></div>
+    <ol class="passos">
+      <li><div><strong>Entrar no painel</strong><p>Abra o endereço da comissão e entre com o seu e-mail e senha. Cada membro tem a própria conta; não existe cadastro aberto.</p></div></li>
+      <li><div><strong>Criar a eleição</strong><p><span class="onde">Cadastros › Eleições › Adicionar</span>. Preencha nome, dia, abertura e encerramento (no máximo 12 horas), a regra de desempate e se a comissão pode ver quais casas já votaram. Deixe <em>eleição ativa</em> marcado.</p></div></li>
+      <li><div><strong>Definir o cargo</strong><p>Na mesma tela, em <em>Cargos</em>: “Comissão Eleitoral”, <strong>3 vagas</strong>, <strong>1 candidato por casa</strong> e se pode votar em branco. Salve.</p></div></li>
+      <li><div><strong>Cadastrar os candidatos</strong><p><span class="onde">Cadastros › Cargos › Comissão Eleitoral</span>. Para cada um: número, nome como deve aparecer na tela, casa, data de inscrição e data de nascimento (usada se o desempate for por idade).</p></div></li>
+      <li><div><strong>Importar as casas</strong><p><span class="onde">Casas › Ler o arquivo</span>. Use a planilha com três colunas: número da casa, proprietário e WhatsApp. O sistema mostra o que está certo, os avisos e os erros por linha. Só grava quando você confirmar.</p></div></li>
+    </ol>
+    <div class="quadro dica"><strong>Planilha das casas</strong><p>Pode salvar direto do Excel como CSV. Telefone com DDD, em qualquer formato: <span class="mono">(11) 98765-4321</span> serve. Casa sem telefone entra normalmente e recebe o código em envelope.</p></div>
+  </div>
+</section>
+
+<section class="etapa" id="codigos">
+  <div class="etapa-lado"><span class="etapa-n">2</span><span class="quando">quinta, 29/10</span></div>
+  <div class="corpo">
+    <div><h2>Gerar e enviar os códigos</h2><p class="intro">Cada casa recebe um código de 8 letras, só uma vez. O sistema não guarda os códigos, só uma impressão digital de cada um. O arquivo de envio é a única cópia.</p></div>
+    <ol class="passos">
+      <li><div><strong>Reunir 2 membros</strong><p>Quem tem o arquivo de envio consegue votar por qualquer casa. Por isso a geração e o envio são feitos sempre em dupla.</p></div></li>
+      <li><div><strong>Gerar</strong><p><span class="onde">Códigos</span>, digite <span class="mono">GERAR</span> e clique em <em>Gerar e baixar o arquivo de envio</em>. Baixa o arquivo <span class="mono">envio-codigos.html</span>.</p></div></li>
+      <li><div><strong>Enviar pelo WhatsApp Web, no computador</strong><p>Abra o arquivo. Cada casa tem um botão <em>Enviar no WhatsApp</em> com a mensagem pronta e o link que já abre com o código preenchido. A caixa “enviado” marca sozinha.</p></div></li>
+      <li><div><strong>Ir em lotes</strong><p>Uns 30 por vez, com pausa entre os lotes, de um número que os moradores conhecem. Mandar muitas mensagens iguais de uma vez pode fazer o WhatsApp bloquear o número.</p></div></li>
+      <li><div><strong>Casas sem WhatsApp</strong><p>Imprima o código dessas casas e entregue em envelope lacrado.</p></div></li>
+      <li><div><strong>Apagar o arquivo</strong><p>Quando terminar, apague o <span class="mono">envio-codigos.html</span> do computador e da lixeira.</p></div></li>
+    </ol>
+    <div class="quadro atencao"><strong>Código perdido ou que não chegou</strong><p>Antes, confirme que o pedido veio do telefone cadastrado da casa. Depois: <span class="onde">Códigos › Reemitir código</span>, número da casa e motivo. O código novo aparece uma única vez, com o botão do WhatsApp, e o antigo para de funcionar na hora. Se a casa já votou, o sistema não deixa reemitir.</p></div>
+  </div>
+</section>
+
+<section class="etapa" id="dia">
+  <div class="etapa-lado"><span class="etapa-n">3</span><span class="quando">sexta, 30/10</span></div>
+  <div class="corpo">
+    <div><h2>No dia da votação</h2><p class="intro">A votação abre e fecha sozinha, pelo relógio do servidor. O papel da comissão é acompanhar, lembrar os moradores e atender quem precisar.</p></div>
+    <ul class="horas">
+      <li><b>6h30</b>Abrir o painel e conferir: 0 votos e a eleição certa.</li>
+      <li class="chave"><b>7h00</b>A votação abre. Avisar no grupo: “A votação está aberta”.</li>
+      <li><b>10h · 13h · 15h</b>Lembretes no grupo com a participação em %.</li>
+      <li><b>16h30</b>Último lembrete: “Falta meia hora”.</li>
+      <li class="chave"><b>17h00</b>A votação fecha sozinha. Partir para a apuração.</li>
+    </ul>
+    <div>
+      <h3 style="font-size:1.3rem;margin-bottom:.7rem">Quando um morador pedir ajuda</h3>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>O morador diz</th><th>O que a comissão faz</th></tr></thead>
+        <tbody>
+          <tr><td>“Não recebi o código” / “Apaguei a mensagem”</td><td>Confirmar que é o proprietário pelo número cadastrado e usar <span class="onde">Reemitir código</span>.</td></tr>
+          <tr><td>“Diz que o código não existe”</td><td>Pedir para conferir as 8 letras. Não existem O nem I no código. Se persistir, reemitir.</td></tr>
+          <tr><td>“Diz que o código já foi usado”</td><td>A casa já votou. Se a pessoa garante que não votou, anotar em <em>Ocorrências</em> (horário, casa, relato). O voto não pode ser identificado nem anulado: é o preço do sigilo.</td></tr>
+          <tr><td>“Muitas tentativas erradas”</td><td>Esperar 15 minutos e tentar de novo com calma.</td></tr>
+          <tr><td>“Não sei mexer no celular”</td><td>Ponto de apoio na portaria. Ajudar com o celular da própria pessoa, <strong>sem olhar a escolha</strong>.</td></tr>
+          <tr><td>“Quem já votou?”</td><td>O painel mostra a casa e o horário, nunca o voto. Divulgar só a porcentagem.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div class="quadro proibido"><strong>Proibido das 7h às 17h</strong>
+      <ul><li>Mudar configuração ou atualizar o sistema.</li><li>Acessar o banco de dados.</li><li>Pedir para alguém mostrar em quem votou.</li></ul>
+    </div>
+    <div class="quadro atencao"><strong>Se o site cair</strong><p>Avisar o técnico na hora. Se ficar mais de 30 minutos fora, use <em>Prorrogar o encerramento</em> no painel (limite de 12 horas de votação) e escreva o motivo, que vai para a ata e para a auditoria.</p></div>
+  </div>
+</section>
+
+<section class="etapa" id="apuracao">
+  <div class="etapa-lado"><span class="etapa-n">4</span><span class="quando">sexta, depois das 17h</span></div>
+  <div class="corpo">
+    <div><h2>Apuração e ata</h2><p class="intro">O resultado só aparece depois do encerramento. Antes disso, nem a comissão consegue ver um único voto.</p></div>
+    <ol class="passos">
+      <li><div><strong>Abrir o resultado</strong><p><span class="onde">Resultado</span>. Confira a faixa verde: <em>cédulas na urna = casas que votaram</em>. Se aparecer diferença, registre na ata e chame o técnico.</p></div></li>
+      <li><div><strong>Conferir o empate</strong><p>Se houver empate na última vaga, o sistema avisa e aplica a regra escolhida. Em sorteio ou nova votação, a comissão decide e escreve na ata.</p></div></li>
+      <li><div><strong>Gerar a ata</strong><p><span class="onde">Ata › Salvar como PDF / imprimir</span>. Ela já traz horários, casas aptas, votantes, participação, votos por candidato, brancos, eleitos e o espaço para assinaturas.</p></div></li>
+      <li><div><strong>Assinar e divulgar</strong><p>Imprimir, escrever as ocorrências do dia, assinar e publicar o resultado no grupo.</p></div></li>
+      <li><div><strong>Guardar</strong><p>Guardar o PDF da ata e pedir ao técnico o backup do banco, que só é feito depois do encerramento.</p></div></li>
+    </ol>
+    <div class="quadro dica"><strong>Auditoria</strong><p>Em <span class="onde">Auditoria</span> fica registrado tudo o que a comissão fez no sistema: quem, quando e o quê. Ninguém consegue apagar ou alterar uma linha. Votos nunca aparecem ali.</p></div>
+  </div>
+</section>
+
+<section class="etapa" id="sigilo">
+  <div class="etapa-lado"><span class="etapa-n">5</span><span class="quando">para explicar aos moradores</span></div>
+  <div class="corpo">
+    <div><h2>Como o voto continua secreto</h2><p class="intro">O sistema guarda duas listas que não se ligam. Quando alguém perguntar, é isto que a comissão pode responder.</p></div>
+    <div class="sigilo">
+      <div class="caixa"><b>Quem votou</b><p class="muted">Casa e horário. Serve para impedir voto duplo e medir a participação.</p><p style="margin-top:.5rem"><code>casa</code> <code>horário</code></p></div>
+      <div class="muro">sem<br>ligação</div>
+      <div class="caixa"><b>Urna</b><p class="muted">Só a escolha, com um número sorteado. Sem casa, sem horário, sem ordem de chegada.</p><p style="margin-top:.5rem"><code>número aleatório</code> <code>candidato</code></p></div>
+    </div>
+    <div class="telas">
+      <div class="tela"><b>Tela 1 · Código</b><span>O morador toca no link do WhatsApp e o código já aparece preenchido.</span></div>
+      <div class="tela"><b>Tela 2 · Escolha</b><span>Um toque no nome do candidato, ou “Votar em branco”.</span></div>
+      <div class="tela"><b>Tela 3 · Confirmação</b><span>Confere e confirma. A tela final não mostra em quem votou.</span></div>
+    </div>
+    <div>
+      <h3 style="font-size:1.3rem;margin-bottom:.7rem">Antes de sexta</h3>
+      <ul class="check" id="check">
+        <li><label><input type="checkbox" id="c1"><span>Eleição, cargo e candidatos cadastrados e conferidos</span></label></li>
+        <li><label><input type="checkbox" id="c2"><span>220 casas importadas; casas sem WhatsApp separadas para envelope</span></label></li>
+        <li><label><input type="checkbox" id="c3"><span>Ensaio geral feito, com a comissão votando num teste</span></label></li>
+        <li><label><input type="checkbox" id="c4"><span>Aviso no grupo: link oficial e número que vai mandar os códigos</span></label></li>
+        <li><label><input type="checkbox" id="c5"><span>Códigos gerados em dupla, enviados e arquivo apagado</span></label></li>
+        <li><label><input type="checkbox" id="c6"><span>Ponto de apoio na portaria combinado (quem e em que horário)</span></label></li>
+        <li><label><input type="checkbox" id="c7"><span>Caderno de ocorrências pronto para o dia</span></label></li>
+      </ul>
+      <p class="muted" style="margin-top:.5rem;font-size:.9rem">As marcações ficam só neste aparelho.</p>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="wrap rodape">Residencial Jardins do Lago · Manual da comissão · versão de 27 de outubro de 2026 · Suporte técnico: Rafael Araújo</footer>
+
+<script>
+(function(){
+  document.querySelectorAll('#check input').forEach(function(c){
+    var k = 'manual-' + c.id;
+    try { c.checked = localStorage.getItem(k) === '1'; } catch(e) {}
+    c.addEventListener('change', function(){ try { localStorage.setItem(k, c.checked ? '1' : '0'); } catch(e) {} });
+  });
+})();
+</script>

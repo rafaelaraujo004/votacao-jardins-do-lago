@@ -7,3 +7,4 @@ staticfiles/
 .env
 envio-codigos*.html
 loadtest/codigos*.json
+docs/manual-publicado.html
