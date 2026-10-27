@@ -12,7 +12,7 @@ from django.template.loader import render_to_string
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods, require_POST
 
-from . import limites
+from . import codigos, limites
 from .auditoria import ip_da_requisicao
 from .distribuicao import data_longa, hora_curta
 from .models import Candidato, Cedula, Eleicao, Eleitor
@@ -62,14 +62,16 @@ def entrar(request):
     if request.method == "POST":
         ip = ip_da_requisicao(request)
         texto = request.POST.get("codigo", "")
-        if limites.bloqueado(ip, texto):
+        # Conta pelo código normalizado: "abcd efgh" e "ABCD-EFGH" são o mesmo código.
+        chave = codigos.normalizar(texto)
+        if limites.bloqueado(ip, chave):
             erro = _erro(eleicao, "bloqueado")
         else:
             try:
                 eleitor = validar_codigo(eleicao, texto)
             except VotoRecusado as e:
                 if e.motivo in ("formato", "naoencontrado", "usado"):
-                    limites.registrar_falha(ip, texto)
+                    limites.registrar_falha(ip, chave)
                 erro = _erro(eleicao, e.motivo, e.casa)
             else:
                 return _tela_escolher(request, eleicao, eleitor, emitir_token(eleitor))
@@ -106,6 +108,10 @@ def _ler_escolhas(request, eleicao):
 
 def _eleitor_do_token(eleicao, token):
     eleitor_id, versao = ler_token(token)
+    if eleicao is None:
+        raise VotoRecusado("expirado")
+    if eleicao.status() != "aberta":
+        raise VotoRecusado("encerrada" if eleicao.status() == "encerrada" else "antes")
     eleitor = Eleitor.objects.select_related("casa").filter(pk=eleitor_id, eleicao=eleicao).first()
     if eleitor is None:
         raise VotoRecusado("expirado")
@@ -121,6 +127,8 @@ def _eleitor_do_token(eleicao, token):
 def revisar(request):
     eleicao = Eleicao.atual()
     token = request.POST.get("token", "")
+    if eleicao is None:
+        return render(request, "voto/sem_eleicao.html")
     try:
         eleitor = _eleitor_do_token(eleicao, token)
     except VotoRecusado as e:
@@ -162,6 +170,8 @@ def _tamanho_fixo(html):
 def confirmar(request):
     eleicao = Eleicao.atual()
     token = request.POST.get("token", "")
+    if eleicao is None:
+        return render(request, "voto/sem_eleicao.html")
     try:
         if request.POST.get("acao") == "voltar":
             eleitor = _eleitor_do_token(eleicao, token)

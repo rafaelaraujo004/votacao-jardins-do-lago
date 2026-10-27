@@ -9,7 +9,7 @@ from django.dispatch import receiver
 
 from . import limites
 from .auditoria import auditar, ip_da_requisicao
-from .models import Auditoria, Candidato, Cargo, Casa, Eleicao, Procuracao
+from .models import Auditoria, Candidato, Cargo, Casa, Eleicao, Eleitor, Procuracao
 
 
 def _eleicao_de(obj):
@@ -76,6 +76,13 @@ class CargoInline(admin.StackedInline):
 class EleicaoAdmin(TravadoAdmin):
     list_display = ("titulo", "data", "abre", "fecha", "ativa", "eh_teste")
     inlines = [CargoInline]
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        mudou_horario = {"data", "abre", "fecha"} & set(form.changed_data)
+        if change and obj.codigos_gerados_em and mudou_horario:
+            messages.warning(request, "Os códigos já foram enviados com o dia e o horário anteriores. "
+                                      "Avise os moradores no grupo sobre a mudança.")
     fieldsets = [
         (None, {"fields": ("titulo", "data", ("abre", "fecha"), "ativa", "eh_teste")}),
         ("Regras", {"fields": ("comissao_ve_votantes", "regra_desempate")}),
@@ -111,6 +118,20 @@ class CasaAdmin(AuditadoAdmin):
     list_display = ("numero", "proprietario", "telefone", "ativa")
     search_fields = ("numero", "proprietario")
     list_filter = ("ativa",)
+
+    def has_delete_permission(self, request, obj=None):
+        # Apagar a casa apagaria o registro "já votou" dela, e a cédula continuaria na
+        # urna: cédulas e votantes deixariam de bater. Depois de ter código, só desativar.
+        if obj is not None and Eleitor.objects.filter(casa=obj).exists():
+            return False
+        return super().has_delete_permission(request, obj)
+
+    def delete_queryset(self, request, queryset):
+        com_codigo = queryset.filter(pk__in=Eleitor.objects.values("casa_id"))
+        if com_codigo.exists():
+            messages.error(request, "Casas que já receberam código não podem ser apagadas. Desmarque “ativa” se precisar.")
+            queryset = queryset.exclude(pk__in=com_codigo)
+        super().delete_queryset(request, queryset)
 
 
 @admin.register(Procuracao)

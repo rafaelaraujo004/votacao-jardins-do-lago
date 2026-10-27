@@ -14,6 +14,21 @@ class ResultadoCargo:
     empate: dict = None
 
 
+def _desempatar(grupo, campo, restantes):
+    """Ordena os empatados pela data da regra (a mais antiga primeiro).
+
+    Só decide se todos têm a data cadastrada e se ela separa quem fica de quem
+    sai. Senão devolve None e a comissão decide, registrando na ata: o sistema
+    nunca escolhe por um critério que não seja a regra.
+    """
+    if any(getattr(c, campo) is None for c in grupo):
+        return None
+    ordem = sorted(grupo, key=lambda c: getattr(c, campo))
+    if getattr(ordem[restantes - 1], campo) == getattr(ordem[restantes], campo):
+        return None
+    return ordem
+
+
 def apurar_cargo(cargo, regra):
     votos = {c.pk: 0 for c in cargo.candidatos.all()}
     brancos = cedulas = 0
@@ -36,10 +51,9 @@ def apurar_cargo(cargo, regra):
         acima = [c for c, n, _ in ranking if n > v]
         restantes = vagas - len(acima)
         ordem = None
-        if regra == "idade":
-            ordem = sorted(grupo, key=lambda c: (c.nascimento is None, c.nascimento or 0))
-        elif regra == "inscricao":
-            ordem = sorted(grupo, key=lambda c: (c.inscrito_em is None, c.inscrito_em or 0))
+        campo = {"idade": "nascimento", "inscricao": "inscrito_em"}.get(regra)
+        if campo:
+            ordem = _desempatar(grupo, campo, restantes)
         r.empate = {"grupo": grupo, "votos": v, "vaga": len(acima) + 1,
                     "decididos": ordem[:restantes] if ordem else None}
         r.eleitos = acima + (ordem[:restantes] if ordem else [])

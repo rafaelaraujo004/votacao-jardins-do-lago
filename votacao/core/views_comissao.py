@@ -1,6 +1,8 @@
 """Telas da comissão (além dos cadastros do Django Admin)."""
 from collections import Counter
-from datetime import datetime, timedelta
+import base64
+import binascii
+from datetime import datetime, time, timedelta
 
 from django.conf import settings
 from django.contrib import messages
@@ -50,7 +52,27 @@ def painel(request):
             bloqueios=limites.total_bloqueios_hoje(),
             alerta_global=limites.falhas_globais_na_hora() >= limites.ALERTA_GLOBAL_POR_HORA,
         )
+        if ctx["status"] != "encerrada":
+            for aviso in pendencias(eleicao):
+                messages.warning(request, aviso)
     return render(request, "comissao/painel.html", ctx)
+
+
+def pendencias(eleicao):
+    """O que impede a votação de funcionar. Aparece no painel até ser resolvido."""
+    avisos = []
+    cargos = list(eleicao.cargos.prefetch_related("candidatos"))
+    if not cargos:
+        avisos.append("Falta cadastrar o cargo da eleição (Cadastros › Eleições). Sem ele ninguém consegue votar.")
+    for cargo in cargos:
+        n = len(cargo.candidatos.all())
+        if n == 0:
+            avisos.append(f"O cargo “{cargo.titulo}” não tem candidatos.")
+        elif n < cargo.vagas:
+            avisos.append(f"O cargo “{cargo.titulo}” tem {n} candidato(s) para {cargo.vagas} vagas.")
+    if not Eleitor.objects.filter(eleicao=eleicao).exists():
+        avisos.append("Os códigos ainda não foram gerados (aba Códigos).")
+    return avisos
 
 
 @staff_member_required
@@ -104,8 +126,15 @@ def importar(request):
         messages.error(request, "Os códigos já foram gerados. Para uma casa que faltou, cadastre-a e use “Reemitir código”.")
         return redirect("comissao:casas")
     if "confirmar" in request.POST:
-        texto = request.POST.get("conteudo", "")
+        # O CSV volta da tela de conferência em base64: campo oculto não guarda quebras de linha com segurança.
+        try:
+            texto = base64.b64decode(request.POST.get("conteudo", ""), validate=True).decode("utf-8")
+        except (binascii.Error, ValueError):  # ValueError cobre texto com acento e UnicodeDecodeError
+            texto = ""
         lidas, erros, _ = importacao.ler(texto)
+        if not lidas:
+            messages.error(request, "Não foi possível ler o arquivo. Envie de novo.")
+            return redirect("comissao:casas")
         if erros:
             messages.error(request, "O arquivo mudou. Envie de novo.")
             return redirect("comissao:casas")
@@ -122,8 +151,9 @@ def importar(request):
         return redirect("comissao:casas")
     texto = importacao.decodificar(arquivo.read())
     lidas, erros, avisos = importacao.ler(texto)
+    conteudo = base64.b64encode(texto.encode("utf-8")).decode("ascii")
     return render(request, "comissao/importar.html", _base(
-        request, "casas", lidas=lidas, erros=erros, avisos=avisos, conteudo=texto, nome=arquivo.name))
+        request, "casas", lidas=lidas, erros=erros, avisos=avisos, conteudo=conteudo, nome=arquivo.name))
 
 
 @staff_member_required
@@ -207,10 +237,12 @@ def prorrogar(request):
         nova = datetime.strptime(request.POST.get("hora", ""), "%H:%M").time()
     except ValueError:
         nova = None
-    limite = (datetime.combine(eleicao.data, eleicao.abre) + timedelta(hours=12)).time()
+    # 12 horas depois da abertura, sem passar da meia-noite (a votação é num dia só).
+    limite = min(datetime.combine(eleicao.data, eleicao.abre) + timedelta(hours=12),
+                 datetime.combine(eleicao.data, time(23, 59))).time()
     if nova is None or nova <= eleicao.fecha:
         messages.error(request, "Escolha um horário depois do encerramento atual.")
-    elif nova > limite or nova < eleicao.abre:
+    elif nova > limite:
         messages.error(request, f"O limite é {distribuicao.hora_curta(limite)}: a votação não pode passar de 12 horas.")
     elif len(motivo) < 5:
         messages.error(request, "Escreva o motivo. Ele vai para a ata.")

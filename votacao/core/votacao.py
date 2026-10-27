@@ -74,6 +74,8 @@ def validar_escolhas(eleicao, dados):
 def registrar_voto(eleicao, token, dados):
     """Marca "já votou" e grava as cédulas juntos, ou nada é gravado."""
     eleitor_id, versao = ler_token(token)
+    if eleicao is None:
+        raise VotoRecusado("expirado")
     with transaction.atomic():  # BEGIN IMMEDIATE (ver settings)
         if eleicao.status() != "aberta":
             raise VotoRecusado("encerrada" if eleicao.status() == "encerrada" else "antes")

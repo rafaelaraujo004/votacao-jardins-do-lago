@@ -100,8 +100,19 @@ class Eleicao(models.Model):
                 raise ValidationError("A votação pode durar no máximo 12 horas.")
         if self.mensagem_whatsapp and "{codigo}" not in self.mensagem_whatsapp:
             raise ValidationError({"mensagem_whatsapp": "A mensagem precisa ter {codigo}."})
+        if self.ativa and self._outra_aberta():
+            raise ValidationError({"ativa": "Há uma votação aberta agora. Esta eleição não pode ficar ativa até ela encerrar."})
+
+    def _outra_aberta(self):
+        outras = Eleicao.objects.filter(ativa=True)
+        if self.pk:
+            outras = outras.exclude(pk=self.pk)
+        return any(e.status() == "aberta" for e in outras)
 
     def save(self, *args, **kwargs):
+        # Ativar outra eleição tiraria do ar a votação em andamento.
+        if self.ativa and self._outra_aberta():
+            raise ValidationError("Há uma votação aberta agora. Outra eleição não pode ficar ativa até ela encerrar.")
         super().save(*args, **kwargs)
         if self.ativa:
             Eleicao.objects.exclude(pk=self.pk).filter(ativa=True).update(ativa=False)

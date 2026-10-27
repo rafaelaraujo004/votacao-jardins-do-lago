@@ -42,12 +42,16 @@ def ler(texto):
     sep = ";" if amostra.count(";") >= amostra.count(",") else ","
     linhas = list(csv.reader(io.StringIO(texto), delimiter=sep))
     casas, erros, avisos, vistos = [], [], [], {}
+    primeira = True
     for i, linha in enumerate(linhas, start=1):
         campos = [c.strip() for c in linha]
         if not any(campos):
             continue
-        if i == 1 and campos and campos[0].lower() in CABECALHO:
-            continue
+        if primeira:
+            primeira = False
+            # Cabeçalho: "Casa", "Nº", "Número da casa"... qualquer 1ª linha sem número na 1ª coluna.
+            if campos[0].lower() in CABECALHO or not re.search(r"\d", campos[0]):
+                continue
         if len(campos) < 2:
             erros.append(f"Linha {i}: faltam colunas (precisa de casa e proprietário).")
             continue
