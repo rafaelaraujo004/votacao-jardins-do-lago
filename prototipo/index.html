@@ -118,6 +118,7 @@ a{color:var(--lake)}
 .topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
 .ribbon{background:var(--ribbon-bg);color:var(--ribbon-fg);font-size:.8rem;font-weight:700;letter-spacing:.02em}
 .ribbon .wrap{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding-block:.3rem}
+.ribbon-btns{display:flex;gap:.5rem}
 .ribbon button{font:inherit;color:inherit;background:transparent;border:1px solid currentColor;border-radius:999px;padding:.1rem .7rem;cursor:pointer;white-space:nowrap}
 .bar .wrap{display:flex;align-items:center;gap:1.25rem;padding-block:.55rem}
 .brand{display:flex;align-items:center;gap:.6rem;text-decoration:none;color:var(--fg)}
@@ -507,7 +508,7 @@ dialog.zapd::backdrop{background:rgb(6 12 10 / .6)}
 <header class="topbar" id="topbar">
   <div class="ribbon"><div class="wrap">
     <span><span class="r-long">Demonstração com dados fictícios · não é a votação oficial</span><span class="r-short">Demonstração · dados fictícios</span></span>
-    <button type="button" data-action="reset">Reiniciar</button>
+    <span class="ribbon-btns"><button type="button" id="tema-btn">Modo escuro</button><button type="button" data-action="reset">Reiniciar</button></span>
   </div></div>
   <div class="bar"><div class="wrap">
     <a class="brand" href="#apresentacao" aria-label="Residencial Jardins do Lago, início">
@@ -1582,6 +1583,21 @@ window.addEventListener('resize', medirHeader);
 S = freshState();
 if(window.innerWidth >= 900) $('#console').setAttribute('open', '');
 medirHeader();
+// Tema claro/escuro: segue o sistema até a pessoa escolher no botão; a escolha fica salva no navegador.
+(function(){
+  var raiz = document.documentElement, btn = $('#tema-btn'), CH = 'jardins-tema';
+  var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  function atual(){ var t = raiz.getAttribute('data-theme'); return t || (mq && mq.matches ? 'dark' : 'light'); }
+  function rotular(){ btn.textContent = atual() === 'dark' ? 'Modo claro' : 'Modo escuro'; }
+  try { var s = localStorage.getItem(CH); if(s === 'light' || s === 'dark') raiz.setAttribute('data-theme', s); } catch(e){}
+  btn.addEventListener('click', function(){
+    var novo = atual() === 'dark' ? 'light' : 'dark';
+    raiz.setAttribute('data-theme', novo);
+    try { localStorage.setItem(CH, novo); } catch(e){}
+    rotular();
+  });
+  rotular();
+})();
 var inicial = (location.hash || '').slice(1);
 showView(VIEWS.indexOf(inicial) >= 0 ? inicial : 'apresentacao');
 })();
