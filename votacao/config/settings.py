@@ -8,6 +8,21 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+def _carregar_arquivo_env():
+    """No PythonAnywhere as configurações ficam em ~/votacao.env (CHAVE=valor por linha)."""
+    caminho = Path(os.environ.get("VOTACAO_ENV_FILE", Path.home() / "votacao.env"))
+    if not caminho.is_file():
+        return
+    for linha in caminho.read_text(encoding="utf-8").splitlines():
+        linha = linha.strip()
+        if linha and not linha.startswith("#") and "=" in linha:
+            chave, valor = linha.split("=", 1)
+            os.environ.setdefault(chave.strip(), valor.strip())
+
+
+_carregar_arquivo_env()
+
 DEBUG = os.environ.get("DJANGO_DEBUG", "0") == "1"
 
 

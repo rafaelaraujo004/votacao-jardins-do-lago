@@ -36,7 +36,11 @@ Conta de teste **só local** (criada para os testes, não existe em produção):
 - No banco, o código é guardado só como HMAC-SHA256 com o segredo `CODIGO_PEPPER`, que fica fora do banco.
 - Auditoria só aceita acréscimos (gatilhos no banco bloqueiam UPDATE e DELETE).
 
-## Publicar no Fly.io (precisa da conta e do cartão do responsável)
+## Publicar
+
+**Agora: PythonAnywhere grátis, sem domínio.** Passo a passo em `deploy/PUBLICAR.md`.
+
+### Alternativa: Fly.io (precisa de cartão)
 
 ```bash
 fly launch --no-deploy --copy-config          # usa o fly.toml daqui
