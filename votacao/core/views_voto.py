@@ -158,10 +158,13 @@ def revisar(request):
 
 
 def _tamanho_fixo(html):
+    """Completa a página até um tamanho fixo. Se um dia passar de TAMANHO_FIXO (mais
+    candidatos ou cargos), sobe para o próximo múltiplo, em vez de deixar o tamanho variar."""
     corpo = html.encode("utf-8")
-    falta = TAMANHO_FIXO - len(corpo)
-    if falta > 8:
-        corpo += b"<!--" + b" " * (falta - 7) + b"-->"
+    alvo = TAMANHO_FIXO
+    while len(corpo) + 8 > alvo:
+        alvo += TAMANHO_FIXO
+    corpo += b"<!--" + b" " * (alvo - len(corpo) - 7) + b"-->"
     return HttpResponse(corpo, content_type="text/html; charset=utf-8")
 
 

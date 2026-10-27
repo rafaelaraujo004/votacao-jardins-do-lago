@@ -105,6 +105,24 @@ class VotoTests(TestCase):
             tamanhos.add(len(rv.content))
         self.assertEqual(len(tamanhos), 1)
 
+    def test_revisao_tem_o_mesmo_tamanho_para_todos_os_votos(self):
+        # Inclui um nome bem mais longo e o voto em branco: nenhum muda o tamanho da resposta.
+        self.cands[1].nome = "Maria Aparecida de Albuquerque Cavalcanti Rodrigues Junqueira"
+        self.cands[1].save()
+        tamanhos = set()
+        escolhas = [{f"c{self.cargo.pk}": [str(c.pk)]} for c in self.cands] + [{f"b{self.cargo.pk}": "1"}]
+        for casa, escolha in zip(("1", "2", "3", "4", "5", "6"), escolhas):
+            r = self.client.post("/", {"codigo": self.cods[casa]})
+            rv = self.client.post("/votar/revisar", dict(escolha, token=r.context["token"]))
+            tamanhos.add(len(rv.content))
+        self.assertEqual(len(tamanhos), 1, tamanhos)
+
+    def test_tamanho_fixo_sobe_para_o_proximo_multiplo_se_a_pagina_crescer(self):
+        from core.views_voto import TAMANHO_FIXO, _tamanho_fixo
+        grande = _tamanho_fixo("x" * (TAMANHO_FIXO + 10))
+        self.assertEqual(len(grande.content), 2 * TAMANHO_FIXO)
+        self.assertEqual(len(_tamanho_fixo("y").content), TAMANHO_FIXO)
+
 
 class JanelaTests(TestCase):
     def test_antes_de_abrir(self):
