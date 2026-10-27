@@ -130,3 +130,22 @@ label.f{display:flex;flex-direction:column;gap:.3rem;font-weight:700;font-size:.
   body{background:#fff}
   .paper{box-shadow:none;padding:0;max-width:none}
 }
+
+/* ---- mapa das casas ---- */
+.mapa-topo{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1.5rem;align-items:end}
+.mapa-ctrl{display:flex;flex-direction:column;gap:.6rem;align-items:flex-start}
+.mapa-ctrl .seg{display:flex;gap:.4rem;flex-wrap:wrap}
+.mapa-ctrl [aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.legenda{display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--muted)}
+.legenda .lote{width:18px;height:18px;min-width:0;padding:0;font-size:0;cursor:default}
+.quadras{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
+.quadra{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:1rem}
+.quadra header{display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;margin-bottom:.7rem}
+.quadra h2{font-size:1.05rem}
+.lotes{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px}
+.lote{font:inherit;font-family:var(--mono);font-size:.85rem;font-weight:600;min-width:44px;height:44px;border-radius:9px;border:1.5px solid var(--line-strong);background:var(--surface-2);color:var(--fg-2);cursor:pointer;padding:0 2px}
+.lote.votou{background:var(--pine);border-color:var(--pine);color:var(--on-pine)}
+.lote.apagado{opacity:.15}
+.lote.achado,.lote.selecionado{outline:3px solid var(--lake);outline-offset:2px}
+.mapa-info{position:sticky;bottom:12px;align-self:center;background:var(--fg);color:var(--bg);font-weight:700;padding:.7rem 1.1rem;border-radius:12px;box-shadow:var(--shadow);text-align:center}
+@media (max-width:700px){.mapa-topo{grid-template-columns:1fr}}

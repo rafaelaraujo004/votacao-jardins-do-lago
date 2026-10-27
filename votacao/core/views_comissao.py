@@ -65,6 +65,40 @@ def casas(request):
     return render(request, "comissao/casas.html", ctx)
 
 
+def _ordem_casa(numero):
+    digitos = "".join(c for c in numero if c.isdigit())
+    return (int(digitos) if digitos else 0, numero)
+
+
+@staff_member_required
+def mapa(request):
+    """Mapa das casas: quem já votou (casa e horário), nunca o voto."""
+    ctx = _base(request, "mapa")
+    eleicao = ctx["eleicao"]
+    if eleicao:
+        eleitores = {e.casa_id: e for e in Eleitor.objects.filter(eleicao=eleicao)}
+        casas = sorted(Casa.objects.filter(ativa=True), key=lambda c: _ordem_casa(c.numero))
+        grupos = {}
+        for c in casas:
+            if c.quadra:
+                nome = c.quadra
+            else:
+                inicio = (_ordem_casa(c.numero)[0] - 1) // 20 * 20 + 1
+                nome = f"Casas {inicio} a {inicio + 19}"
+            e = eleitores.get(c.pk)
+            grupos.setdefault(nome, []).append({
+                "numero": c.numero,
+                "votou": bool(e and e.votou_em),
+                "hora": timezone.localtime(e.votou_em).strftime("%H:%M") if e and e.votou_em else "",
+            })
+        votaram = sum(1 for g in grupos.values() for c in g if c["votou"])
+        total = sum(len(g) for g in grupos.values())
+        ctx.update(grupos=[{"nome": n, "casas": g, "votaram": sum(1 for c in g if c["votou"])}
+                           for n, g in grupos.items()],
+                   votaram=votaram, total=total, pct=(votaram / total * 100) if total else 0)
+    return render(request, "comissao/mapa.html", ctx)
+
+
 @staff_member_required
 @require_POST
 def importar(request):
@@ -81,7 +115,7 @@ def importar(request):
         Casa.objects.update(ativa=False)
         for c in lidas:
             Casa.objects.update_or_create(numero=c["numero"], defaults={
-                "proprietario": c["proprietario"], "telefone": c["telefone"], "ativa": True})
+                "proprietario": c["proprietario"], "telefone": c["telefone"], "quadra": c.get("quadra", ""), "ativa": True})
         auditar(request, "importar_casas", f"Importou a lista de casas: {len(lidas)} casas aptas")
         messages.success(request, f"{len(lidas)} casas importadas.")
         return redirect("comissao:casas")

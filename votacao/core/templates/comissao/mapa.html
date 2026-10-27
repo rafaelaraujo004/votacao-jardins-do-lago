@@ -1,0 +1,52 @@
+{% extends "comissao/base.html" %}
+{% load static %}
+{% block titulo %}Mapa{% endblock %}
+{% block head %}{% if status == "aberta" %}<meta http-equiv="refresh" content="30">{% endif %}{% endblock %}
+{% block conteudo %}
+<div class="head">
+  <div><p class="eyebrow">{{ eleicao.titulo }}</p><h1>Mapa das casas</h1></div>
+  {% if status == "aberta" %}<span class="pill pill-ok">● Atualiza a cada 30 segundos</span>{% endif %}
+</div>
+
+{% if not eleicao.comissao_ve_votantes %}
+  <section class="card stack">
+    <h2>Mapa desligado nesta eleição</h2>
+    <p class="muted">A regra “a comissão pode ver quais casas já votaram” está desligada. Por isso o mapa mostra só o total.</p>
+    <p><span class="big">{{ votaram }}</span> <strong>de {{ total }}</strong> casas votaram ({{ pct|floatformat:1 }}%).</p>
+  </section>
+{% else %}
+  <section class="card mapa-topo">
+    <div>
+      <p class="label">Participação</p>
+      <p><span class="big">{{ votaram }}</span> <strong>de {{ total }}</strong> · {{ pct|floatformat:1 }}%</p>
+      <div class="meter"><span style="width:{{ pct|floatformat:'1u' }}%"></span></div>
+    </div>
+    <div class="mapa-ctrl">
+      <label class="f">Buscar casa <input class="in" id="mapa-busca" inputmode="numeric" placeholder="Ex.: 47" autocomplete="off"></label>
+      <div class="seg" role="group" aria-label="Mostrar">
+        <button type="button" class="btn btn-sm btn-ghost" data-filtro="todas" aria-pressed="true">Todas</button>
+        <button type="button" class="btn btn-sm btn-ghost" data-filtro="votou" aria-pressed="false">Votaram</button>
+        <button type="button" class="btn btn-sm btn-ghost" data-filtro="falta" aria-pressed="false">Faltam</button>
+      </div>
+      <p class="legenda"><span class="lote votou" aria-hidden="true"></span> já votou <span class="lote" aria-hidden="true"></span> falta votar</p>
+    </div>
+  </section>
+
+  <div class="quadras" id="mapa">
+    {% for g in grupos %}
+    <section class="quadra">
+      <header><h2>{{ g.nome }}</h2><span class="small">{{ g.votaram }} de {{ g.casas|length }}</span></header>
+      <div class="lotes">
+        {% for c in g.casas %}<button type="button" class="lote{% if c.votou %} votou{% endif %}" data-casa="{{ c.numero }}" data-hora="{{ c.hora }}"
+          aria-label="Casa {{ c.numero }}: {% if c.votou %}votou às {{ c.hora }}{% else %}ainda não votou{% endif %}">{{ c.numero }}</button>{% endfor %}
+      </div>
+    </section>
+    {% empty %}
+    <p class="muted">Nenhuma casa cadastrada ainda. Importe a lista em <a href="{% url 'comissao:casas' %}">Casas</a>.</p>
+    {% endfor %}
+  </div>
+  <div class="mapa-info" id="mapa-info" role="status" aria-live="polite" hidden></div>
+  <p class="small">O mapa mostra só se a casa votou e o horário. Nunca mostra o voto.</p>
+{% endif %}
+<script src="{% static 'js/mapa.js' %}"></script>
+{% endblock %}

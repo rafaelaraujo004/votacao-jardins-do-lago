@@ -15,6 +15,7 @@
   <strong>Painel da comissão</strong>
   <nav aria-label="Seções">
     <a href="{% url 'comissao:painel' %}"{% if ativo == 'painel' %} aria-current="page"{% endif %}>Painel</a>
+    <a href="{% url 'comissao:mapa' %}"{% if ativo == 'mapa' %} aria-current="page"{% endif %}>Mapa</a>
     <a href="{% url 'admin:index' %}">Cadastros</a>
     <a href="{% url 'comissao:casas' %}"{% if ativo == 'casas' %} aria-current="page"{% endif %}>Casas</a>
     <a href="{% url 'comissao:codigos' %}"{% if ativo == 'codigos' %} aria-current="page"{% endif %}>Códigos</a>

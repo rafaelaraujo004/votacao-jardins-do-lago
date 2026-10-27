@@ -2,13 +2,13 @@
 
 Aceita separador ";" ou ",", UTF-8 (com ou sem BOM) ou Windows-1252, e telefones
 em qualquer formato. Colunas: casa, proprietário, telefone (nessa ordem, com ou
-sem linha de cabeçalho).
+sem linha de cabeçalho). Uma 4ª coluna opcional, quadra ou rua, agrupa as casas no mapa.
 """
 import csv
 import io
 import re
 
-CABECALHO = {"casa", "numero", "número", "proprietario", "proprietário", "nome", "telefone", "contato", "whatsapp"}
+CABECALHO = {"casa", "numero", "número", "proprietario", "proprietário", "nome", "telefone", "contato", "whatsapp", "quadra", "rua"}
 
 
 def decodificar(conteudo: bytes) -> str:
@@ -70,5 +70,6 @@ def ler(texto):
         if not telefone:
             avisos.append(f"Linha {i}: casa {numero} sem telefone. O código vai em envelope.")
         vistos[numero] = i
-        casas.append({"numero": numero, "proprietario": nome, "telefone": telefone})
+        quadra = campos[3] if len(campos) > 3 else ""
+        casas.append({"numero": numero, "proprietario": nome, "telefone": telefone, "quadra": quadra})
     return casas, erros, avisos

@@ -5,6 +5,7 @@ from . import views_comissao as v
 app_name = "comissao"
 urlpatterns = [
     path("", v.painel, name="painel"),
+    path("mapa/", v.mapa, name="mapa"),
     path("casas/", v.casas, name="casas"),
     path("casas/importar/", v.importar, name="importar"),
     path("codigos/", v.codigos, name="codigos"),

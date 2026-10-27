@@ -155,6 +155,8 @@ class Casa(models.Model):
     proprietario = models.CharField(max_length=150)
     telefone = models.CharField("WhatsApp", max_length=20, blank=True,
                                 help_text="Só dígitos, com 55 e DDD. Vazio = código em envelope.")
+    quadra = models.CharField("quadra / rua", max_length=40, blank=True,
+                              help_text="Agrupa as casas no mapa. Vazio = grupos de 20 em 20.")
     ativa = models.BooleanField(default=True)
 
     class Meta:
