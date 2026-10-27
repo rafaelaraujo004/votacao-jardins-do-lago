@@ -8,4 +8,5 @@ urlpatterns = [
     path("votar/revisar", views_voto.revisar, name="revisar"),
     path("votar/confirmar", views_voto.confirmar, name="confirmar"),
     path("votar/obrigado", views_voto.sucesso, name="sucesso"),
+    path("participacao/", views_voto.participacao, name="participacao"),
 ]

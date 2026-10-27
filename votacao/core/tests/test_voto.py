@@ -124,6 +124,26 @@ class VotoTests(TestCase):
         self.assertEqual(len(_tamanho_fixo("y").content), TAMANHO_FIXO)
 
 
+class ParticipacaoTests(TestCase):
+    def test_mostra_contagem_sem_candidatos_nem_votos(self):
+        eleicao, cargo, cands, cods = criar_eleicao(casas=4)
+        votar(self.client, cods["1"], cargo, [cands[0]])
+        votar(self.client, cods["2"], cargo, [cands[0]])
+        r = self.client.get("/participacao/")
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "2")
+        self.assertContains(r, "de 4")
+        self.assertContains(r, "50,0%")
+        for c in cands:
+            self.assertNotContains(r, c.nome)
+        self.assertNotContains(r, "Casa 1 ")
+        self.assertNotContains(r, "Casa 2 ")
+
+    def test_botao_na_tela_de_entrada(self):
+        criar_eleicao(casas=1)
+        self.assertContains(self.client.get("/"), "Ver quantas casas já votaram")
+
+
 class JanelaTests(TestCase):
     def test_antes_de_abrir(self):
         _, cargo, cands, cods = criar_eleicao(aberta=False)

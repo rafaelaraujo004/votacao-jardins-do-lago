@@ -19,5 +19,6 @@
   <p id="ajuda" class="va-help">Está na mensagem que a comissão mandou no seu WhatsApp. São 8 letras.</p>
   <button class="btn btn-primary va-btn" type="submit">Continuar</button>
 </form>
+<p class="va-foot"><a href="{% url 'voto:participacao' %}">Ver quantas casas já votaram</a></p>
 <p class="va-help" style="display:flex;gap:.5rem;align-items:flex-start"><svg class="ic" aria-hidden="true" style="color:var(--pine);margin-top:.2rem"><use href="#i-ajuda"/></svg><span>Precisa de ajuda? Procure a comissão na portaria, das {{ abre }} às {{ fecha }}.</span></p>
 {% endblock %}

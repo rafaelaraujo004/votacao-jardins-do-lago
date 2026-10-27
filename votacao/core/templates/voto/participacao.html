@@ -1,0 +1,28 @@
+{% extends "voto/base.html" %}
+{% block head %}{% if status == "aberta" %}<meta http-equiv="refresh" content="30">{% endif %}{% endblock %}
+{% block conteudo %}
+<p class="va-step">Acompanhamento</p>
+<h1 class="va-title">Participação ao vivo</h1>
+<div class="va-when">
+  <span class="ic-box"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg></span>
+  <strong>{{ eleicao.titulo }}</strong><span>{{ data_longa|capfirst }}, das {{ abre }} às {{ fecha }}</span>
+  {% if status == "aberta" %}<span class="pill pill-ok"><span class="pulso" aria-hidden="true"></span> Aberta agora</span>{% elif status == "antes" %}<span class="pill pill-info">Abre às {{ abre }}</span>{% else %}<span class="pill pill-muted">Encerrada</span>{% endif %}
+</div>
+
+<section class="card card-destaque" aria-live="polite">
+  <p class="label">Casas que já votaram</p>
+  <p><span class="big">{{ votaram }}</span> <strong style="font-size:1.3rem">de {{ aptas }}</strong></p>
+  <div class="meter" role="img" aria-label="{{ pct }}% de participação"><span style="width:{{ pct }}%"></span></div>
+  <p><strong>{{ pct }}%</strong> de participação · faltam {{ faltam }} casas</p>
+</section>
+
+{% if status == "aberta" %}
+  <p class="va-help">Esta página atualiza sozinha a cada 30 segundos. Ela mostra só a participação: nenhum candidato, nenhum voto.</p>
+  <a class="btn btn-ghost va-btn" href="{% url 'voto:participacao' %}">Atualizar agora</a>
+  <a class="btn btn-primary va-btn" href="{% url 'voto:entrar' %}">Votar agora</a>
+{% elif status == "encerrada" %}
+  <div class="alert alert-info" role="status"><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg><strong>A votação foi encerrada</strong><span>O resultado é divulgado pela comissão, com a ata.</span></div>
+{% else %}
+  <div class="alert alert-info" role="status"><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg><strong>A votação ainda não começou</strong><span>Ela abre {{ data_longa }}, às {{ abre }}.</span></div>
+{% endif %}
+{% endblock %}

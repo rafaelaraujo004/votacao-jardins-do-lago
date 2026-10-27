@@ -34,6 +34,8 @@
     {% endfor %}</ol>
   </section>
   {% endfor %}
-  <div class="row"><a class="btn btn-primary" href="{% url 'comissao:ata' %}">Gerar a ata</a></div>
+  <div class="row no-print"><button type="button" class="btn btn-primary" data-imprimir>Salvar a ata como PDF / imprimir</button></div>
+  <h2 class="no-print" style="margin-top:2rem">Ata</h2>
+  {% include "comissao/_ata_miolo.html" %}
 {% endif %}
 {% endblock %}

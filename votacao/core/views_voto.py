@@ -190,5 +190,22 @@ def sucesso(request):
     return render(request, "voto/sucesso.html", _ctx(Eleicao.atual()))
 
 
+def participacao(request):
+    """Participação ao vivo para os moradores: só quantas casas já votaram.
+
+    Nunca mostra candidatos nem votos, para não influenciar quem ainda vai votar.
+    Depois do encerramento, passa a mostrar o resultado final (ver apuracao).
+    """
+    eleicao = Eleicao.atual()
+    if eleicao is None:
+        return render(request, "voto/sem_eleicao.html")
+    aptas = Eleitor.objects.filter(eleicao=eleicao).count()
+    votaram = Eleitor.objects.filter(eleicao=eleicao, votou_em__isnull=False).count()
+    pct = (votaram / aptas * 100) if aptas else 0
+    return render(request, "voto/participacao.html", _ctx(
+        eleicao, votaram=votaram, aptas=aptas, pct=f"{pct:.1f}".replace(".", ","),
+        faltam=aptas - votaram))
+
+
 def falha_csrf(request, reason=""):
     return render(request, "voto/expirou.html", _ctx(Eleicao.atual()), status=403)
