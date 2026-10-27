@@ -8,6 +8,7 @@
 <title>{% block titulo %}Painel{% endblock %} · Comissão Jardins do Lago</title>
 <link rel="stylesheet" href="{% static 'css/app.css' %}">
 <link rel="icon" href="{% static 'img/logo-jardins-do-lago.png' %}">
+<script src="{% static 'js/tema.js' %}"></script>
 {% block head %}{% endblock %}
 </head>
 <body>
@@ -27,6 +28,7 @@
     <a href="{% url 'comissao:ata' %}"{% if ativo == 'ata' %} aria-current="page"{% endif %}><svg class="ic" aria-hidden="true"><use href="#i-doc"/></svg>Ata</a>
     <a href="{% url 'comissao:auditoria' %}"{% if ativo == 'auditoria' %} aria-current="page"{% endif %}><svg class="ic" aria-hidden="true"><use href="#i-lista"/></svg>Auditoria</a>
   </nav>
+  <button type="button" class="btn btn-sm btn-ghost tema no-print" data-tema>Modo escuro</button>
   <form method="post" action="{% url 'admin:logout' %}" class="no-print">{% csrf_token %}<button class="btn btn-sm btn-ghost sair"><svg class="ic" aria-hidden="true"><use href="#i-sair"/></svg>Sair</button></form>
 </div></header>
 <main class="wrap main">
