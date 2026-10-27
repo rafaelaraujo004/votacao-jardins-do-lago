@@ -30,7 +30,7 @@
   <form method="post" action="{% url 'admin:logout' %}" class="no-print">{% csrf_token %}<button class="btn btn-sm btn-ghost sair"><svg class="ic" aria-hidden="true"><use href="#i-sair"/></svg>Sair</button></form>
 </div></header>
 <main class="wrap main">
-  {% for m in messages %}<div class="alert alert-{% if m.level_tag == 'error' %}danger{% elif m.level_tag == 'success' %}ok{% else %}info{% endif %}" role="status"><svg class="ic" aria-hidden="true"><use href="#{% if m.level_tag == 'success' %}i-check{% elif m.level_tag == 'error' %}i-alerta{% else %}i-info{% endif %}"/></svg><span>{{ m }}</span></div>{% endfor %}
+  {% for m in messages %}<div class="alert alert-{% if m.level_tag == 'error' %}danger{% elif m.level_tag == 'success' %}ok{% elif m.level_tag == 'warning' %}warn{% else %}info{% endif %}" role="status"><svg class="ic" aria-hidden="true"><use href="#{% if m.level_tag == 'success' %}i-check{% elif m.level_tag == 'error' or m.level_tag == 'warning' %}i-alerta{% else %}i-info{% endif %}"/></svg><span>{{ m }}</span></div>{% endfor %}
   {% if not eleicao %}
     <section class="card vazio"><span class="ic-box"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg></span><h2>Nenhuma eleição ativa</h2><p class="muted">Crie a eleição e o cargo em <a href="{% url 'admin:core_eleicao_add' %}">Cadastros › Eleições</a>.</p></section>
   {% else %}{% block conteudo %}{% endblock %}{% endif %}
