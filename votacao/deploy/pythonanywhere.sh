@@ -69,11 +69,10 @@ if ! grep -q "alias votacao=" "$HOME/.bashrc" 2>/dev/null; then
   echo "alias votacao='cd $PROJETO && $VENV/bin/python manage.py'" >> "$HOME/.bashrc"
 fi
 
-touch "$WSGI"  # recarrega o site
 cat <<EOF
 
-== Pronto.
-Falta, uma única vez, na aba Web do PythonAnywhere:
+== Pronto. AGORA CLIQUE EM "Reload" NA ABA WEB, senão o site continua na versão antiga.
+Na primeira instalação, na aba Web do PythonAnywhere:
   1. Virtualenv: ${VENV}
   2. Force HTTPS: Enabled
   3. Botão verde Reload

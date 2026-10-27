@@ -49,6 +49,8 @@ Depois, cada membro entra em `https://NOMEDACONTA.pythonanywhere.com/comissao/`.
 cd ~/votacao-jardins-do-lago && git pull && bash votacao/deploy/pythonanywhere.sh
 ```
 
+Depois, na aba **Web**, clique no botão verde **Reload**. Sem isso o site continua na versão antiga.
+
 ## Cuidados
 
 - **Nunca apague `~/votacao.env`.** Sem o `CODIGO_PEPPER` dele, os códigos enviados param de funcionar.
