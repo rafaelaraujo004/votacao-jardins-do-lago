@@ -7,12 +7,14 @@
 set -euo pipefail
 
 USUARIO="$(whoami)"
-DOMINIO="${USUARIO}.pythonanywhere.com"
+# O PythonAnywhere usa o nome em minúsculas no domínio e no arquivo WSGI (ex.: RAFAELARAUJO004 → rafaelaraujo004).
+USUARIO_MIN="$(echo "$USUARIO" | tr '[:upper:]' '[:lower:]')"
+DOMINIO="${USUARIO_MIN}.pythonanywhere.com"
 PROJETO="$HOME/votacao-jardins-do-lago/votacao"
 VENV="$HOME/.virtualenvs/votacao"
 ENV_FILE="$HOME/votacao.env"
 DADOS="$HOME/dados"
-WSGI="/var/www/${USUARIO}_pythonanywhere_com_wsgi.py"
+WSGI="/var/www/${USUARIO_MIN}_pythonanywhere_com_wsgi.py"
 
 echo "== Votação Jardins do Lago · instalação em https://${DOMINIO}"
 cd "$PROJETO"
