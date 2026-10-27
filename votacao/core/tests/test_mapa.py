@@ -1,9 +1,6 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
 
-from core import importacao
-from core.models import Casa
-
 from .base import criar_eleicao, votar
 
 
@@ -26,12 +23,6 @@ class MapaTests(TestCase):
         self.assertContains(r, "Casas 1 a 20")
         self.assertContains(r, "Casas 21 a 40")
 
-    def test_agrupa_por_quadra_quando_informada(self):
-        Casa.objects.filter(numero__in=["1", "2"]).update(quadra="Rua das Flores")
-        self.client.force_login(self.user)
-        r = self.client.get("/comissao/mapa/")
-        self.assertContains(r, "Rua das Flores")
-
     def test_respeita_a_regra_de_nao_ver_votantes(self):
         self.eleicao.comissao_ve_votantes = False
         self.eleicao.save()
@@ -40,8 +31,3 @@ class MapaTests(TestCase):
         r = self.client.get("/comissao/mapa/")
         self.assertContains(r, "Mapa desligado nesta eleição")
         self.assertNotContains(r, 'data-casa="3"')
-
-    def test_csv_com_coluna_quadra(self):
-        casas, erros, _ = importacao.ler("casa;nome;telefone;quadra\n5;Ana;11999998888;Quadra B\n")
-        self.assertEqual(erros, [])
-        self.assertEqual(casas[0]["quadra"], "Quadra B")

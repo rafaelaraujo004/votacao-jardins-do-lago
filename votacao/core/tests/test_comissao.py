@@ -100,5 +100,5 @@ class ImportacaoTests(TestCase):
     def test_utf8_com_bom_e_virgula(self):
         texto = importacao.decodificar("﻿casa,nome,telefone\n10A,Lúcia,+55 11 91234-5678\n".encode("utf-8"))
         casas, erros, _ = importacao.ler(texto)
-        self.assertEqual(casas, [{"numero": "10A", "proprietario": "Lúcia", "telefone": "5511912345678", "quadra": ""}])
+        self.assertEqual(casas, [{"numero": "10A", "proprietario": "Lúcia", "telefone": "5511912345678"}])
         self.assertEqual(erros, [])

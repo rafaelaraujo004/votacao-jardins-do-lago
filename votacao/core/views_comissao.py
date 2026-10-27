@@ -80,11 +80,8 @@ def mapa(request):
         casas = sorted(Casa.objects.filter(ativa=True), key=lambda c: _ordem_casa(c.numero))
         grupos = {}
         for c in casas:
-            if c.quadra:
-                nome = c.quadra
-            else:
-                inicio = (_ordem_casa(c.numero)[0] - 1) // 20 * 20 + 1
-                nome = f"Casas {inicio} a {inicio + 19}"
+            inicio = (_ordem_casa(c.numero)[0] - 1) // 20 * 20 + 1
+            nome = f"Casas {inicio} a {inicio + 19}"
             e = eleitores.get(c.pk)
             grupos.setdefault(nome, []).append({
                 "numero": c.numero,
@@ -115,7 +112,7 @@ def importar(request):
         Casa.objects.update(ativa=False)
         for c in lidas:
             Casa.objects.update_or_create(numero=c["numero"], defaults={
-                "proprietario": c["proprietario"], "telefone": c["telefone"], "quadra": c.get("quadra", ""), "ativa": True})
+                "proprietario": c["proprietario"], "telefone": c["telefone"], "ativa": True})
         auditar(request, "importar_casas", f"Importou a lista de casas: {len(lidas)} casas aptas")
         messages.success(request, f"{len(lidas)} casas importadas.")
         return redirect("comissao:casas")

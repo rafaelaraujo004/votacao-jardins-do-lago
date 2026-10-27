@@ -108,9 +108,9 @@ class CandidatoAdmin(TravadoAdmin):
 
 @admin.register(Casa)
 class CasaAdmin(AuditadoAdmin):
-    list_display = ("numero", "proprietario", "telefone", "quadra", "ativa")
+    list_display = ("numero", "proprietario", "telefone", "ativa")
     search_fields = ("numero", "proprietario")
-    list_filter = ("ativa", "quadra")
+    list_filter = ("ativa",)
 
 
 @admin.register(Procuracao)
