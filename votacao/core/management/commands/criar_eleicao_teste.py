@@ -1,6 +1,6 @@
 """Monta uma eleição de ensaio (ou de teste de carga) com códigos conhecidos."""
 import json
-from datetime import timedelta
+from datetime import time, timedelta
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -24,10 +24,15 @@ class Command(BaseCommand):
     def handle(self, casas, horas, arquivo, sem_casas, **opts):
         agora = timezone.localtime()
         fim = min(agora + timedelta(hours=horas), agora.replace(hour=23, minute=59))
-        eleicao = Eleicao.objects.create(
-            titulo="ENSAIO – Eleição da Comissão Eleitoral", data=agora.date(),
-            abre=(agora - timedelta(minutes=1)).time().replace(second=0, microsecond=0),
-            fecha=fim.time().replace(second=0, microsecond=0), ativa=True, eh_teste=True)
+        if fim - agora < timedelta(hours=1):
+            # Perto da meia-noite: o ensaio vale o dia seguinte inteiro (só para teste).
+            data, abre, fecha = (agora + timedelta(days=1)).date(), time(0, 0), time(23, 59)
+        else:
+            data = agora.date()
+            abre = (agora - timedelta(minutes=1)).time().replace(second=0, microsecond=0)
+            fecha = fim.time().replace(second=0, microsecond=0)
+        eleicao = Eleicao.objects.create(titulo="ENSAIO – Eleição da Comissão Eleitoral", data=data,
+                                         abre=abre, fecha=fecha, ativa=True, eh_teste=True)
         cargo = Cargo.objects.create(eleicao=eleicao, titulo="Comissão Eleitoral", vagas=3, max_escolhas=1)
         for i, nome in enumerate(NOMES):
             Candidato.objects.create(cargo=cargo, numero=11 + i, nome=nome)
@@ -45,5 +50,5 @@ class Command(BaseCommand):
         with open(arquivo, "w", encoding="utf-8") as f:
             json.dump({"cargo": cargo.pk, "candidatos": candidatos, "codigos": saida}, f)
         self.stdout.write(self.style.SUCCESS(
-            f"Ensaio criado (id {eleicao.pk}), aberto até {eleicao.fecha:%H:%M}. {len(saida)} códigos em {arquivo}. "
+            f"Ensaio criado (id {eleicao.pk}): {eleicao.data:%d/%m}, das {eleicao.abre:%H:%M} às {eleicao.fecha:%H:%M}. {len(saida)} códigos em {arquivo}. "
             f"Depois: python manage.py apagar_eleicao {eleicao.pk}"))
