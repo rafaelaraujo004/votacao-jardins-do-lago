@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Envio dos códigos · {{ eleicao.titulo }}</title>
+<style>
+body{font-family:"Segoe UI",system-ui,sans-serif;margin:0;background:#F2F5F1;color:#15221C}
+main{max-width:860px;margin:0 auto;padding:16px}
+.aviso{background:#FBEFD8;border:1.5px solid #8A5200;border-radius:12px;padding:12px 14px;margin:12px 0}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden}
+td,th{padding:10px;border-bottom:1px solid #D3DDD5;text-align:left;vertical-align:middle}
+th{font-size:12px;text-transform:uppercase;color:#5F6F66;background:#E7EDE7}
+.cod{font-family:Consolas,monospace;font-weight:700;letter-spacing:.08em}
+a.zap{display:inline-block;background:#1D6B4E;color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:9px;white-space:nowrap}
+tr.feito{opacity:.5}
+label{white-space:nowrap}
+</style>
+</head>
+<body><main>
+<h1>Envio dos códigos</h1>
+<p>{{ eleicao.titulo }} · gerado em {{ gerado_em|date:"d/m/Y \à\s H:i" }} · {{ linhas|length }} casas</p>
+<div class="aviso"><strong>Este arquivo é a única cópia dos códigos.</strong> Quem tem este arquivo pode votar por qualquer casa. Envie com 2 membros presentes, em lotes de 30, pelo WhatsApp Web, e <strong>apague o arquivo</strong> no fim. As caixas “enviado” valem só neste computador.</div>
+<table>
+<thead><tr><th>Casa</th><th>Proprietário</th><th>Código</th><th>Envio</th><th></th></tr></thead>
+<tbody>
+{% for l in linhas %}<tr>
+  <td><strong>{{ l.casa.numero }}</strong></td><td>{{ l.casa.proprietario }}</td><td class="cod">{{ l.codigo|slice:":4" }}-{{ l.codigo|slice:"4:" }}</td>
+  <td>{% if l.whatsapp %}<a class="zap" href="{{ l.whatsapp }}" target="_blank" rel="noopener noreferrer">Enviar no WhatsApp</a>{% else %}Envelope{% endif %}</td>
+  <td><label><input type="checkbox" data-casa="{{ l.casa.numero }}"> enviado</label></td>
+</tr>{% endfor %}
+</tbody></table>
+</main>
+<script>
+document.querySelectorAll('input[data-casa]').forEach(function(c){
+  var k='enviado-'+c.dataset.casa;
+  try{ c.checked = localStorage.getItem(k)==='1'; }catch(e){}
+  c.closest('tr').classList.toggle('feito', c.checked);
+  c.addEventListener('change', function(){ try{ localStorage.setItem(k, c.checked?'1':'0'); }catch(e){} c.closest('tr').classList.toggle('feito', c.checked); });
+});
+document.querySelectorAll('a.zap').forEach(function(a){ a.addEventListener('click', function(){ var c=a.closest('tr').querySelector('input'); c.checked=true; c.dispatchEvent(new Event('change')); }); });
+</script>
+</body></html>

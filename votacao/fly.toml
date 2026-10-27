@@ -1,0 +1,28 @@
+# Fly.io · região São Paulo. Exatamente 1 máquina e 1 volume (dois volumes = duas urnas).
+app = "votacao-jardins-do-lago"
+primary_region = "gru"
+
+[env]
+  DADOS_DIR = "/dados"
+  IP_HEADER = "Fly-Client-IP"
+  DJANGO_ALLOWED_HOSTS = "votacao-jardins-do-lago.fly.dev"
+  DJANGO_CSRF_TRUSTED_ORIGINS = "https://votacao-jardins-do-lago.fly.dev"
+  SITE_URL = "https://votacao-jardins-do-lago.fly.dev"
+
+[mounts]
+  source = "dados"
+  destination = "/dados"
+  # Sigilo: sem fotos automáticas do disco durante a votação. Backup só depois do encerramento.
+  scheduled_snapshots = false
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  # Sempre ligado: nada de "acordar" devagar às 7h.
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

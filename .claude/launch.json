@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "votacao",
+      "runtimeExecutable": "votacao/.venv/Scripts/python.exe",
+      "runtimeArgs": ["votacao/manage.py", "runserver", "8000", "--noreload"],
+      "env": {"DJANGO_DEBUG": "1", "PYTHONIOENCODING": "utf-8"},
+      "port": 8000
+    }
+  ]
+}

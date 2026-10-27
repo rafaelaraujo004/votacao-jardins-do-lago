@@ -1,0 +1,36 @@
+{% extends "comissao/base.html" %}
+{% load static %}
+{% block titulo %}Ata{% endblock %}
+{% block conteudo %}
+<div class="head no-print"><div><p class="eyebrow">Documento oficial</p><h1>Ata</h1></div>{% if r %}<button type="button" class="btn btn-primary" data-imprimir>Salvar como PDF / imprimir</button>{% endif %}</div>
+{% if not r %}{% with titulo_bloqueio="A ata fica pronta depois do encerramento" %}{% include "comissao/_bloqueado.html" %}{% endwith %}
+{% else %}
+<article class="paper">
+  <header class="paper-head"><img src="{% static 'img/logo-jardins-do-lago.png' %}" alt="Residencial Jardins do Lago" width="113" height="64">
+    <div><p class="label" style="margin:0">Residencial Jardins do Lago</p><h2>Ata da {{ eleicao.titulo }}</h2></div></header>
+  <p>Aos {{ eleicao.data|date:"j" }} dias do mês de {{ eleicao.data|date:"F"|lower }} de {{ eleicao.data|date:"Y" }}, realizou-se, por meio da plataforma de votação online do Residencial Jardins do Lago, conforme autoriza a convenção do condomínio, a {{ eleicao.titulo|lower }}, com voto secreto e um voto por casa, registrando-se o que segue.</p>
+  <table><tbody>
+    <tr><th>Abertura</th><td>{{ eleicao.abre|time:"H:i" }}</td></tr>
+    <tr><th>Encerramento</th><td>{{ eleicao.fecha|time:"H:i" }}</td></tr>
+    <tr><th>Casas aptas</th><td>{{ r.aptas }}</td></tr>
+    <tr><th>Casas que votaram</th><td>{{ r.votantes }}</td></tr>
+    <tr><th>Participação</th><td>{{ r.pct|floatformat:1 }}%</td></tr>
+    <tr><th>Cédulas na urna</th><td>{% for c in r.cargos %}{{ c.cedulas }}{% endfor %} {% if r.confere %}(confere com o número de votantes){% else %}(DIVERGENTE){% endif %}</td></tr>
+    <tr><th>Votos em branco</th><td>{% for c in r.cargos %}{{ c.brancos }}{% endfor %}</td></tr>
+    <tr><th>Regra de desempate</th><td>{{ eleicao.get_regra_desempate_display }}</td></tr>
+  </tbody></table>
+  {% for cargo in r.cargos %}
+  <h4>{{ cargo.cargo.titulo }}: votos por candidato</h4>
+  <table><thead><tr><th>Nº</th><th>Candidato</th><th class="r">Votos</th></tr></thead><tbody>
+    {% for l in cargo.linhas %}<tr><td>{{ l.c.numero }}</td><td>{{ l.c.nome }}</td><td class="r">{{ l.votos }}</td></tr>{% endfor %}
+  </tbody></table>
+  <h4>Eleitos</h4><ol>{% for c in cargo.eleitos %}<li>{{ c.nome }} (nº {{ c.numero }})</li>{% endfor %}</ol>
+  {% if cargo.empate %}<p>Empate na {{ cargo.empate.vaga }}ª vaga entre {% for c in cargo.empate.grupo %}{{ c.nome }}{% if not forloop.last %} e {% endif %}{% endfor %} ({{ cargo.empate.votos }} votos). Regra: {{ eleicao.get_regra_desempate_display|lower }}.{% if not cargo.empate.decididos %} Resultado do desempate: ______________________________{% endif %}</p>{% endif %}
+  {% endfor %}
+  <h4>Ocorrências</h4><div class="linhas"><span></span><span></span><span></span><span></span></div>
+  <p class="small" style="margin-top:1rem">Versão do sistema: {{ versao }}. Registro de auditoria disponível para consulta.</p>
+  <p style="margin-top:1rem">Residencial Jardins do Lago, {{ eleicao.data|date:"j \d\e F \d\e Y" }}.</p>
+  <div class="signs">{% for m in membros %}<div><strong>{{ m.get_full_name|default:m.username }}</strong><small>Comissão</small></div>{% empty %}<div>Assinatura</div><div>Assinatura</div><div>Assinatura</div>{% endfor %}</div>
+</article>
+{% endif %}
+{% endblock %}

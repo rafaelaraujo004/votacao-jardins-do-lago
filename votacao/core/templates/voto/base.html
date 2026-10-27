@@ -1,0 +1,22 @@
+{% load static %}<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="same-origin">
+<title>Votação · Residencial Jardins do Lago</title>
+<link rel="stylesheet" href="{% static 'css/app.css' %}">
+<link rel="icon" href="{% static 'img/logo-jardins-do-lago.png' %}">
+</head>
+<body>
+<div class="va-page">
+  <header class="va-top">
+    <span class="logo-chip"><img src="{% static 'img/logo-jardins-do-lago.png' %}" alt="Residencial Jardins do Lago" width="70" height="40"></span>
+    <span>Votação online</span>
+  </header>
+  <main class="va">{% block conteudo %}{% endblock %}</main>
+</div>
+<script src="{% static 'js/voto.js' %}"></script>
+</body>
+</html>

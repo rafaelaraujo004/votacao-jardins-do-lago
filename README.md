@@ -6,4 +6,4 @@ Plataforma de votação online do condomínio: eleição da Comissão Eleitoral 
 
 - `prototipo/index.html`: protótipo navegável com dados fictícios, para apresentar à comissão. É uma página única, sem servidor, publicada na Vercel.
 
-O sistema real (Django + SQLite) vai ficar neste mesmo repositório, em `votacao/`.
+- `votacao/`: o sistema real (Django + SQLite), com testes e arquivos de publicação no Fly.io. Veja `votacao/README.md`.

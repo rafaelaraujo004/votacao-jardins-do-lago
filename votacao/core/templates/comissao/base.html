@@ -1,0 +1,35 @@
+{% load static %}<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{% block titulo %}Painel{% endblock %} · Comissão Jardins do Lago</title>
+<link rel="stylesheet" href="{% static 'css/app.css' %}">
+<link rel="icon" href="{% static 'img/logo-jardins-do-lago.png' %}">
+{% block head %}{% endblock %}
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a href="{% url 'comissao:painel' %}" class="logo-chip"><img src="{% static 'img/logo-jardins-do-lago.png' %}" alt="Residencial Jardins do Lago" width="70" height="40"></a>
+  <strong>Painel da comissão</strong>
+  <nav aria-label="Seções">
+    <a href="{% url 'comissao:painel' %}"{% if ativo == 'painel' %} aria-current="page"{% endif %}>Painel</a>
+    <a href="{% url 'admin:index' %}">Cadastros</a>
+    <a href="{% url 'comissao:casas' %}"{% if ativo == 'casas' %} aria-current="page"{% endif %}>Casas</a>
+    <a href="{% url 'comissao:codigos' %}"{% if ativo == 'codigos' %} aria-current="page"{% endif %}>Códigos</a>
+    <a href="{% url 'comissao:resultado' %}"{% if ativo == 'resultado' %} aria-current="page"{% endif %}>Resultado</a>
+    <a href="{% url 'comissao:ata' %}"{% if ativo == 'ata' %} aria-current="page"{% endif %}>Ata</a>
+    <a href="{% url 'comissao:auditoria' %}"{% if ativo == 'auditoria' %} aria-current="page"{% endif %}>Auditoria</a>
+  </nav>
+  <form method="post" action="{% url 'admin:logout' %}" class="no-print">{% csrf_token %}<button class="btn btn-sm btn-ghost">Sair</button></form>
+</div></header>
+<main class="wrap main">
+  {% for m in messages %}<div class="alert alert-{% if m.level_tag == 'error' %}danger{% elif m.level_tag == 'success' %}ok{% else %}info{% endif %}" role="status">{{ m }}</div>{% endfor %}
+  {% if not eleicao %}
+    <div class="card"><h2>Nenhuma eleição ativa</h2><p>Crie a eleição e o cargo em <a href="{% url 'admin:core_eleicao_add' %}">Cadastros › Eleições</a>.</p></div>
+  {% else %}{% block conteudo %}{% endblock %}{% endif %}
+</main>
+<script src="{% static 'js/comissao.js' %}"></script>
+</body>
+</html>

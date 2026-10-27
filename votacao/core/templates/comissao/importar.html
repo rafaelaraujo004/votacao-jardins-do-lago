@@ -1,0 +1,21 @@
+{% extends "comissao/base.html" %}
+{% block titulo %}Importar casas{% endblock %}
+{% block conteudo %}
+<div class="head"><div><p class="eyebrow">Conferência antes de importar</p><h1>{{ nome }}</h1></div></div>
+<div class="grid">
+  <div class="card"><p class="label">Prontas</p><p class="big">{{ lidas|length }}</p><p>casas sem problema</p></div>
+  <div class="card"><p class="label">Avisos</p><p class="big">{{ avisos|length }}</p><p>entram, mas recebem envelope</p></div>
+  <div class="card"><p class="label">Erros</p><p class="big">{{ erros|length }}</p><p>precisam ser corrigidos no arquivo</p></div>
+</div>
+{% if erros %}<section class="alert alert-danger"><strong>Corrija estas linhas no arquivo e envie de novo</strong><ul>{% for e in erros %}<li>{{ e }}</li>{% endfor %}</ul></section>{% endif %}
+{% if avisos %}<section class="alert alert-warn"><strong>Avisos</strong><ul>{% for a in avisos %}<li>{{ a }}</li>{% endfor %}</ul></section>{% endif %}
+<div class="table-wrap tbl-scroll"><table class="tbl"><thead><tr><th>Casa</th><th>Proprietário</th><th>Telefone</th></tr></thead><tbody>
+  {% for c in lidas %}<tr><td>{{ c.numero }}</td><td>{{ c.proprietario }}</td><td class="mono">{{ c.telefone|default:"envelope" }}</td></tr>{% endfor %}
+</tbody></table></div>
+<div class="row">
+  {% if not erros %}
+  <form method="post" action="{% url 'comissao:importar' %}">{% csrf_token %}<input type="hidden" name="conteudo" value="{{ conteudo }}"><button class="btn btn-primary" name="confirmar" value="1">Importar {{ lidas|length }} casas</button></form>
+  {% endif %}
+  <a class="btn btn-ghost" href="{% url 'comissao:casas' %}">Cancelar</a>
+</div>
+{% endblock %}

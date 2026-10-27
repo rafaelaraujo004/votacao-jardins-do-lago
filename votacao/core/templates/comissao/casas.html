@@ -1,0 +1,24 @@
+{% extends "comissao/base.html" %}
+{% block titulo %}Casas{% endblock %}
+{% block conteudo %}
+<div class="head"><div><p class="eyebrow">Cadastro</p><h1>Casas</h1></div><span class="pill pill-muted">{{ linhas|length }} casas aptas</span></div>
+<section class="card stack">
+  <h2>Importar a lista (CSV)</h2>
+  {% if bloqueada %}
+    <p class="muted">Bloqueado: os códigos já foram gerados. Para uma casa que faltou, cadastre-a em <a href="{% url 'admin:core_casa_add' %}">Cadastros › Casas</a> e use “Reemitir código” para emitir o código dela.</p>
+  {% else %}
+    <p class="muted">Colunas: número da casa, proprietário e telefone (WhatsApp). Pode ser o arquivo salvo pelo Excel, com “;” ou “,”. Você confere tudo antes de confirmar.</p>
+    <form method="post" action="{% url 'comissao:importar' %}" enctype="multipart/form-data" class="row">{% csrf_token %}
+      <input type="file" name="arquivo" accept=".csv,text/csv" required><button class="btn btn-primary">Ler o arquivo</button>
+    </form>
+  {% endif %}
+</section>
+<div class="table-wrap tbl-scroll"><table class="tbl">
+  <thead><tr><th>Casa</th><th>Proprietário</th><th>WhatsApp</th><th>Código</th>{% if eleicao.comissao_ve_votantes %}<th>Situação</th>{% endif %}</tr></thead>
+  <tbody>{% for c, e in linhas %}<tr>
+    <td><strong>{{ c.numero }}</strong></td><td>{{ c.proprietario }}</td><td class="mono">{{ c.telefone_mascarado }}</td>
+    <td>{% if not e %}<span class="muted">Sem código</span>{% elif not c.telefone %}Envelope{% elif e.codigo_versao > 1 %}Reemitido{% else %}Gerado{% endif %}</td>
+    {% if eleicao.comissao_ve_votantes %}<td>{% if e.votou_em %}<span class="pill pill-ok">Votou {{ e.votou_em|time:"H:i" }}</span>{% else %}<span class="muted">Ainda não</span>{% endif %}</td>{% endif %}
+  </tr>{% empty %}<tr><td colspan="5" class="muted">Nenhuma casa cadastrada. Importe a lista.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% endblock %}

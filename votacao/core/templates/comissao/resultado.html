@@ -1,0 +1,28 @@
+{% extends "comissao/base.html" %}
+{% block titulo %}Resultado{% endblock %}
+{% block conteudo %}
+<div class="head"><div><p class="eyebrow">Apuração</p><h1>Resultado</h1></div>{% if r %}<span class="pill pill-muted">Encerrada às {{ fecha }}</span>{% endif %}</div>
+{% if not r %}{% with titulo_bloqueio="O resultado só aparece depois do encerramento" %}{% include "comissao/_bloqueado.html" %}{% endwith %}
+{% else %}
+  {% if r.confere %}<div class="alert alert-ok"><strong>Conferência: cédulas na urna = {{ r.votantes }} casas que votaram</strong><span>Nenhuma cédula a mais, nenhuma a menos.</span></div>
+  {% else %}<div class="alert alert-danger"><strong>Diferença entre cédulas e votantes</strong><span>Registre na ata e avise o técnico.</span></div>{% endif %}
+  {% for cargo in r.cargos %}
+  <div class="grid">
+    <div class="card"><p class="label">Votaram</p><p class="big">{{ r.votantes }}</p><p>de {{ r.aptas }} casas ({{ r.pct|floatformat:1 }}%)</p></div>
+    <div class="card"><p class="label">Cédulas com candidato</p><p class="big">{{ cargo.com_candidato }}</p><p>{{ cargo.brancos }} em branco</p></div>
+  </div>
+  {% if cargo.empate %}<div class="alert alert-warn"><strong>Empate na {{ cargo.empate.vaga }}ª vaga</strong>
+    <span>{% for c in cargo.empate.grupo %}{{ c.nome }} ({{ c.numero }}){% if not forloop.last %} e {% endif %}{% endfor %} tiveram {{ cargo.empate.votos }} votos cada. Regra: {{ eleicao.get_regra_desempate_display|lower }}.
+    {% if cargo.empate.decididos %}Fica com a vaga: {% for c in cargo.empate.decididos %}{{ c.nome }}{% if not forloop.last %}, {% endif %}{% endfor %}.{% else %}A comissão aplica a regra e registra na ata.{% endif %}</span></div>{% endif %}
+  <section class="card"><h2>{{ cargo.cargo.titulo }} · {{ cargo.cargo.vagas }} vagas</h2>
+    <ol class="rank">{% for l in cargo.linhas %}
+      <li class="{% if l.vaga %}eleito{% elif l.empate %}empate{% endif %}"><span class="muted"><strong>{{ l.pos }}º</strong></span>
+        <div><div><span class="num">{{ l.c.numero }}</span> <strong>{{ l.c.nome }}</strong></div><div class="rbar"><span style="width:{{ l.largura|floatformat:'1u' }}%"></span></div></div>
+        <span class="rv-n">{{ l.votos }}</span>
+        <span class="tag">{% if l.vaga %}<span class="pill pill-ok">Vaga {{ l.vaga }}</span>{% elif l.empate %}<span class="pill pill-warn">Empate</span>{% endif %}</span></li>
+    {% endfor %}</ol>
+  </section>
+  {% endfor %}
+  <div class="row"><a class="btn btn-primary" href="{% url 'comissao:ata' %}">Gerar a ata</a></div>
+{% endif %}
+{% endblock %}

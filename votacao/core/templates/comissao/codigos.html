@@ -1,0 +1,28 @@
+{% extends "comissao/base.html" %}
+{% block titulo %}Códigos{% endblock %}
+{% block conteudo %}
+<div class="head"><div><p class="eyebrow">Distribuição</p><h1>Códigos</h1></div></div>
+<section class="card stack">
+  {% if eleicao.codigos_gerados_em %}
+    <h2>✔ {{ total }} códigos gerados</h2>
+    <p class="muted">Gerados em {{ eleicao.codigos_gerados_em|date:"d/m \à\s H:i" }} por {{ eleicao.codigos_gerados_por }}. {{ reemitidos }} reemitido(s) depois.</p>
+  {% else %}<h2>Gerar os códigos</h2>{% endif %}
+  <p>O sistema não guarda os códigos. Guarda só uma impressão digital de cada um, que serve para conferir o código digitado. O arquivo de envio é a única cópia: baixe com 2 membros presentes, envie pelo WhatsApp Web e <strong>apague o arquivo depois</strong>.</p>
+  {% if impedimento %}<p class="muted">🔒 {{ impedimento }}</p>
+  {% else %}
+  <form method="post" action="{% url 'comissao:gerar' %}" data-confirmar="GERAR" class="row">{% csrf_token %}
+    <label class="f">Digite GERAR para confirmar{% if eleicao.codigos_gerados_em %} (os códigos atuais deixam de valer){% endif %}<input class="in" name="confirmacao" autocomplete="off" required></label>
+    <button class="btn btn-primary">{% if eleicao.codigos_gerados_em %}Gerar de novo e baixar{% else %}Gerar e baixar o arquivo de envio{% endif %}</button>
+  </form>
+  {% endif %}
+</section>
+<section class="card stack">
+  <h2>Reemitir código</h2>
+  <p class="muted">Para quem perdeu a mensagem, ou para uma casa nova. Confirme antes que o pedido veio do telefone cadastrado. O código antigo para de funcionar na hora.</p>
+  <form method="post" action="{% url 'comissao:reemitir' %}" class="row">{% csrf_token %}
+    <label class="f">Número da casa <input class="in" name="casa" required size="6"></label>
+    <label class="f">Motivo <select class="in" name="motivo"><option>Perdeu a mensagem</option><option>Trocou de celular</option><option>A mensagem não chegou</option><option>Casa nova na lista</option><option>Procuração</option></select></label>
+    <button class="btn btn-primary">Reemitir código</button>
+  </form>
+</section>
+{% endblock %}

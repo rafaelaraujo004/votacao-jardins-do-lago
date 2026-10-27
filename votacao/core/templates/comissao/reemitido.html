@@ -1,0 +1,14 @@
+{% extends "comissao/base.html" %}
+{% block titulo %}Código reemitido{% endblock %}
+{% block conteudo %}
+<section class="card stack" style="border:2px solid var(--pine);background:var(--ok-soft)">
+  <p class="label">Novo código da casa {{ novo.casa.numero }} · {{ novo.casa.proprietario }}</p>
+  <p class="code-xl">{{ novo.codigo|slice:":4" }}-{{ novo.codigo|slice:"4:" }}</p>
+  <p>Este código aparece só agora. Envie para o proprietário e saia desta página. O código antigo já não funciona.</p>
+  <div class="row">
+    {% if novo.whatsapp %}<a class="btn btn-primary" href="{{ novo.whatsapp }}" target="_blank" rel="noopener noreferrer">Enviar no WhatsApp</a>
+    {% else %}<span class="muted">Esta casa não tem WhatsApp cadastrado: entregue em envelope.</span>{% endif %}
+    <a class="btn btn-ghost" href="{% url 'comissao:codigos' %}">Concluído</a>
+  </div>
+</section>
+{% endblock %}
