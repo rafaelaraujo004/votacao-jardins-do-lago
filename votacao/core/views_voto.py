@@ -18,7 +18,7 @@ from .distribuicao import data_longa, hora_curta
 from .models import Candidato, Cedula, Eleicao, Eleitor
 from .votacao import VotoRecusado, emitir_token, ler_token, registrar_voto, validar_codigo, validar_escolhas
 
-TAMANHO_FIXO = 24_000  # bytes da página de revisão, sempre iguais
+TAMANHO_FIXO = 40_000  # bytes da página de revisão, sempre iguais
 
 MENSAGENS = {
     "formato": ("danger", "O código tem 8 letras", "Confira a mensagem do WhatsApp e digite as 8 letras."),

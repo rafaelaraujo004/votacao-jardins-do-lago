@@ -4,31 +4,35 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#12382A">
 <title>{% block titulo %}Painel{% endblock %} · Comissão Jardins do Lago</title>
 <link rel="stylesheet" href="{% static 'css/app.css' %}">
 <link rel="icon" href="{% static 'img/logo-jardins-do-lago.png' %}">
 {% block head %}{% endblock %}
 </head>
 <body>
+{% include "_icones.html" %}
 <header class="top"><div class="wrap">
-  <a href="{% url 'comissao:painel' %}" class="logo-chip"><img src="{% static 'img/logo-jardins-do-lago.png' %}" alt="Residencial Jardins do Lago" width="70" height="40"></a>
-  <strong>Painel da comissão</strong>
+  <a href="{% url 'comissao:painel' %}" class="marca-top">
+    <span class="logo-chip"><img src="{% static 'img/logo-jardins-do-lago.png' %}" alt="Residencial Jardins do Lago" width="64" height="36"></span>
+    <span><b>Painel da comissão</b><span>{% if eleicao %}{{ eleicao.titulo }}{% else %}Votação online{% endif %}</span></span>
+  </a>
   <nav aria-label="Seções">
-    <a href="{% url 'comissao:painel' %}"{% if ativo == 'painel' %} aria-current="page"{% endif %}>Painel</a>
-    <a href="{% url 'comissao:mapa' %}"{% if ativo == 'mapa' %} aria-current="page"{% endif %}>Mapa</a>
-    <a href="{% url 'admin:index' %}">Cadastros</a>
-    <a href="{% url 'comissao:casas' %}"{% if ativo == 'casas' %} aria-current="page"{% endif %}>Casas</a>
-    <a href="{% url 'comissao:codigos' %}"{% if ativo == 'codigos' %} aria-current="page"{% endif %}>Códigos</a>
-    <a href="{% url 'comissao:resultado' %}"{% if ativo == 'resultado' %} aria-current="page"{% endif %}>Resultado</a>
-    <a href="{% url 'comissao:ata' %}"{% if ativo == 'ata' %} aria-current="page"{% endif %}>Ata</a>
-    <a href="{% url 'comissao:auditoria' %}"{% if ativo == 'auditoria' %} aria-current="page"{% endif %}>Auditoria</a>
+    <a href="{% url 'comissao:painel' %}"{% if ativo == 'painel' %} aria-current="page"{% endif %}><svg class="ic" aria-hidden="true"><use href="#i-painel"/></svg>Painel</a>
+    <a href="{% url 'comissao:mapa' %}"{% if ativo == 'mapa' %} aria-current="page"{% endif %}><svg class="ic" aria-hidden="true"><use href="#i-mapa"/></svg>Mapa</a>
+    <a href="{% url 'admin:index' %}"><svg class="ic" aria-hidden="true"><use href="#i-engrenagem"/></svg>Cadastros</a>
+    <a href="{% url 'comissao:casas' %}"{% if ativo == 'casas' %} aria-current="page"{% endif %}><svg class="ic" aria-hidden="true"><use href="#i-casa"/></svg>Casas</a>
+    <a href="{% url 'comissao:codigos' %}"{% if ativo == 'codigos' %} aria-current="page"{% endif %}><svg class="ic" aria-hidden="true"><use href="#i-chave"/></svg>Códigos</a>
+    <a href="{% url 'comissao:resultado' %}"{% if ativo == 'resultado' %} aria-current="page"{% endif %}><svg class="ic" aria-hidden="true"><use href="#i-trofeu"/></svg>Resultado</a>
+    <a href="{% url 'comissao:ata' %}"{% if ativo == 'ata' %} aria-current="page"{% endif %}><svg class="ic" aria-hidden="true"><use href="#i-doc"/></svg>Ata</a>
+    <a href="{% url 'comissao:auditoria' %}"{% if ativo == 'auditoria' %} aria-current="page"{% endif %}><svg class="ic" aria-hidden="true"><use href="#i-lista"/></svg>Auditoria</a>
   </nav>
-  <form method="post" action="{% url 'admin:logout' %}" class="no-print">{% csrf_token %}<button class="btn btn-sm btn-ghost">Sair</button></form>
+  <form method="post" action="{% url 'admin:logout' %}" class="no-print">{% csrf_token %}<button class="btn btn-sm btn-ghost sair"><svg class="ic" aria-hidden="true"><use href="#i-sair"/></svg>Sair</button></form>
 </div></header>
 <main class="wrap main">
-  {% for m in messages %}<div class="alert alert-{% if m.level_tag == 'error' %}danger{% elif m.level_tag == 'success' %}ok{% else %}info{% endif %}" role="status">{{ m }}</div>{% endfor %}
+  {% for m in messages %}<div class="alert alert-{% if m.level_tag == 'error' %}danger{% elif m.level_tag == 'success' %}ok{% else %}info{% endif %}" role="status"><svg class="ic" aria-hidden="true"><use href="#{% if m.level_tag == 'success' %}i-check{% elif m.level_tag == 'error' %}i-alerta{% else %}i-info{% endif %}"/></svg><span>{{ m }}</span></div>{% endfor %}
   {% if not eleicao %}
-    <div class="card"><h2>Nenhuma eleição ativa</h2><p>Crie a eleição e o cargo em <a href="{% url 'admin:core_eleicao_add' %}">Cadastros › Eleições</a>.</p></div>
+    <section class="card vazio"><span class="ic-box"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg></span><h2>Nenhuma eleição ativa</h2><p class="muted">Crie a eleição e o cargo em <a href="{% url 'admin:core_eleicao_add' %}">Cadastros › Eleições</a>.</p></section>
   {% else %}{% block conteudo %}{% endblock %}{% endif %}
 </main>
 <script src="{% static 'js/comissao.js' %}"></script>

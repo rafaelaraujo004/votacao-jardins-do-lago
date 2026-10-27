@@ -32,7 +32,7 @@ Conta de teste **só local** (criada para os testes, não existe em produção):
 - A chave da cédula é um inteiro aleatório declarado `integer primary key`: no SQLite ele é o próprio rowid, então a ordem física é sorteada e não a de chegada.
 - Marcar "já votou" e gravar a cédula acontecem na mesma transação `BEGIN IMMEDIATE`.
 - SQLite sem WAL (`journal_mode=DELETE`) e com `secure_delete=ON`.
-- A escolha só trafega em POST; a revisão tem sempre 24.000 bytes; sem sessão, `messages`, Sentry, analytics ou fontes externas; `sensitive_post_parameters` nas telas de voto; sem `ADMINS`.
+- A escolha só trafega em POST; a revisão tem sempre 40.000 bytes; sem sessão, `messages`, Sentry, analytics ou fontes externas; `sensitive_post_parameters` nas telas de voto; sem `ADMINS`.
 - No banco, o código é guardado só como HMAC-SHA256 com o segredo `CODIGO_PEPPER`, que fica fora do banco.
 - Auditoria só aceita acréscimos (gatilhos no banco bloqueiam UPDATE e DELETE).
 

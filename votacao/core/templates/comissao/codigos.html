@@ -4,11 +4,11 @@
 <div class="head"><div><p class="eyebrow">Distribuição</p><h1>Códigos</h1></div></div>
 <section class="card stack">
   {% if eleicao.codigos_gerados_em %}
-    <h2>✔ {{ total }} códigos gerados</h2>
+    <h2><svg class="ic" aria-hidden="true" style="color:var(--pine)"><use href="#i-check"/></svg> {{ total }} códigos gerados</h2>
     <p class="muted">Gerados em {{ eleicao.codigos_gerados_em|date:"d/m \à\s H:i" }} por {{ eleicao.codigos_gerados_por }}. {{ reemitidos }} reemitido(s) depois.</p>
   {% else %}<h2>Gerar os códigos</h2>{% endif %}
   <p>O sistema não guarda os códigos. Guarda só uma impressão digital de cada um, que serve para conferir o código digitado. O arquivo de envio é a única cópia: baixe com 2 membros presentes, envie pelo WhatsApp Web e <strong>apague o arquivo depois</strong>.</p>
-  {% if impedimento %}<p class="muted">🔒 {{ impedimento }}</p>
+  {% if impedimento %}<p class="muted"><svg class="ic" aria-hidden="true"><use href="#i-cadeado"/></svg> {{ impedimento }}</p>
   {% else %}
   <form method="post" action="{% url 'comissao:gerar' %}" data-confirmar="GERAR" class="row">{% csrf_token %}
     <label class="f">Digite GERAR para confirmar{% if eleicao.codigos_gerados_em %} (os códigos atuais deixam de valer){% endif %}<input class="in" name="confirmacao" autocomplete="off" required></label>

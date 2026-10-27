@@ -1,7 +1,7 @@
 {% extends "voto/base.html" %}
+{% block passos %}{% with passo=2 %}{% include "voto/_passos.html" %}{% endwith %}{% endblock %}
 {% block conteudo %}
-<span class="va-house">🏠 Casa {{ casa }}</span>
-<p class="va-step">Passo 2 de 3</p>
+<span class="va-house"><svg class="ic" aria-hidden="true"><use href="#i-casa"/></svg> Casa {{ casa }}</span>
 {% include "voto/_erro.html" %}
 <form method="post" action="{% url 'voto:revisar' %}" class="stack">
   {% csrf_token %}
@@ -9,13 +9,14 @@
   {% for c in cargos %}
   <fieldset class="cands" data-max="{{ c.obj.max_escolhas }}">
     <legend><span class="va-title">{% if c.multi %}Escolha até {{ c.obj.max_escolhas }} candidatos{% else %}Escolha 1 candidato{% endif %}</span>{% if cargos|length > 1 %}<br><span class="va-help">{{ c.obj.titulo }}</span>{% endif %}</legend>
-    {% if c.multi %}<p class="va-counter" aria-live="polite">Você escolheu <strong data-contador>0</strong> de {{ c.obj.max_escolhas }}</p>{% endif %}
+    {% if c.multi %}<p class="va-counter" aria-live="polite">Você escolheu <strong data-contador>0</strong> de {{ c.obj.max_escolhas }}</p>{% else %}<p class="va-help">Toque no nome. Dá para trocar antes de confirmar.</p>{% endif %}
     {% for cand, marcado in c.candidatos %}
     <label class="cand"><input type="{% if c.multi %}checkbox{% else %}radio{% endif %}" name="c{{ c.obj.pk }}" value="{{ cand.pk }}"{% if marcado %} checked{% endif %}>
+      <span class="marca{% if not c.multi %} radio{% endif %}" aria-hidden="true"></span>
       <span class="num">{{ cand.numero }}</span><span class="name">{{ cand.nome }}{% if cand.casa %}<small>Casa {{ cand.casa }}</small>{% endif %}</span></label>
     {% endfor %}
     {% if c.obj.permite_branco %}
-    <label class="cand cand-branco"><input type="checkbox" name="b{{ c.obj.pk }}" value="1" data-branco{% if c.branco %} checked{% endif %}><span class="name">Votar em branco<small>Não escolher nenhum candidato</small></span></label>
+    <label class="cand cand-branco"><input type="checkbox" name="b{{ c.obj.pk }}" value="1" data-branco{% if c.branco %} checked{% endif %}><span class="marca" aria-hidden="true"></span><span class="name">Votar em branco<small>Não escolher nenhum candidato</small></span></label>
     {% endif %}
   </fieldset>
   {% endfor %}

@@ -3,37 +3,37 @@
 {% block conteudo %}
 <div class="head">
   <div><p class="eyebrow">{{ eleicao.titulo }}{% if eleicao.eh_teste %} · ENSAIO{% endif %}</p><h1>Painel ao vivo</h1></div>
-  {% if status == "aberta" %}<span class="pill pill-ok">● Votação aberta · encerra às {{ fecha }}</span>
-  {% elif status == "antes" %}<span class="pill pill-info">{{ data_longa|capfirst }} · abre às {{ abre }}</span>
-  {% else %}<span class="pill pill-muted">Encerrada às {{ fecha }}</span>{% endif %}
+  {% if status == "aberta" %}<span class="pill pill-ok"><span class="pulso" aria-hidden="true"></span> Votação aberta · encerra às {{ fecha }}</span>
+  {% elif status == "antes" %}<span class="pill pill-info"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg> {{ data_longa|capfirst }} · abre às {{ abre }}</span>
+  {% else %}<span class="pill pill-muted"><svg class="ic" aria-hidden="true"><use href="#i-cadeado"/></svg> Encerrada às {{ fecha }}</span>{% endif %}
 </div>
-{% if alerta_global %}<div class="alert alert-warn"><strong>Muitas tentativas de código erradas na última hora</strong><span>Pode ser alguém tentando adivinhar códigos. Os IPs envolvidos já estão sendo bloqueados.</span></div>{% endif %}
+{% if alerta_global %}<div class="alert alert-warn"><svg class="ic" aria-hidden="true"><use href="#i-alerta"/></svg><strong>Muitas tentativas de código erradas na última hora</strong><span>Pode ser alguém tentando adivinhar códigos. Os IPs envolvidos já estão sendo bloqueados.</span></div>{% endif %}
 <div class="grid">
-  <section class="card" style="background:var(--ok-soft)">
-    <p class="label">Casas que já votaram</p>
-    <p><span class="big">{{ votantes }}</span> <strong>de {{ aptas }}</strong></p>
+  <section class="card card-destaque">
+    <p class="label"><svg class="ic" aria-hidden="true"><use href="#i-casa"/></svg>Casas que já votaram</p>
+    <p><span class="big">{{ votantes }}</span> <strong style="font-size:1.3rem">de {{ aptas }}</strong></p>
     <div class="meter" role="img" aria-label="{{ pct|floatformat:1 }}% de participação"><span style="width:{{ pct|floatformat:'1u' }}%"></span></div>
-    <p><strong>{{ pct|floatformat:1 }}%</strong> de participação · faltam {{ faltam }} casas</p>
+    <p><strong>{{ pct|floatformat:1 }}%</strong> de participação · faltam {{ faltam }} casas · <a href="{% url 'comissao:mapa' %}">ver no mapa</a></p>
   </section>
-  <section class="card"><p class="label">Votos por hora</p>
+  <section class="card"><p class="label"><svg class="ic" aria-hidden="true"><use href="#i-painel"/></svg>Votos por hora</p>
     <div class="bars">{% for h, n, alt in barras %}<div><b>{% if n %}{{ n }}{% endif %}</b><i style="height:{{ alt|floatformat:'0u' }}%"></i><span>{{ h }}h</span></div>{% endfor %}</div>
   </section>
 </div>
 <div class="grid">
-  <section class="card"><p class="label">Quem já votou</p>
+  <section class="card"><p class="label"><svg class="ic" aria-hidden="true"><use href="#i-lista"/></svg>Quem já votou</p>
     {% if ultimos is None %}<p class="muted">Desligado na configuração da eleição. Quando ligado, mostra só a casa e o horário.</p>
     {% elif ultimos %}<div class="table-wrap"><table class="tbl"><thead><tr><th>Casa</th><th>Votou às</th></tr></thead><tbody>
       {% for e in ultimos %}<tr><td>Casa {{ e.casa.numero }}</td><td class="mono">{{ e.votou_em|time:"H:i" }}</td></tr>{% endfor %}
-    </tbody></table></div><p class="small" style="margin-top:.5rem">Lista completa em <a href="{% url 'comissao:casas' %}">Casas</a>. Nunca mostra o voto.</p>
+    </tbody></table></div><p class="small" style="margin-top:.6rem">Mostra a casa e o horário. Nunca mostra o voto.</p>
     {% else %}<p class="muted">Ninguém votou ainda.</p>{% endif %}
   </section>
-  <section class="card stack"><p class="label">Situação</p>
-    <p>{% if status == "encerrada" %}Votação encerrada. <a href="{% url 'comissao:resultado' %}">Ver resultado</a>{% else %}🔒 O resultado fica disponível depois das {{ fecha }}.{% endif %}</p>
+  <section class="card stack"><p class="label"><svg class="ic" aria-hidden="true"><use href="#i-escudo"/></svg>Situação</p>
+    <p>{% if status == "encerrada" %}Votação encerrada. <a href="{% url 'comissao:resultado' %}">Ver resultado</a>{% else %}<svg class="ic" aria-hidden="true" style="color:var(--muted)"><use href="#i-cadeado"/></svg> O resultado só aparece depois das {{ fecha }}.{% endif %}</p>
     <p><strong>{{ bloqueios }}</strong> IP(s) bloqueados hoje por tentativas erradas</p>
     <p class="small">Versão do sistema: {{ versao }}{% if status == "aberta" %} · esta página atualiza a cada 30 segundos{% endif %}</p>
     {% if status == "aberta" %}
     <details><summary><strong>Prorrogar o encerramento (emergência)</strong></summary>
-      <form method="post" action="{% url 'comissao:prorrogar' %}" class="stack" style="margin-top:.6rem">{% csrf_token %}
+      <form method="post" action="{% url 'comissao:prorrogar' %}" class="stack" style="margin-top:.7rem">{% csrf_token %}
         <label class="f">Novo encerramento <input class="in" type="time" name="hora" value="{{ eleicao.fecha|time:'H:i' }}" required></label>
         <label class="f">Motivo (vai para a ata) <input class="in" name="motivo" required placeholder="Ex.: sistema fora do ar das 9h10 às 9h50"></label>
         <button class="btn btn-ghost">Prorrogar</button>

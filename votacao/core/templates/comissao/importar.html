@@ -7,8 +7,8 @@
   <div class="card"><p class="label">Avisos</p><p class="big">{{ avisos|length }}</p><p>entram, mas recebem envelope</p></div>
   <div class="card"><p class="label">Erros</p><p class="big">{{ erros|length }}</p><p>precisam ser corrigidos no arquivo</p></div>
 </div>
-{% if erros %}<section class="alert alert-danger"><strong>Corrija estas linhas no arquivo e envie de novo</strong><ul>{% for e in erros %}<li>{{ e }}</li>{% endfor %}</ul></section>{% endif %}
-{% if avisos %}<section class="alert alert-warn"><strong>Avisos</strong><ul>{% for a in avisos %}<li>{{ a }}</li>{% endfor %}</ul></section>{% endif %}
+{% if erros %}<section class="alert alert-danger"><svg class="ic" aria-hidden="true"><use href="#i-alerta"/></svg><strong>Corrija estas linhas no arquivo e envie de novo</strong><ul>{% for e in erros %}<li>{{ e }}</li>{% endfor %}</ul></section>{% endif %}
+{% if avisos %}<section class="alert alert-warn"><svg class="ic" aria-hidden="true"><use href="#i-alerta"/></svg><strong>Avisos</strong><ul>{% for a in avisos %}<li>{{ a }}</li>{% endfor %}</ul></section>{% endif %}
 <div class="table-wrap tbl-scroll"><table class="tbl"><thead><tr><th>Casa</th><th>Proprietário</th><th>Telefone</th></tr></thead><tbody>
   {% for c in lidas %}<tr><td>{{ c.numero }}</td><td>{{ c.proprietario }}</td><td class="mono">{{ c.telefone|default:"envelope" }}</td></tr>{% endfor %}
 </tbody></table></div>

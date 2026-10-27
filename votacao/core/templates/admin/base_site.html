@@ -1,0 +1,12 @@
+{% extends "admin/base.html" %}
+{% load static %}
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | Comissão Jardins do Lago{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin.css' %}"><link rel="icon" href="{% static 'img/logo-jardins-do-lago.png' %}">{% endblock %}
+{% block branding %}
+<div id="site-name"><a href="{% url 'comissao:painel' %}" class="marca-admin">
+  <span class="logo-chip"><img src="{% static 'img/logo-jardins-do-lago.png' %}" alt="Residencial Jardins do Lago" width="64" height="36"></span>
+  <span>Comissão <small>Votação online</small></span>
+</a></div>
+{% if user.is_anonymous %}{% include "admin/color_theme_toggle.html" %}{% endif %}
+{% endblock %}
+{% block nav-global %}{% if user.is_active and user.is_staff %}<a class="voltar-painel" href="{% url 'comissao:painel' %}">← Voltar ao painel</a>{% endif %}{% endblock %}

@@ -1,7 +1,7 @@
 {% extends "voto/base.html" %}
+{% block passos %}{% with passo=3 %}{% include "voto/_passos.html" %}{% endwith %}{% endblock %}
 {% block conteudo %}
-<span class="va-house">🏠 Casa {{ casa }}</span>
-<p class="va-step">Passo 3 de 3</p>
+<span class="va-house"><svg class="ic" aria-hidden="true"><use href="#i-casa"/></svg> Casa {{ casa }}</span>
 <h1 class="va-title">Confira o seu voto</h1>
 <form method="post" action="{% url 'voto:confirmar' %}" class="stack">
   {% csrf_token %}
@@ -9,14 +9,14 @@
   {% for cargo, cands, branco, campos in resumo %}
   <div class="rv">
     {% if resumo|length > 1 %}<p class="label">{{ cargo.titulo }}</p>{% endif %}
-    {% if branco %}<p style="font-weight:700;font-size:1.4rem;text-align:center">Voto em branco</p><input type="hidden" name="b{{ cargo.pk }}" value="1">
+    {% if branco %}<p class="branco">Voto em branco</p><input type="hidden" name="b{{ cargo.pk }}" value="1">
     {% else %}<ul>{% for c in cands %}<li><span class="num">{{ c.numero }}</span><span>{{ c.nome }}</span></li>{% endfor %}</ul>{% endif %}
     {% for v in campos %}<input type="hidden" name="c{{ cargo.pk }}" value="{{ v }}">{% endfor %}
   </div>
   {% endfor %}
-  <p class="va-help">ℹ️ Depois de confirmar, não dá para mudar o voto.</p>
+  <p class="va-aviso"><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg><span>Depois de confirmar, não dá para mudar o voto.</span></p>
   <div class="va-actions">
-    <button class="btn btn-primary va-btn" type="submit" name="acao" value="confirmar">✔ Confirmar voto</button>
+    <button class="btn btn-primary va-btn" type="submit" name="acao" value="confirmar"><svg class="ic" aria-hidden="true" style="stroke-width:3"><use href="#i-check"/></svg> Confirmar voto</button>
     <button class="btn btn-ghost va-btn" type="submit" name="acao" value="voltar">Voltar e corrigir</button>
   </div>
 </form>

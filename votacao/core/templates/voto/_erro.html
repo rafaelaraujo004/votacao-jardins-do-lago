@@ -1,1 +1,1 @@
-{% if erro %}<div class="alert alert-{{ erro.tom }}" role="{% if erro.tom == 'danger' %}alert{% else %}status{% endif %}"><strong>{{ erro.titulo }}</strong><span>{{ erro.texto }}</span></div>{% endif %}
+{% if erro %}<div class="alert alert-{{ erro.tom }}" role="{% if erro.tom == 'danger' %}alert{% else %}status{% endif %}"><svg class="ic" aria-hidden="true"><use href="#{% if erro.tom == 'info' %}i-info{% else %}i-alerta{% endif %}"/></svg><strong>{{ erro.titulo }}</strong><span>{{ erro.texto }}</span></div>{% endif %}

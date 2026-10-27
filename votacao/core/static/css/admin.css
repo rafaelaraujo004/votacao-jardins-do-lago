@@ -1,0 +1,40 @@
+/* Cadastros (Django Admin) com as cores do Residencial Jardins do Lago. */
+@font-face{font-family:"Atkinson Hyperlegible";src:url("../fonts/atkinson-400.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("../fonts/atkinson-700.woff2") format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:"Bricolage Grotesque";src:url("../fonts/bricolage.woff2") format("woff2");font-weight:600 800;font-display:swap}
+
+:root, html[data-theme="light"]{
+  --primary:#1D6B4E; --secondary:#12382A; --accent:#F3E3AE; --primary-fg:#FFFFFF;
+  --header-color:#F2F6F1; --header-branding-color:#FFFFFF; --header-bg:#12382A; --header-link-color:#F2F6F1;
+  --breadcrumbs-fg:#D5E3D9; --breadcrumbs-link-fg:#FFFFFF; --breadcrumbs-bg:#1D6B4E;
+  --link-fg:#1C5C78; --link-hover-color:#14543C; --link-selected-fg:#14543C;
+  --button-bg:#1D6B4E; --button-hover-bg:#14543C; --default-button-bg:#14543C; --default-button-hover-bg:#12382A;
+  --selected-row:#E7F1EA; --body-bg:#F6F8F5; --darkened-bg:#EAF0EA; --hairline-color:#D5DED7;
+  --font-family-primary:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root{
+  --primary:#56C694; --secondary:#0A1C15; --primary-fg:#05130D; --header-bg:#0A1C15; --breadcrumbs-bg:#14302A;
+  --link-fg:#74BCD8; --link-hover-color:#82D8B1; --button-bg:#2D8A63; --button-hover-bg:#1D6B4E;
+  --default-button-bg:#56C694; --default-button-hover-bg:#82D8B1; --body-bg:#0C1411; --darkened-bg:#141F1A; --selected-row:#17301F;
+}}
+html[data-theme="dark"]{
+  --primary:#56C694; --secondary:#0A1C15; --primary-fg:#05130D; --header-bg:#0A1C15; --breadcrumbs-bg:#14302A;
+  --link-fg:#74BCD8; --link-hover-color:#82D8B1; --button-bg:#2D8A63; --button-hover-bg:#1D6B4E;
+  --default-button-bg:#56C694; --default-button-hover-bg:#82D8B1; --body-bg:#0C1411; --darkened-bg:#141F1A; --selected-row:#17301F;
+}
+#header{padding:10px 30px;align-items:center}
+#site-name a.marca-admin{display:flex;align-items:center;gap:12px;color:var(--header-branding-color);font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:1.25rem}
+#site-name small{display:block;font-family:var(--font-family-primary);font-weight:400;font-size:.8rem;opacity:.75}
+.logo-chip{display:inline-flex;background:#fff;border-radius:10px;padding:3px 6px}
+.logo-chip img{display:block;height:auto}
+.voltar-painel{color:var(--header-link-color)!important;font-weight:700;margin-left:auto;margin-right:1rem}
+h1,#content h1,.module h2,.module caption{font-family:"Bricolage Grotesque",var(--font-family-primary)}
+.module{border-radius:14px;overflow:hidden}
+.button,input[type=submit],input[type=button],.submit-row input,a.button{border-radius:10px!important}
+/* tela de login */
+body.login{background:radial-gradient(80% 60% at 50% 0%,#1D6B4E33,transparent),var(--body-bg)}
+.login #container{border-radius:22px;overflow:hidden;box-shadow:0 28px 60px -12px rgb(16 32 24 / .35);max-width:440px}
+.login #header{justify-content:center;padding:22px 24px}
+.login #content{padding:26px 30px 30px}
+.login .form-row input{border-radius:10px;padding:10px 12px;font-size:1rem}
+.login .submit-row input{width:100%;padding:12px;font-size:1rem;font-weight:700}

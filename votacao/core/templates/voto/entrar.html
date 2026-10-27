@@ -1,13 +1,15 @@
 {% extends "voto/base.html" %}
+{% block passos %}{% with passo=1 %}{% include "voto/_passos.html" %}{% endwith %}{% endblock %}
 {% block conteudo %}
-<p class="va-step">Passo 1 de 3</p>
 <h1 class="va-title">{{ eleicao.titulo }}</h1>
-<div class="va-when"><span class="ic" aria-hidden="true">📅</span><strong>{{ data_longa|capfirst }}</strong><span>das {{ abre }} às {{ fecha }}</span>
-  {% if status == "aberta" %}<span class="pill pill-ok">● Aberta agora</span>{% elif status == "antes" %}<span class="pill pill-info">Abre às {{ abre }}</span>{% else %}<span class="pill pill-muted">Encerrada</span>{% endif %}
+<div class="va-when">
+  <span class="ic-box"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg></span>
+  <strong>{{ data_longa|capfirst }}</strong><span>das {{ abre }} às {{ fecha }}</span>
+  {% if status == "aberta" %}<span class="pill pill-ok"><span class="pulso" aria-hidden="true"></span> Aberta agora</span>{% elif status == "antes" %}<span class="pill pill-info">Abre às {{ abre }}</span>{% else %}<span class="pill pill-muted">Encerrada</span>{% endif %}
 </div>
 {% if not erro %}
-  {% if status == "antes" %}<div class="alert alert-info" role="status"><strong>A votação ainda não começou</strong><span>Ela abre {{ data_longa }}, às {{ abre }}.</span></div>{% endif %}
-  {% if status == "encerrada" %}<div class="alert alert-info" role="status"><strong>A votação foi encerrada</strong><span>Encerrou às {{ fecha }}. Obrigado pela participação.</span></div>{% endif %}
+  {% if status == "antes" %}<div class="alert alert-info" role="status"><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg><strong>A votação ainda não começou</strong><span>Ela abre {{ data_longa }}, às {{ abre }}.</span></div>{% endif %}
+  {% if status == "encerrada" %}<div class="alert alert-info" role="status"><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg><strong>A votação foi encerrada</strong><span>Encerrou às {{ fecha }}. Obrigado pela participação.</span></div>{% endif %}
 {% endif %}
 {% include "voto/_erro.html" %}
 <form class="va-form" method="post" action="{% url 'voto:entrar' %}" autocomplete="off" novalidate>
@@ -17,5 +19,5 @@
   <p id="ajuda" class="va-help">Está na mensagem que a comissão mandou no seu WhatsApp. São 8 letras.</p>
   <button class="btn btn-primary va-btn" type="submit">Continuar</button>
 </form>
-<p class="va-foot">Precisa de ajuda? Procure a comissão na portaria, das {{ abre }} às {{ fecha }}.</p>
+<p class="va-help" style="display:flex;gap:.5rem;align-items:flex-start"><svg class="ic" aria-hidden="true" style="color:var(--pine);margin-top:.2rem"><use href="#i-ajuda"/></svg><span>Precisa de ajuda? Procure a comissão na portaria, das {{ abre }} às {{ fecha }}.</span></p>
 {% endblock %}

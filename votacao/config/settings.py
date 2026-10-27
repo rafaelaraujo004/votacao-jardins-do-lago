@@ -51,13 +51,13 @@ TELEFONE_COMISSAO = os.environ.get("TELEFONE_COMISSAO", "")
 VERSAO_SISTEMA = os.environ.get("VERSAO_SISTEMA", "dev")
 
 INSTALLED_APPS = [
+    "core",  # antes do admin, para o visual dos cadastros (templates/admin/base_site.html) valer
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "core",
 ]
 
 MIDDLEWARE = [
