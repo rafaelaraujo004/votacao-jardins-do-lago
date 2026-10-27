@@ -5,5 +5,6 @@
   <h1 class="va-title">Voto registrado com sucesso</h1>
   <p>Obrigado por participar! Você já pode fechar esta página.</p>
   <p class="va-help">Por segurança, esta tela não mostra em quem você votou.</p>
+  {% if eleicao %}<div class="depois"><svg class="ic" aria-hidden="true"><use href="#i-relogio"/></svg><span>A votação vai até as <strong>{{ fecha }}</strong>. Depois disso, a comissão apura e divulga o resultado no grupo do condomínio.</span></div>{% endif %}
 </div>
 {% endblock %}

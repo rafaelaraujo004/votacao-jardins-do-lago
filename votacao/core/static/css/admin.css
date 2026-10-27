@@ -38,3 +38,4 @@ body.login{background:radial-gradient(80% 60% at 50% 0%,#1D6B4E33,transparent),v
 .login #content{padding:26px 30px 30px}
 .login .form-row input{border-radius:10px;padding:10px 12px;font-size:1rem}
 .login .submit-row input{width:100%;padding:12px;font-size:1rem;font-weight:700}
+.login-intro{color:var(--body-quiet-color);margin:0 0 1rem}

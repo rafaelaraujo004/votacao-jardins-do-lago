@@ -16,7 +16,7 @@
 <div class="va-page">
   <header class="va-band"><div class="va-band-in">
     <span class="logo-chip"><img src="{% static 'img/logo-jardins-do-lago.png' %}" alt="Residencial Jardins do Lago" width="76" height="43"></span>
-    <span class="sub"><b>Votação online</b><span>Residencial Jardins do Lago</span></span>
+    <span class="sub"><b>Votação online</b><span class="titulo-faixa">{% if eleicao %}{{ eleicao.titulo }}{% else %}Residencial Jardins do Lago{% endif %}</span></span>
   </div></header>
   <div class="va-shell">
     <main class="va">

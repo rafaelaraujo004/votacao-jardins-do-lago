@@ -1,4 +1,5 @@
 {% extends "comissao/base.html" %}
+{% load jardim %}
 {% block titulo %}Resultado{% endblock %}
 {% block conteudo %}
 <div class="head"><div><p class="eyebrow">Apuração</p><h1>Resultado</h1></div>{% if r %}<span class="pill pill-muted">Encerrada às {{ fecha }}</span>{% endif %}</div>
@@ -14,10 +15,20 @@
   {% if cargo.empate %}<div class="alert alert-warn"><svg class="ic" aria-hidden="true"><use href="#i-alerta"/></svg><strong>Empate na {{ cargo.empate.vaga }}ª vaga</strong>
     <span>{% for c in cargo.empate.grupo %}{{ c.nome }} ({{ c.numero }}){% if not forloop.last %} e {% endif %}{% endfor %} tiveram {{ cargo.empate.votos }} votos cada. Regra: {{ eleicao.get_regra_desempate_display|lower }}.
     {% if cargo.empate.decididos %}Fica com a vaga: {% for c in cargo.empate.decididos %}{{ c.nome }}{% if not forloop.last %}, {% endif %}{% endfor %}.{% else %}A comissão aplica a regra e registra na ata.{% endif %}</span></div>{% endif %}
+  {% if cargo.eleitos %}
+  <section class="stack"><p class="label"><svg class="ic" aria-hidden="true"><use href="#i-trofeu"/></svg>Eleitos · {{ cargo.cargo.titulo }}</p>
+    <div class="podio" style="margin-top:.6rem">{% for l in cargo.linhas %}{% if l.vaga %}
+      <div class="podio-item{% if l.vaga == 1 %} v1{% endif %}"><span class="vaga">{{ l.vaga }}ª vaga</span>
+        <span class="av p{{ l.c.numero|petala }}" aria-hidden="true">{{ l.c.nome|iniciais }}</span>
+        <strong>{{ l.c.nome }}</strong><span class="small">Nº {{ l.c.numero }}{% if l.c.casa %} · Casa {{ l.c.casa }}{% endif %}</span>
+        <span class="votos">{{ l.votos }}</span><span class="small">voto{{ l.votos|pluralize }}</span></div>
+    {% endif %}{% endfor %}</div>
+  </section>
+  {% endif %}
   <section class="card"><h2>{{ cargo.cargo.titulo }} · {{ cargo.cargo.vagas }} vagas</h2>
     <ol class="rank">{% for l in cargo.linhas %}
       <li class="{% if l.vaga %}eleito{% elif l.empate %}empate{% endif %}"><span class="pos">{{ l.pos }}º</span>
-        <div><div><span class="num">{{ l.c.numero }}</span> <strong>{{ l.c.nome }}</strong></div><div class="rbar"><span style="width:{{ l.largura|floatformat:'1u' }}%"></span></div></div>
+        <div><div style="display:flex;align-items:center;gap:.6rem"><span class="av p{{ l.c.numero|petala }}" aria-hidden="true" style="width:34px;height:34px;font-size:.85rem">{{ l.c.nome|iniciais }}</span><span class="num">{{ l.c.numero }}</span> <strong>{{ l.c.nome }}</strong></div><div class="rbar"><span style="width:{{ l.largura|floatformat:'1u' }}%"></span></div></div>
         <span class="rv-n">{{ l.votos }}</span>
         <span class="tag">{% if l.vaga %}<span class="pill pill-ok">Vaga {{ l.vaga }}</span>{% elif l.empate %}<span class="pill pill-warn">Empate</span>{% endif %}</span></li>
     {% endfor %}</ol>

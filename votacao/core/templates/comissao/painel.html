@@ -7,6 +7,7 @@
   {% elif status == "antes" %}<span class="pill pill-info"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg> {{ data_longa|capfirst }} · abre às {{ abre }}</span>
   {% else %}<span class="pill pill-muted"><svg class="ic" aria-hidden="true"><use href="#i-cadeado"/></svg> Encerrada às {{ fecha }}</span>{% endif %}
 </div>
+<p class="relogio"><span><svg class="ic" aria-hidden="true"><use href="#i-relogio"/></svg> Atualizado às <b>{% now "H:i" %}</b></span>{% if status == "aberta" %}<span>Encerra em <b>{{ eleicao.fecha_em|timeuntil }}</b></span>{% elif status == "antes" %}<span>Abre em <b>{{ eleicao.abre_em|timeuntil }}</b></span>{% endif %}</p>
 {% if alerta_global %}<div class="alert alert-warn"><svg class="ic" aria-hidden="true"><use href="#i-alerta"/></svg><strong>Muitas tentativas de código erradas na última hora</strong><span>Pode ser alguém tentando adivinhar códigos. Os IPs envolvidos já estão sendo bloqueados.</span></div>{% endif %}
 <div class="grid">
   <section class="card card-destaque">

@@ -1,0 +1,37 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+{# Cópia do login do Django com o texto da comissão: entra-se com o e-mail. #}
+{% block title %}{% if form.errors %}{% translate "Error:" %} {% endif %}{{ block.super }}{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static "admin/css/login.css" %}">
+{{ form.media }}
+{% endblock %}
+{% block bodyclass %}{{ block.super }} login{% endblock %}
+{% block usertools %}{% endblock %}
+{% block nav-global %}{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+{% block content_title %}{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+
+{% block content %}
+{% if form.errors %}
+<p class="errornote">E-mail ou senha não conferem. Confira e tente de novo.</p>
+{% endif %}
+<div id="content-main">
+{% if user.is_authenticated %}
+<p class="errornote">Você entrou como {{ username }}, mas esta conta não tem acesso a esta página.</p>
+{% endif %}
+<p class="login-intro">Painel da comissão. Cada membro entra com o próprio e-mail e senha.</p>
+<form action="{{ app_path }}" method="post" id="login-form">{% csrf_token %}
+  <div class="form-row">
+    <label for="id_username" class="required">E-mail:</label> {{ form.username }}
+  </div>
+  <div class="form-row">
+    <label for="id_password" class="required">Senha:</label> {{ form.password }}
+    <input type="hidden" name="next" value="{{ next }}">
+  </div>
+  <div class="submit-row">
+    <input type="submit" value="Entrar">
+  </div>
+</form>
+</div>
+{% endblock %}

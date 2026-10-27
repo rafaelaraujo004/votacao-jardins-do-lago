@@ -15,7 +15,7 @@
 <form class="va-form" method="post" action="{% url 'voto:entrar' %}" autocomplete="off" novalidate>
   {% csrf_token %}
   <label for="codigo" class="va-label">Digite o seu código</label>
-  <input id="codigo" name="codigo" class="va-input" placeholder="ABCD-EFGH" maxlength="12" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-describedby="ajuda" required>
+  <input id="codigo" name="codigo" class="va-input" placeholder="8 letras" maxlength="12" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-describedby="ajuda" required>
   <p id="ajuda" class="va-help">Está na mensagem que a comissão mandou no seu WhatsApp. São 8 letras.</p>
   <button class="btn btn-primary va-btn" type="submit">Continuar</button>
 </form>

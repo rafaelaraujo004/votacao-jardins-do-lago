@@ -13,9 +13,10 @@
     </form>
   {% endif %}
 </section>
-<div class="table-wrap tbl-scroll"><table class="tbl">
+<label class="f busca-tabela">Buscar casa ou proprietário <input class="in" type="search" data-busca-tabela="casas-lista" placeholder="Número ou nome" autocomplete="off"></label>
+<div class="table-wrap tbl-scroll"><table class="tbl" id="casas-lista">
   <thead><tr><th>Casa</th><th>Proprietário</th><th>WhatsApp</th><th>Código</th>{% if eleicao.comissao_ve_votantes %}<th>Situação</th>{% endif %}</tr></thead>
-  <tbody>{% for c, e in linhas %}<tr>
+  <tbody>{% for c, e in linhas %}<tr data-busca="{{ c.numero }} {{ c.proprietario|lower }}">
     <td><strong>{{ c.numero }}</strong></td><td>{{ c.proprietario }}</td><td class="mono">{{ c.telefone_mascarado }}</td>
     <td>{% if not e %}<span class="muted">Sem código</span>{% elif not c.telefone %}Envelope{% elif e.codigo_versao > 1 %}Reemitido{% else %}Gerado{% endif %}</td>
     {% if eleicao.comissao_ve_votantes %}<td>{% if e.votou_em %}<span class="pill pill-ok">Votou {{ e.votou_em|time:"H:i" }}</span>{% else %}<span class="muted">Ainda não</span>{% endif %}</td>{% endif %}

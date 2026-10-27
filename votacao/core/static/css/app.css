@@ -233,3 +233,57 @@ label.f{display:flex;flex-direction:column;gap:.3rem;font-weight:700;font-size:.
   body{background:#fff}
   .paper{box-shadow:none;padding:0;max-width:none}
 }
+
+/* ===== Jardim: identidade da logo (pétalas, vinho e dourado) ===== */
+:root{
+  --vinho:#7E2453; --vinho-soft:#F7E7EF; --ouro:#9A6B12; --ouro-soft:#F8EFD9;
+  --p1:#FCE3D3; --p1-fg:#8A3A0C;   /* laranja */
+  --p2:#FBEFC8; --p2-fg:#6E4C05;   /* amarelo */
+  --p3:#FBE1E8; --p3-fg:#8E1F44;   /* rosa */
+  --p4:#E6F0D2; --p4-fg:#3D5A10;   /* verde */
+  --p5:#DDE9F6; --p5-fg:#1E4E86;   /* azul */
+  --p6:#EBE3F4; --p6-fg:#523A7C;   /* roxo */
+  --petalas:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-50 -50 100 100'%3E%3Cg opacity='.9'%3E%3Cpath d='M0 0C6-14 20-24 34-22C26-10 12-2 0 0Z' fill='%23E8712A'/%3E%3Cpath d='M0 0C6-14 20-24 34-22C26-10 12-2 0 0Z' fill='%23F2B33D' transform='rotate(60)'/%3E%3Cpath d='M0 0C6-14 20-24 34-22C26-10 12-2 0 0Z' fill='%23E9547A' transform='rotate(120)'/%3E%3Cpath d='M0 0C6-14 20-24 34-22C26-10 12-2 0 0Z' fill='%238DB33F' transform='rotate(180)'/%3E%3Cpath d='M0 0C6-14 20-24 34-22C26-10 12-2 0 0Z' fill='%233E7CC0' transform='rotate(240)'/%3E%3Cpath d='M0 0C6-14 20-24 34-22C26-10 12-2 0 0Z' fill='%237B5AA6' transform='rotate(300)'/%3E%3C/g%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark){:root{
+  --vinho:#E89BC0; --vinho-soft:#3A1A2C; --ouro:#E7C178; --ouro-soft:#3A2E14;
+  --p1:#4A2614; --p1-fg:#F8C3A0; --p2:#433510; --p2-fg:#F3D98D; --p3:#4A1C2B; --p3-fg:#F5AEC3;
+  --p4:#29361A; --p4-fg:#C3DD92; --p5:#18304A; --p5-fg:#A9CBF0; --p6:#2E2342; --p6-fg:#CBB8EA;
+}}
+.eyebrow{color:var(--vinho)}
+.va-band::before,.top::before{content:"";position:absolute;width:260px;height:260px;right:-70px;top:-90px;background:var(--petalas) no-repeat center/contain;opacity:.22;pointer-events:none;transform:rotate(12deg)}
+.top{overflow:hidden}
+.top .wrap{position:relative;z-index:1}
+.va-band-in .sub b{font-size:1.15rem}
+.va-band-in .titulo-faixa{font-size:.86rem;color:var(--band-muted)}
+.passos li{font-size:.95rem;letter-spacing:.03em}
+.va-input::placeholder{color:var(--muted);opacity:.55;letter-spacing:.04em;font-family:var(--font);font-weight:400;font-size:1.3rem}
+.va-house{background:var(--ouro-soft);color:var(--ouro)}
+/* candidato: marca · iniciais · nome e número */
+.cand{grid-template-columns:auto auto minmax(0,1fr)}
+.av{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:1.05rem;letter-spacing:.02em;flex:none}
+.av.p1{background:var(--p1);color:var(--p1-fg)} .av.p2{background:var(--p2);color:var(--p2-fg)}
+.av.p3{background:var(--p3);color:var(--p3-fg)} .av.p4{background:var(--p4);color:var(--p4-fg)}
+.av.p5{background:var(--p5);color:var(--p5-fg)} .av.p6{background:var(--p6);color:var(--p6-fg)}
+.cand .name .meta{display:block;font-weight:400;font-size:.98rem;color:var(--muted)}
+.cand .name .meta b{font-family:var(--mono);font-weight:600;color:var(--fg-2)}
+.rv li .av{width:52px;height:52px;font-size:1.15rem}
+.btn-link{background:transparent;border-color:transparent;color:var(--fg-2);text-decoration:underline;text-underline-offset:4px;font-size:1.1rem;min-height:52px}
+.depois{background:var(--surface-2);border-radius:16px;padding:.9rem 1rem;display:flex;gap:.7rem;align-items:flex-start;text-align:left;font-size:1.05rem}
+.depois .ic{color:var(--pine);margin-top:.2rem}
+/* comissão */
+.relogio{display:flex;flex-wrap:wrap;gap:.4rem .9rem;font-size:.92rem;color:var(--muted)}
+.relogio b{color:var(--fg)}
+.podio{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;align-items:end}
+.podio-item{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:1.2rem 1rem 1rem;display:flex;flex-direction:column;align-items:center;text-align:center;gap:.45rem;position:relative;box-shadow:var(--shadow-sm)}
+.podio-item .av{width:64px;height:64px;font-size:1.35rem}
+.podio-item .vaga{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--vinho);color:#fff;font-weight:700;font-size:.8rem;padding:.2rem .7rem;border-radius:999px;white-space:nowrap}
+.podio-item strong{font-family:var(--display);font-size:1.15rem;line-height:1.2}
+.podio-item .votos{font-family:var(--display);font-size:2rem;font-weight:800;line-height:1;color:var(--pine)}
+.podio-item.v1{border-color:color-mix(in srgb,var(--ouro) 55%,var(--line));background:linear-gradient(180deg,var(--ouro-soft),var(--surface) 70%)}
+.busca-tabela{max-width:340px}
+@media (max-width:700px){
+  .top nav{flex-wrap:wrap;overflow:visible}
+  .top nav a{font-size:.9rem;padding:.4rem .65rem}
+  .va-band::before{width:190px;height:190px;right:-60px;top:-70px}
+}
