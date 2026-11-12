@@ -1,0 +1,10 @@
+rules_version = '2';
+// Fase 1: nenhum arquivo pode ser lido ou gravado pelo navegador.
+// Documentos (Fase 4) terão regras próprias, por condomínio e por perfil.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{caminho=**} {
+      allow read, write: if false;
+    }
+  }
+}

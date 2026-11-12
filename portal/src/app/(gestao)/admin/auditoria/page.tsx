@@ -1,0 +1,71 @@
+import type { Metadata } from "next";
+import { LogIn, LogOut, ScrollText, Settings, type LucideIcon } from "lucide-react";
+import { exigirPermissao } from "@/server/contexto";
+import { ultimosRegistrosDeAuditoria } from "@/server/dados/gestao";
+import { formatarDataHora } from "@/lib/formato";
+import { ehPapel, NOME_DO_PAPEL } from "@/lib/permissoes";
+import { Cartao, EstadoVazio, TituloPagina } from "@/components/ui/basicos";
+
+export const metadata: Metadata = { title: "Auditoria" };
+
+/** Ações em linguagem simples. As que não estão aqui aparecem com o código técnico. */
+const DESCRICAO: Record<string, { texto: string; icone: LucideIcon }> = {
+  "sessao.entrar": { texto: "Entrou no portal", icone: LogIn },
+  "sessao.sair": { texto: "Saiu do portal", icone: LogOut },
+  "condominio.criar": { texto: "Criou o condomínio no sistema", icone: Settings },
+  "membro.criar": { texto: "Cadastrou uma pessoa", icone: Settings },
+};
+
+export default async function PaginaAuditoria() {
+  const ctx = await exigirPermissao("auditoria.ver");
+  const registros = await ultimosRegistrosDeAuditoria(ctx, 50);
+
+  return (
+    <div className="flex flex-col gap-6">
+      <TituloPagina
+        sobretitulo="Controle"
+        titulo="Auditoria"
+        descricao="Registro de tudo o que é importante: quem fez, o quê e quando. Ninguém pode alterar ou apagar estes registros."
+      />
+
+      {registros.length === 0 ? (
+        <EstadoVazio icone={ScrollText} titulo="Nenhum registro ainda">
+          As ações importantes aparecerão aqui assim que acontecerem.
+        </EstadoVazio>
+      ) : (
+        <Cartao semEspaco>
+          <h2 className="sr-only">Últimos {registros.length} registros</h2>
+          <ol className="divide-y divide-line">
+            {registros.map((r) => {
+              const d = DESCRICAO[r.acao] ?? { texto: r.acao, icone: ScrollText };
+              const Icone = d.icone;
+              return (
+                <li key={r.id} className="flex items-start gap-3 px-4 py-3.5 sm:items-center">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-surface-2 text-ink-2">
+                    <Icone aria-hidden className="size-5" />
+                  </span>
+                  <div className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-center sm:gap-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold">{d.texto}</p>
+                      <p className="text-[0.92rem] text-muted">
+                        {r.nome ?? "Sistema"}
+                        {r.papel && ehPapel(r.papel) ? ` · ${NOME_DO_PAPEL[r.papel]}` : ""}
+                        {r.alvo ? ` · ${r.alvo}` : ""}
+                      </p>
+                    </div>
+                    <time
+                      className="text-[0.92rem] tabular-nums text-ink-2"
+                      dateTime={r.quando?.toISOString()}
+                    >
+                      {r.quando ? formatarDataHora(r.quando, ctx.fuso) : "—"}
+                    </time>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </Cartao>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,46 @@
+{
+  "name": "portal-jardins-do-lago",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "dev:emu": "node scripts/firebase.mjs emulators:exec --project demo-jardins --only auth,firestore --ui \"npm run semear && next dev\"",
+    "emuladores": "node scripts/firebase.mjs emulators:start --project demo-jardins --only auth,firestore",
+    "semear": "tsx scripts/semear-demo.ts",
+    "criar-condominio": "tsx scripts/criar-condominio.ts",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --project unit",
+    "test:emu": "node scripts/firebase.mjs emulators:exec --project demo-jardins --only auth,firestore \"vitest run --project emulador\"",
+    "test:tudo": "npm run lint && npm run typecheck && npm test && npm run test:emu"
+  },
+  "dependencies": {
+    "firebase": "^13.3.0",
+    "firebase-admin": "^14.5.0",
+    "lucide-react": "^1.72.0",
+    "next": "16.4.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "server-only": "^0.0.1",
+    "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^6.0.0",
+    "@tailwindcss/turbopack": "4.3.3",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.6",
+    "firebase-tools": "^15.35.0",
+    "tailwindcss": "4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "vitest": "^5.1.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

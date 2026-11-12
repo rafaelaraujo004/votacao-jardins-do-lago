@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+/* =====================================================================
+   Identidade visual — Portal Jardins do Lago
+   Cores tiradas da logo e do "Visual Jardim" já usado na votação.
+   Os nomes abaixo viram classes do Tailwind: bg-pine, text-ink, border-line...
+   ===================================================================== */
+
+:root {
+  --canvas: #f1f4ef;        /* fundo da página */
+  --surface: #ffffff;       /* cartões */
+  --surface-2: #eaf0ea;     /* áreas de apoio dentro dos cartões */
+  --line: #d5ded7;
+  --line-strong: #a9b8ad;
+  --ink: #14211b;           /* texto principal */
+  --ink-2: #3d4e45;         /* texto secundário */
+  --muted: #5e6e65;         /* legendas */
+  --pine: #1d6b4e;          /* verde institucional */
+  --pine-strong: #14543c;
+  --pine-deep: #12382a;
+  --on-pine: #ffffff;
+  --lake: #1c5c78;          /* informação, links */
+  --lake-soft: #dceaf0;
+  --plum: #8b2a5c;          /* destaque (cor do nome na logo) */
+  --plum-soft: #f6e6ee;
+  --sand: #e9dfc4;          /* etiquetas (dourado da logo) */
+  --warn: #8a5200;
+  --warn-soft: #fbefd8;
+  --danger: #b42318;
+  --danger-soft: #fbe4e1;
+  --on-danger: #ffffff;
+  --ok-soft: #ddefe4;
+  --band: #12382a;          /* faixa do topo */
+  --band-fg: #f2f6f1;
+  --band-muted: #b7cabd;
+  --shadow-card: 0 1px 2px rgb(16 32 24 / 0.05), 0 10px 30px -8px rgb(16 32 24 / 0.16);
+  --shadow-float: 0 2px 6px rgb(16 32 24 / 0.06), 0 28px 60px -12px rgb(16 32 24 / 0.28);
+  color-scheme: light;
+}
+
+/* Tema escuro: segue o aparelho, salvo quando a pessoa escolhe no botão. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --canvas: #0c1411; --surface: #141f1a; --surface-2: #1b2922; --line: #283a31; --line-strong: #46604f;
+    --ink: #e6eee9; --ink-2: #bccbc1; --muted: #93a59a;
+    --pine: #56c694; --pine-strong: #82d8b1; --pine-deep: #0a1c15; --on-pine: #05130d;
+    --lake: #74bcd8; --lake-soft: #16303b; --plum: #e58bb8; --plum-soft: #35182a; --sand: #3a3424;
+    --warn: #f0b652; --warn-soft: #33270f; --danger: #ff8d7e; --danger-soft: #3b1a16; --on-danger: #1f0a07; --ok-soft: #13301f;
+    --band: #0a1c15; --band-fg: #e6eee9; --band-muted: #8fa699;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 30px -8px rgb(0 0 0 / 0.5);
+    --shadow-float: 0 2px 6px rgb(0 0 0 / 0.4), 0 28px 60px -12px rgb(0 0 0 / 0.6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --canvas: #0c1411; --surface: #141f1a; --surface-2: #1b2922; --line: #283a31; --line-strong: #46604f;
+  --ink: #e6eee9; --ink-2: #bccbc1; --muted: #93a59a;
+  --pine: #56c694; --pine-strong: #82d8b1; --pine-deep: #0a1c15; --on-pine: #05130d;
+  --lake: #74bcd8; --lake-soft: #16303b; --plum: #e58bb8; --plum-soft: #35182a; --sand: #3a3424;
+  --warn: #f0b652; --warn-soft: #33270f; --danger: #ff8d7e; --danger-soft: #3b1a16; --on-danger: #1f0a07; --ok-soft: #13301f;
+  --band: #0a1c15; --band-fg: #e6eee9; --band-muted: #8fa699;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 30px -8px rgb(0 0 0 / 0.5);
+  --shadow-float: 0 2px 6px rgb(0 0 0 / 0.4), 0 28px 60px -12px rgb(0 0 0 / 0.6);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-pine: var(--pine);
+  --color-pine-strong: var(--pine-strong);
+  --color-pine-deep: var(--pine-deep);
+  --color-on-pine: var(--on-pine);
+  --color-lake: var(--lake);
+  --color-lake-soft: var(--lake-soft);
+  --color-plum: var(--plum);
+  --color-plum-soft: var(--plum-soft);
+  --color-sand: var(--sand);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-on-danger: var(--on-danger);
+  --color-ok-soft: var(--ok-soft);
+  --color-band: var(--band);
+  --color-band-fg: var(--band-fg);
+  --color-band-muted: var(--band-muted);
+
+  --font-sans: var(--fonte-texto), "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --font-display: var(--fonte-titulo), "Segoe UI", system-ui, sans-serif;
+
+  --shadow-card: var(--shadow-card);
+  --shadow-float: var(--shadow-float);
+  --radius-card: 16px;
+}
+
+/* Texto base de 17px: mais confortável para leitura no celular. */
+html {
+  font-size: 106.25%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+:focus-visible {
+  outline: 3px solid var(--lake);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Entrada suave dos blocos (desligada para quem pede menos movimento). */
+@keyframes surgir {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.surgir { animation: surgir 0.35s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
