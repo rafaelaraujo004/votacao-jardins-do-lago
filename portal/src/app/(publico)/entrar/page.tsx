@@ -13,6 +13,7 @@ import { BotaoSair, classeBotaoFaixa } from "@/components/layout/faixa-topo";
 import { FaixaPetalas } from "@/components/ui/painel";
 import { ENDERECO_LINHA } from "@/lib/condominio";
 import { EntrarDemo } from "./entrar-demo";
+import { EntrarSenha } from "./entrar-senha";
 
 export const metadata: Metadata = { title: "Entrar" };
 
@@ -69,14 +70,21 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
               </Alerta>
             ) : null}
 
+            {/* Equipe: e-mail e senha (Firebase Authentication). */}
+            <EntrarSenha />
+
+            <Alerta tipo="info" titulo="Moradores">
+              O acesso será liberado em breve pela administração. Enquanto isso, qualquer dúvida pode ser tirada
+              diretamente com a portaria.
+            </Alerta>
+
+            {/* Atalhos fictícios: só no computador local, com o simulador. */}
             {demo ? (
-              <EntrarDemo perfis={perfis} />
-            ) : (
-              <Alerta tipo="info" titulo="Acesso em preparação">
-                A administração do condomínio vai enviar as instruções para você entrar. Enquanto isso, qualquer
-                dúvida pode ser tirada diretamente com a portaria.
-              </Alerta>
-            )}
+              <>
+                <hr className="border-line" />
+                <EntrarDemo perfis={perfis} />
+              </>
+            ) : null}
           </div>
         </div>
       </main>

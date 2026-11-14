@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, CirclePause, CirclePlay, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CirclePause, CirclePlay, KeyRound, ShieldCheck } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { obterPessoa } from "@/server/dados/pessoas";
+import { situacaoDoAcesso } from "@/server/dados/acesso";
 import { listarUnidades } from "@/server/dados/unidades";
 import { alterarSituacao, salvarPermissoes, salvarPessoa } from "@/server/acoes/pessoas";
 import { idDocumento } from "@/lib/validacao";
@@ -19,8 +20,10 @@ import {
 import { Alerta, Cartao, TituloPagina } from "@/components/ui/basicos";
 import { BotaoEnviar, Formulario } from "@/components/ui/formulario";
 import { AcaoConfirmada } from "@/components/ui/acao-confirmada";
+import { BotaoLink } from "@/components/ui/botao";
 import { CamposPessoa } from "../campos-pessoa";
 import { EtiquetaSituacaoPessoa } from "../etiquetas";
+import { AcessoSenha } from "./acesso-senha";
 
 export const metadata: Metadata = { title: "Pessoa" };
 
@@ -38,6 +41,10 @@ export default async function PaginaPessoa({ params, searchParams }: PageProps<"
   const ehVoce = pessoa.uid === ctx.uid;
   const podePermissoes = ctx.permissoes.has("permissoes.gerenciar") && !ehVoce;
   const unidades = podeEditar ? (await listarUnidades(ctx)).filter((u) => u.status === "ativa" || u.id === pessoa.unitId) : [];
+  // Equipe (não morador) entra com e-mail e senha; quem cuida da equipe cria esse acesso.
+  const ehEquipe = pessoa.papel !== "morador";
+  const podeCriarSenha = ehEquipe && !ehVoce && pessoa.status === "ativo" && ctx.permissoes.has("equipe.gerenciar");
+  const situacaoSenha = podeCriarSenha ? await situacaoDoAcesso(ctx, pessoa.uid) : null;
   const efetivas = calcularPermissoes(pessoa.papel, pessoa.permissoesExtras, pessoa.permissoesNegadas);
 
   return (
@@ -53,7 +60,9 @@ export default async function PaginaPessoa({ params, searchParams }: PageProps<"
 
       {criado ? (
         <Alerta tipo="sucesso" titulo="Pessoa adicionada.">
-          O cadastro está pronto. O acesso ao portal será liberado quando o login estiver ativo.
+          {ehEquipe
+            ? "O cadastro está pronto. Agora crie o acesso com e-mail e senha no cartão “Entrar com e-mail e senha”."
+            : "O cadastro está pronto. O acesso dos moradores será liberado em breve pela administração."}
         </Alerta>
       ) : null}
 
@@ -116,6 +125,29 @@ export default async function PaginaPessoa({ params, searchParams }: PageProps<"
                   </div>
                 </>
               )}
+            </Cartao>
+          ) : null}
+
+          {situacaoSenha ? (
+            <Cartao className="flex flex-col gap-3">
+              <h2 className="flex items-center gap-2 text-lg font-bold">
+                <KeyRound aria-hidden className="size-5 text-pine" /> Entrar com e-mail e senha
+              </h2>
+              <AcessoSenha uid={pessoa.uid} nome={pessoa.nome} situacao={situacaoSenha} />
+            </Cartao>
+          ) : null}
+
+          {ehEquipe && ehVoce ? (
+            <Cartao className="flex flex-col gap-3">
+              <h2 className="flex items-center gap-2 text-lg font-bold">
+                <KeyRound aria-hidden className="size-5 text-pine" /> Sua senha
+              </h2>
+              <p className="text-ink-2">Para trocar a sua própria senha, confirme a senha atual e escolha uma nova.</p>
+              <div>
+                <BotaoLink href="/conta/senha" variante="secundario" icone={<KeyRound aria-hidden className="size-5" />}>
+                  Trocar senha
+                </BotaoLink>
+              </div>
             </Cartao>
           ) : null}
 

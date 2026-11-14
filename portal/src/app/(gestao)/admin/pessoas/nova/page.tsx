@@ -36,8 +36,13 @@ export default async function NovaPessoa({ searchParams }: PageProps<"/admin/pes
             inicial={{ unitId: typeof unidade === "string" ? unidade : null }}
           />
           <Alerta tipo="info" titulo="Como a pessoa vai entrar?">
-            O jeito de entrar no portal (login) ainda será definido. O cadastro fica pronto e o acesso é liberado quando o
-            login estiver ativo.
+            <p>
+              <strong>Equipe</strong> (portaria, conselho e administração): depois de adicionar, crie o acesso com e-mail e
+              senha provisória na página da pessoa.
+            </p>
+            <p className="mt-1">
+              <strong>Moradores</strong>: o cadastro fica pronto e o acesso será liberado em breve pela administração.
+            </p>
           </Alerta>
           <div>
             <BotaoEnviar>Adicionar</BotaoEnviar>

@@ -8,7 +8,7 @@ import { ehPapel, NOME_DO_PAPEL, PAPEIS } from "@/lib/permissoes";
 import { Cartao, classeEntrada, EstadoVazio, TituloPagina } from "@/components/ui/basicos";
 import { Botao, BotaoLink } from "@/components/ui/botao";
 import { SegmentoLinks } from "@/components/ui/painel";
-import { EtiquetaSituacaoPessoa } from "./etiquetas";
+import { EtiquetaSenhaProvisoria, EtiquetaSituacaoPessoa } from "./etiquetas";
 
 export const metadata: Metadata = { title: "Pessoas" };
 
@@ -85,6 +85,7 @@ export default async function PaginaPessoas({ searchParams }: PageProps<"/admin/
                       {p.unitId ? ` · ${rotulos.get(p.unitId) ?? p.unitId}` : ""}
                     </p>
                   </div>
+                  {p.precisaTrocarSenha && p.status === "ativo" ? <EtiquetaSenhaProvisoria /> : null}
                   <EtiquetaSituacaoPessoa status={p.status} />
                 </Link>
               </li>
