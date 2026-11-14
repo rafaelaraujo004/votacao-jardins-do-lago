@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Building2, Eye, Landmark, Megaphone, ScrollText, Settings, Users, Wrench, type LucideIcon } from "lucide-react";
+import { Building2, CalendarDays, DoorOpen, Eye, Landmark, Megaphone, ScrollText, Settings, ShieldCheck, Users, type LucideIcon } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { resumoDoCondominio } from "@/server/dados/gestao";
 import type { Permissao } from "@/lib/permissoes";
@@ -14,7 +14,9 @@ const ATALHOS: { titulo: string; icone: LucideIcon; tom: TomModulo; permissao: P
   { titulo: "Moradores e equipe", icone: Users, tom: "lago", permissao: "moradores.ver", href: "/admin/pessoas" },
   { titulo: "Prestação de contas", icone: Landmark, tom: "areia", permissao: "financeiro.ver", href: "/admin/financeiro" },
   { titulo: "Auditoria", icone: ScrollText, tom: "vinho", permissao: "auditoria.ver", href: "/admin/auditoria" },
-  { titulo: "Reservas", icone: Wrench, tom: "verde", permissao: "reservas.ver_todas" },
+  { titulo: "Reservas e áreas", icone: CalendarDays, tom: "verde", permissao: "reservas.ver_todas", href: "/admin/reservas" },
+  { titulo: "Portaria (operar)", icone: ShieldCheck, tom: "vinho", permissao: "portaria.operar", href: "/portaria" },
+  { titulo: "Histórico da portaria", icone: DoorOpen, tom: "lago", permissao: "visitantes.ver_todos", href: "/admin/portaria" },
   { titulo: "Comunicados", icone: Megaphone, tom: "lago", permissao: "comunicados.ver" },
   { titulo: "Configurações", icone: Settings, tom: "areia", permissao: "areas.configurar" },
 ];
@@ -68,8 +70,8 @@ export default async function PainelGestao() {
       ) : null}
 
       <Alerta tipo="info" titulo="O portal está sendo construído por partes">
-        Login, perfis, permissões, auditoria, cadastro das unidades e dos moradores e a prestação de contas já funcionam.
-        Reservas, comunicados e configurações chegam nas próximas fases.
+        Já funcionam: login da equipe, perfis e permissões, auditoria, unidades e moradores, prestação de contas,
+        portaria (visitantes e encomendas) e reservas das áreas de lazer. Comunicados e configurações chegam nas próximas fases.
       </Alerta>
     </div>
   );
