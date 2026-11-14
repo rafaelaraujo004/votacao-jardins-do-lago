@@ -21,7 +21,8 @@
 | Login do morador | **Usuário** = código de 6 caracteres sorteado com crypto (32 símbolos, ~1 bilhão de combinações) + **senha provisória** (a mesma da equipe), vista **uma vez** pelo síndico e nunca gravada nem logada; troca obrigatória no 1º acesso. Usuário inexistente, fora do formato e senha errada dão **a mesma mensagem**. Só o admin (`moradores.gerenciar`) gera; morador suspenso não entra (o contexto barra). Limite de tentativas do Firebase + `/api/sessao` (10 por IP a cada 5 min) | `src/lib/usuario-morador.ts`, `src/server/acoes/acesso.ts`, `src/app/(publico)/entrar` |
 | E-mail sintético do morador | O Firebase Auth só aceita e-mail: `K7M4PX` vira `k7m4px@morador.<condominio>.portal.invalid`. O domínio `.invalid` é reservado (RFC 2606): **nunca existe**, então nada é enviado para lá e ninguém pode registrá-lo. Esse e-mail nunca aparece na tela (mostramos o usuário) e a equipe não pode usá-lo | `src/lib/usuario-morador.ts` |
 | Mandar a pessoa para um site falso depois do login (`?volta=`) | Só caminhos internos de uma barra; recusa `//`, barra invertida, caracteres de controle, `/api`, `/entrar` | `src/lib/destino-seguro.ts` |
-| Área pública mostrar dados pessoais | Só condomínios com `portalPublico: true`; cada leitura devolve uma lista fechada de campos; agenda mostra só "Ocupado"; financeiro só meses publicados; o `?c=` é validado e o cabeçalho interno `x-portal-c` vindo do navegador é apagado no proxy | `src/server/publico.ts`, `src/server/dados/publico.ts`, `src/proxy.ts` |
+| Alguém ver dados do condomínio sem login | **Nada abre sem login**: o proxy manda toda área sem cookie para `/entrar`; o layout do morador exige `area.morador`; cada página, ação, leitura e exportação confere a sessão e a permissão de novo. O condomínio vem sempre da sessão (o `?c=` só monta o login em `/entrar`). Usuários e senhas são criados **só pelo síndico** | `src/proxy.ts`, `src/server/contexto.ts`, `src/app/(morador)/layout.tsx` |
+| Morador ver dados de outra casa | Cada leitura da área do morador devolve uma lista fechada de campos; agenda mostra só "Ocupado"; financeiro só meses publicados e sem quem lançou | `src/server/dados/morador.ts` |
 | Código de visitante copiado do banco | No banco fica só o HMAC (segredo `PORTARIA_SEGREDO_CODIGO`, obrigatório em produção); código de um dia vale uma vez só | `src/lib/portaria.ts`, `src/server/acoes/portaria.ts` |
 | Adivinhar códigos de visitante | Limite de 40 consultas de código por porteiro a cada 5 min; 30 autorizações por casa por hora | `src/server/acoes/portaria.ts` |
 | Duas reservas no mesmo horário | Trava por horário + conferência de sobreposição na mesma transação | `src/server/dados/reservas.ts` |
@@ -40,7 +41,7 @@
 - **Separação**: morador nunca vê dados pessoais de outra casa (nas reservas aparece só "Ocupado"); portaria não vê financeiro.
 - **E-mail da equipe**: fica só no Firebase Authentication, não no Firestore; na auditoria aparece mascarado (`jo•••@gmail.com`).
 - **Morador**: não precisa de e-mail. O usuário (código) fica em `members/{uid}.usuario` e no índice `usernames/{codigo}`; a auditoria registra o usuário e o nome, nunca a senha. O telefone (se cadastrado) só é usado para abrir o WhatsApp do síndico na conversa certa.
-- **Área pública**: nenhum nome nem número de casa aparece sem login.
+- **Sem área pública**: nada do condomínio aparece sem login (decisão do dono). O síndico controla quem tem usuário e senha e pode suspender o acesso a qualquer momento.
 - **Finalidade**: dados usados só para a gestão do condomínio; sem analytics, sem anúncios, sem fontes ou scripts de terceiros além do reCAPTCHA.
 - **Transparência**: a prestação de contas mostra só informações coletivas aprovadas para divulgação, sem dados bancários ou pessoais.
 

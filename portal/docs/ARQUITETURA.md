@@ -30,7 +30,7 @@ portal/
   src/components/layout/   faixa do topo e menus
   src/lib/                 código que pode rodar em qualquer lugar (permissões, formatos, validação)
   src/server/              código SÓ do servidor (Admin SDK, contexto, sessão, auditoria)
-  src/proxy.ts             triagem rápida: sem cookie → /entrar
+  src/proxy.ts             triagem rápida: todas as áreas sem cookie → /entrar?volta=...
   firestore.rules          regras do banco
   scripts/                 simulador, dados de demonstração, criação do condomínio
   tests/                   unit/, regras/, integracao/
@@ -76,6 +76,6 @@ Peças: `Botao`, `BotaoLink`, `Cartao`, `Alerta`, `Etiqueta`, `EstadoVazio`, `Ca
 
 ## Navegação
 
-- **Morador** (celular primeiro): área **pública** pelo link (informações gerais, sem login) com faixa verde, botão **Entrar** ou **"Casa 12 · Sair"** no topo; barra inferior Início · Contas · Mapa · Agenda · Mais (no computador vira coluna, com o bloco da casa: Autorizar visita e Encomendas). `/entrar` tem as abas "Sou morador" (usuário + senha) e "Sou da equipe" (e-mail + senha).
+- **Morador** (celular primeiro): área **sempre com login** (o layout exige `area.morador`; cada página confere de novo) com faixa verde e **"Casa 12 · Sair"** no topo; o condomínio vem sempre da sessão, nunca da URL; barra inferior Início · Contas · Mapa · Agenda · Mais (no computador vira coluna, com o bloco da casa: Autorizar visita e Encomendas). `/entrar` tem as abas "Sou morador" (usuário + senha) e "Sou da equipe" (e-mail + senha).
 - **Portaria** (tablet/computador): uma tela de trabalho com buscar, validar código, entrada/saída, nova encomenda e listas do dia.
 - **Gestão** (síndico e conselho): menu lateral em grupos, filtrado pelas permissões (inclui Configurações → Informações do condomínio). Conselho vê "Somente consulta".

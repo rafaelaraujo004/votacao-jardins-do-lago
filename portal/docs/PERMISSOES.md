@@ -21,9 +21,9 @@ permissões = padrão do papel  +  extras concedidas (só as que cabem no "teto"
 - O **teto** impede erros graves: por exemplo, a portaria não recebe nada do financeiro, da auditoria nem de permissões, mesmo que alguém tente conceder.
 - Os extras e retiradas ficam em `members/{uid}.permissoesExtras` e `permissoesNegadas` (tela de edição na Fase 2, com auditoria `membro.permissoes`).
 
-## Área pública (sem login)
+## Nada abre sem login
 
-Com `portalPublico: true` no condomínio, qualquer pessoa com o link vê as **informações gerais**, sem permissão nenhuma: `/inicio`, `/financeiro` (só meses publicados), `/mapa`, `/contatos`, `/mais`, a agenda de `/reservas` (só "Ocupado", sem casas) e `/relatorio/financeiro` (só publicado). O que é da casa continua exigindo login e permissão (tabela abaixo). O proxy (`src/proxy.ts`) só faz a triagem: rotas privadas sem cookie vão para `/entrar?volta=...`.
+Não existe área pública. Todas as páginas, ações e exportações exigem sessão válida; o condomínio vem sempre da sessão (nunca de `?c=` nem de cabeçalho). O proxy (`src/proxy.ts`) faz a triagem: qualquer área sem cookie vai para `/entrar?volta=...`. A área do morador exige `area.morador` no layout e cada página confere a sua permissão (tabela abaixo). O `?c=` só existe em `/entrar`, para montar o login do morador de outro condomínio (ex.: demonstração).
 
 ## Onde é aplicada
 
@@ -38,7 +38,11 @@ Com `portalPublico: true` no condomínio, qualquer pessoa com o link vê as **in
 |---|---|
 | `/visitas` (morador) | `visitantes.autorizar` (sem login → `/entrar?volta=/visitas`) |
 | `/encomendas` (morador) | `encomendas.ver_proprias` (sem login → `/entrar?volta=/encomendas`) |
-| `/reservas` (morador) | agenda: pública; **pedir e cancelar** reserva: `reservas.fazer` (sem login: botão "Entrar para pedir reserva") |
+| `/inicio`, `/mais` (morador) | `area.morador` |
+| `/financeiro`, `/relatorio/financeiro`, `/api/financeiro/exportar` | `financeiro.ver_publicado` (só meses publicados) ou `financeiro.ver` (equipe: todos os meses) |
+| `/mapa` | `mapa.ver` |
+| `/contatos` | `informacoes.ver` |
+| `/reservas` (morador) | agenda: `area.morador` (só "Ocupado", sem casas); **pedir e cancelar** reserva: `reservas.fazer` |
 | `/admin/informacoes` | `informacoes.gerenciar` (só o admin; a portaria pode receber como extra) |
 | `/portaria` | `portaria.operar` (reservas de hoje: `reservas.ver_todas`) |
 | `/admin/portaria` | `visitantes.ver_todos`; o botão de limpeza LGPD exige também `moradores.gerenciar` (só o admin) |

@@ -10,7 +10,7 @@ import { BotaoLink } from "@/components/ui/botao";
 import { FaixaTopo } from "@/components/layout/faixa-topo";
 import { destinoSeguro } from "@/lib/destino-seguro";
 import { ehEmailDeMorador, usuarioParaLeitura } from "@/lib/usuario-morador";
-import { comC, idPublicoPadrao, sufixoDoId } from "@/server/publico";
+import { idCondominioPadrao, sufixoDoId } from "@/lib/condominio-id";
 import { TrocarSenha } from "./trocar-senha";
 
 export const metadata: Metadata = { title: "Trocar senha" };
@@ -26,9 +26,9 @@ export default async function PaginaTrocarSenha({ searchParams }: PageProps<"/co
   const ctx = await getContexto();
   if (!ctx) redirect("/entrar");
   const situacao = await minhaSituacaoDeAcesso(ctx);
-  // Morador volta ao Início DO SEU condomínio (com o ?c= quando não é o padrão).
-  const sufixo = sufixoDoId(ctx.condominioId, idPublicoPadrao());
-  const inicio = ctx.papel === "morador" ? comC("/inicio", sufixo) : inicioDoPapel(ctx.papel);
+  const inicio = inicioDoPapel(ctx.papel);
+  // Tela de entrada com o ?c= do condomínio da pessoa (o login do morador depende dele).
+  const entrarHref = `/entrar${sufixoDoId(ctx.condominioId, idCondominioPadrao())}`;
   const { volta: bruta } = await searchParams;
   const volta = destinoSeguro(Array.isArray(bruta) ? bruta[0] : bruta);
 
@@ -74,7 +74,7 @@ export default async function PaginaTrocarSenha({ searchParams }: PageProps<"/co
                 provisoria={situacao.precisaTrocarSenha}
                 volta={volta}
                 inicio={inicio}
-                entrarHref={comC("/entrar", sufixo)}
+                entrarHref={entrarHref}
               />
             </>
           )}

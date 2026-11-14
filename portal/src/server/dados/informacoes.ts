@@ -1,17 +1,20 @@
 /**
  * Leitura das informações do condomínio (telefones, horário e aviso).
- * Ficam em condominiums/{c}.informacoes; a chave do portal público em condominiums/{c}.portalPublico.
+ * Ficam em condominiums/{c}.informacoes. Só aparecem para quem está logado
+ * (área do morador e painel do síndico); o condomínio vem sempre da sessão.
  *
  * Sempre devolvemos uma LISTA FECHADA de campos (nunca o documento inteiro).
+ * Obs.: o campo antigo condominiums/{c}.portalPublico pode ainda existir no
+ * banco, mas não tem mais efeito nenhum (não existe área sem login).
  */
 import "server-only";
 import { cache } from "react";
 import { adminDb } from "../firebase-admin";
-import type { Contexto } from "../contexto";
+import { garantirPermissao, type Contexto } from "../contexto";
 import { idDocumento } from "@/lib/validacao";
 import { LIMITE_AVISO, LIMITE_HORARIO, normalizarTelefone } from "@/lib/validacao-informacoes";
 
-export type InformacoesPublicas = {
+export type InformacoesDoCondominio = {
   telefonePortaria: string | null;
   telefoneAdministracao: string | null;
   whatsappAdministracao: string | null;
@@ -19,7 +22,7 @@ export type InformacoesPublicas = {
   aviso: string | null;
 };
 
-const VAZIAS: InformacoesPublicas = {
+const VAZIAS: InformacoesDoCondominio = {
   telefonePortaria: null,
   telefoneAdministracao: null,
   whatsappAdministracao: null,
@@ -37,7 +40,7 @@ function texto(v: unknown, max: number): string | null {
   return t ? t.slice(0, max) : null;
 }
 
-function lerInformacoes(bruto: unknown): InformacoesPublicas {
+function lerInformacoes(bruto: unknown): InformacoesDoCondominio {
   if (!bruto || typeof bruto !== "object") return { ...VAZIAS };
   const i = bruto as Record<string, unknown>;
   return {
@@ -49,24 +52,23 @@ function lerInformacoes(bruto: unknown): InformacoesPublicas {
   };
 }
 
-/**
- * Informações que qualquer pessoa com o link público pode ver.
- * Quem chama já conferiu o condomínio (condominioPublico); aqui só lemos os campos públicos.
- */
-export const informacoesPublicas = cache(async (condominioId: string): Promise<InformacoesPublicas> => {
+/** Lê as informações do banco (uma vez por pedido). */
+const lerDoBanco = cache(async (condominioId: string): Promise<InformacoesDoCondominio> => {
   if (!idDocumento.safeParse(condominioId).success) return { ...VAZIAS };
   const doc = await adminDb().collection("condominiums").doc(condominioId).get();
   if (!doc.exists) return { ...VAZIAS };
   return lerInformacoes(doc.get("informacoes"));
 });
 
-/** Para a tela do síndico: as informações + se o portal dos moradores está ligado. */
-export async function informacoesParaEdicao(
-  ctx: Contexto,
-): Promise<InformacoesPublicas & { portalPublico: boolean }> {
+/** Informações do condomínio de quem está logado (exige "informacoes.ver"). */
+export async function informacoesDoCondominio(ctx: Contexto): Promise<InformacoesDoCondominio> {
+  garantirPermissao(ctx, "informacoes.ver");
+  return lerDoBanco(ctx.condominioId);
+}
+
+/** Para a tela do síndico (exige "informacoes.gerenciar"). */
+export async function informacoesParaEdicao(ctx: Contexto): Promise<InformacoesDoCondominio> {
+  garantirPermissao(ctx, "informacoes.gerenciar");
   const doc = await adminDb().collection("condominiums").doc(ctx.condominioId).get();
-  return {
-    ...lerInformacoes(doc.get("informacoes")),
-    portalPublico: doc.get("portalPublico") === true,
-  };
+  return lerInformacoes(doc.get("informacoes"));
 }

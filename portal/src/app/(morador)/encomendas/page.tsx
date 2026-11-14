@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Package, PackageCheck } from "lucide-react";
-import { exigirLoginDaCasa } from "@/server/sessao-opcional";
+import { exigirPermissao } from "@/server/contexto";
 import { minhasEncomendas, type Encomenda } from "@/server/dados/portaria";
 import { formatarDataHora } from "@/lib/formato";
 import { nomeTipoEncomenda } from "@/lib/portaria";
@@ -33,10 +33,9 @@ function ItemEncomenda({ e, fuso }: { e: Encomenda; fuso: string }) {
   );
 }
 
-export default async function EncomendasMorador({ searchParams }: PageProps<"/encomendas">) {
+export default async function EncomendasMorador() {
   // Sem login → /entrar, voltando para cá depois.
-  const { c } = await searchParams;
-  const ctx = await exigirLoginDaCasa("encomendas.ver_proprias", "/encomendas", c);
+  const ctx = await exigirPermissao("encomendas.ver_proprias", "/encomendas");
   const cabecalho = <CabecalhoPagina sobretitulo="Portaria" titulo="Encomendas" subtitulo="O que chegou para a sua casa na portaria." />;
 
   if (!ctx.unitId) {

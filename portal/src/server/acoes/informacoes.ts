@@ -8,7 +8,7 @@ import { registrarAuditoria } from "../auditoria";
 import { executar, lerFormulario, type Resultado } from "./resultado";
 import { esquemaInformacoes } from "@/lib/validacao-informacoes";
 
-/** Salva telefones, horário, aviso e a chave "Portal dos moradores ligado". */
+/** Salva telefones, horário e aviso (o morador vê depois de entrar). */
 export async function salvarInformacoes(_: Resultado, dados: FormData): Promise<Resultado> {
   return executar(async () => {
     const ctx = garantirPermissao(await getContexto(), "informacoes.gerenciar");
@@ -32,7 +32,6 @@ export async function salvarInformacoes(_: Resultado, dados: FormData): Promise<
 
       tx.update(ref, {
         informacoes: { ...novas, atualizadoEm: FieldValue.serverTimestamp() },
-        portalPublico: v.portalPublico,
       });
       registrarAuditoria(db, tx, {
         condominioId: ctx.condominioId,
@@ -43,14 +42,12 @@ export async function salvarInformacoes(_: Resultado, dados: FormData): Promise<
         alvo: `condominiums/${ctx.condominioId}`,
         detalhes: {
           camposAlterados: mudaram.join(", ") || "nenhum",
-          portalPublicoAntes: atual.get("portalPublico") === true,
-          portalPublico: v.portalPublico,
         },
       });
     });
 
     revalidatePath("/admin/informacoes");
-    revalidatePath("/", "layout"); // o Início público mostra o aviso e os telefones
-    return v.portalPublico ? "Informações salvas. O portal dos moradores está ligado." : "Informações salvas. O portal dos moradores está desligado.";
+    revalidatePath("/", "layout"); // a área do morador mostra o aviso e os telefones
+    return "Informações salvas.";
   });
 }

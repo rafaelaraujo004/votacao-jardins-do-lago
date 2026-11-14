@@ -13,8 +13,8 @@ import {
   UserCheck,
   Vote,
 } from "lucide-react";
-import { comC, condominioPublico, sufixoC, type CondominioPublico } from "@/server/publico";
-import { mesesPublicados } from "@/server/dados/publico";
+import { exigirPermissao, type Contexto } from "@/server/contexto";
+import { mesesPublicados } from "@/server/dados/morador";
 import { eventosDoMes } from "@/server/dados/agenda";
 import { formatarMoeda, hojeISO, saudacao } from "@/lib/formato";
 import { nomeDoMes, type MesComSaldo } from "@/lib/financeiro";
@@ -25,13 +25,11 @@ import { IlustracaoCondominio } from "@/components/ui/ilustracao-condominio";
 import { AtalhoModulo, BlocoNumero, FaixaPetalas, TituloSecao, type TomModulo } from "@/components/ui/painel";
 import { EnderecoCopiavel } from "@/components/ui/endereco";
 import { Calendario } from "@/components/ui/calendario";
-import { PortalIndisponivel } from "@/components/layout/faixa-topo";
 import type { LucideIcon } from "lucide-react";
 
 export const metadata: Metadata = { title: "Início" };
 
 // Atalhos dos módulos. Sem "href" = ainda não pronto (aparece "Em breve" e não é clicável).
-// Os links ganham o ?c= do condomínio na hora de montar a página.
 const ATALHOS: { icone: LucideIcon; titulo: string; href?: string; tom: TomModulo }[] = [
   { icone: ReceiptText, titulo: "Prestação de contas", href: "/financeiro", tom: "verde" },
   { icone: MapPinned, titulo: "Mapa das casas", href: "/mapa", tom: "lago" },
@@ -44,9 +42,11 @@ const ATALHOS: { icone: LucideIcon; titulo: string; href?: string; tom: TomModul
 ];
 
 /** Último mês PUBLICADO, ou null se ainda não houver. */
-async function ultimoMesPublicado(cp: CondominioPublico): Promise<MesComSaldo | null | "erro"> {
+async function ultimoMesPublicado(ctx: Contexto): Promise<MesComSaldo | null | "erro"> {
+  // Perfil sem acesso à prestação de contas: o resumo simplesmente não aparece.
+  if (!ctx.permissoes.has("financeiro.ver_publicado")) return null;
   try {
-    return (await mesesPublicados(cp)).at(-1) ?? null;
+    return (await mesesPublicados(ctx)).at(-1) ?? null;
   } catch (erro) {
     // Se o financeiro falhar, a página inicial continua abrindo.
     console.error("Início: não foi possível carregar o resumo financeiro", erro);
@@ -54,23 +54,20 @@ async function ultimoMesPublicado(cp: CondominioPublico): Promise<MesComSaldo | 
   }
 }
 
-/** Início PÚBLICO (sem login): nada aqui identifica casas ou pessoas. */
-export default async function InicioMorador({ searchParams }: PageProps<"/inicio">) {
-  const { c } = await searchParams;
-  const cp = await condominioPublico(c);
-  if (!cp) return <PortalIndisponivel />;
-  const sufixo = sufixoC(cp);
+/** Início do morador (com login): nada aqui identifica OUTRAS casas ou pessoas. */
+export default async function InicioMorador() {
+  const ctx = await exigirPermissao("area.morador", "/inicio");
 
   // Mês atual no fuso do condomínio.
-  const hoje = hojeISO(new Date(), cp.fuso);
+  const hoje = hojeISO(new Date(), ctx.fuso);
   const [ano, mes, dia] = hoje.split("-").map(Number);
   const proxAno = mes === 12 ? ano + 1 : ano;
   const proxMes = mes === 12 ? 1 : mes + 1;
 
   const [resumo, eventos, eventosProx] = await Promise.all([
-    ultimoMesPublicado(cp),
-    eventosDoMes(cp, ano, mes),
-    eventosDoMes(cp, proxAno, proxMes),
+    ultimoMesPublicado(ctx),
+    eventosDoMes(ctx, ano, mes),
+    eventosDoMes(ctx, proxAno, proxMes),
   ]);
 
   // Próximos eventos: de hoje em diante, deste mês e do seguinte.
@@ -82,7 +79,7 @@ export default async function InicioMorador({ searchParams }: PageProps<"/inicio
       {/* Identidade: ilustração do condomínio + endereço */}
       <div className="grid gap-4 sm:grid-cols-2">
         <section
-          aria-label={cp.nome}
+          aria-label={ctx.condominioNome}
           className="surgir overflow-hidden rounded-[var(--radius-card)] border border-borda-luz shadow-card"
         >
           <FaixaPetalas />
@@ -97,16 +94,16 @@ export default async function InicioMorador({ searchParams }: PageProps<"/inicio
       {/* Saudação */}
       <header>
         <h1 className="text-[1.7rem] font-bold text-destaque">
-          {saudacao(new Date(), cp.fuso)}!
+          {saudacao(new Date(), ctx.fuso)}!
         </h1>
-        <p className="mt-0.5 text-ink-2">Bem-vindo ao portal do {cp.nome}.</p>
+        <p className="mt-0.5 text-ink-2">Bem-vindo ao portal do {ctx.condominioNome}.</p>
       </header>
 
       {/* Resumo do último mês publicado */}
       <section aria-labelledby="titulo-resumo">
         {resumo && resumo !== "erro" ? (
           <Link
-            href={comC("/financeiro", sufixo)}
+            href="/financeiro"
             className="block rounded-[var(--radius-card)] border border-borda-luz bg-surface p-4 shadow-card transition-shadow active:shadow-afundado"
           >
             <div className="mb-3 flex items-baseline justify-between gap-3">
@@ -144,7 +141,7 @@ export default async function InicioMorador({ searchParams }: PageProps<"/inicio
         <ul className="grid grid-cols-3 gap-2.5 min-[360px]:grid-cols-4">
           {ATALHOS.map((a) => (
             <li key={a.titulo}>
-              <AtalhoModulo {...a} href={a.href ? comC(a.href, sufixo) : undefined} />
+              <AtalhoModulo {...a} />
             </li>
           ))}
         </ul>
@@ -168,7 +165,7 @@ export default async function InicioMorador({ searchParams }: PageProps<"/inicio
           <Calendario ano={ano} mes={mes} hoje={dia} eventos={eventos} />
         </Cartao>
         <Link
-          href={comC("/reservas", sufixo)}
+          href="/reservas"
           className="saltado inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-full px-4 font-bold text-pine active:shadow-afundado"
         >
           <CalendarDays aria-hidden className="size-5" /> Ver horários livres das áreas

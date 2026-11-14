@@ -4,7 +4,7 @@ import { adminAuth, adminDb } from "../firebase-admin";
 import { garantirPermissao, type Contexto } from "../contexto";
 import { formatarDataHora } from "@/lib/formato";
 import { ehEmailDeMorador, ehUsuarioValido, situacaoLoginMorador, type SituacaoLoginMorador } from "@/lib/usuario-morador";
-import { idPublicoPadrao, sufixoDoId } from "../publico";
+import { idCondominioPadrao, linkAcessoMoradores } from "@/lib/condominio-id";
 
 /** Situação do login com e-mail e senha de uma pessoa da equipe. */
 export type SituacaoAcesso = {
@@ -128,5 +128,5 @@ export async function enderecoDoPortal(): Promise<string> {
 
 /** Link da tela de entrada do morador: "<base>/entrar" (+ "?c=<id>" se não for o condomínio padrão). */
 export function linkEntrarMorador(base: string, condominioId: string): string {
-  return `${base.replace(/\/+$/, "")}/entrar${sufixoDoId(condominioId, idPublicoPadrao())}`;
+  return linkAcessoMoradores(base, condominioId, idCondominioPadrao());
 }

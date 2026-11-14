@@ -7,8 +7,8 @@
  * - Um MORADOR demo da Casa 12, que entra na aba "Sou morador" com o usuário DEMA22
  *   e a MESMA senha (DEMO_SENHA), sem troca obrigatória. ("DEMO12" não serve: o usuário
  *   não pode ter O nem 1 — veja src/lib/usuario-morador.ts.)
- * - Portal público LIGADO (portalPublico: true) e informações fictícias (telefones de mentira):
- *   as informações gerais abrem por "/inicio?c=jardins-do-lago-demo" sem login.
+ * - Informações fictícias (telefones de mentira). Como todo o portal, só abrem com login:
+ *   o morador demo entra por "/entrar?c=jardins-do-lago-demo" (o ?c= só monta o login).
  * - Casas, visitantes, encomendas, áreas de lazer e reservas fictícias.
  *
  * Uso (na pasta portal), com a senha numa variável de ambiente (não fica no histórico do git):
@@ -90,7 +90,6 @@ async function main() {
     fuso: "America/Belem",
     moeda: "BRL",
     demo: true,
-    portalPublico: true, // informações gerais abertas pelo link ?c=jardins-do-lago-demo
     informacoes: INFORMACOES_DEMO,
     criadoEm: agora,
   });
@@ -252,7 +251,6 @@ async function main() {
   await lote.commit();
   console.log(`Pronto: "${NOME}" com a conta demo ${email} (administrador só da demonstração).`);
   console.log(`Morador demo (Casa 12): aba "Sou morador", usuário ${USUARIO_MORADOR_DEMO}, a mesma senha (DEMO_SENHA). Link: /entrar?c=${ID}`);
-  console.log(`Informações gerais abertas: /inicio?c=${ID}`);
   console.log("Códigos de visitante: K7M-4PX (hoje) e PRT-3ZB (prestador, 7 dias).");
 }
 

@@ -6,7 +6,7 @@ Todos os dados de um condomínio ficam **dentro** de `condominiums/{condominioId
 users/{uid}                          nome, condominioIds[], condominioAtivo     (só a própria pessoa lê)
 rateLimits/{hash}                    limite de tentativas (só servidor; expira via TTL em expiraEm)
 
-condominiums/{c}                     nome, status, fuso, moeda, portalPublico (true = informações gerais abertas pelo link),
+condominiums/{c}                     nome, status, fuso, moeda, (portalPublico: campo antigo, sem efeito — pode ficar esquecido),
                                      informacoes {telefonePortaria, telefoneAdministracao, whatsappAdministracao,
                                      horarioAdministracao, aviso, atualizadoEm}
   members/{uid}                      nome, papel, unitId, status, permissoesExtras[], permissoesNegadas[],
@@ -61,7 +61,7 @@ Coleções em inglês (padrão do Firebase e da sugestão inicial); campos em po
 | `rateLimits` com hash do IP | Limita tentativas sem guardar o IP em texto. |
 | Usuário do morador vira e-mail sintético | O Firebase Auth só entende e-mail + senha. `K7M4PX` no condomínio `c` vira `k7m4px@morador.c.portal.invalid` (sempre o mesmo, então o login não consulta o banco antes). `.invalid` nunca existe na internet. |
 | `usernames/{codigo}` | Garante que o mesmo código não é dado a duas pessoas do condomínio (o Firebase também recusa dois e-mails iguais). |
-| `portalPublico` e `informacoes` no documento do condomínio | A área pública lê um documento só e devolve uma lista fechada de campos (nunca o documento inteiro). |
+| `informacoes` no documento do condomínio | A área do morador (com login) lê um documento só e devolve uma lista fechada de campos (nunca o documento inteiro). O antigo `portalPublico` não é mais lido nem gravado: não existe área sem login. |
 
 ## Índices
 

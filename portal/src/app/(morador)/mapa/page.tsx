@@ -1,17 +1,15 @@
 import type { Metadata } from "next";
 import { Info } from "lucide-react";
-import { condominioPublico } from "@/server/publico";
-import { PortalIndisponivel } from "@/components/layout/faixa-topo";
+import { exigirPermissao } from "@/server/contexto";
 import { Cartao } from "@/components/ui/basicos";
 import { CabecalhoPagina } from "@/components/ui/painel";
 import { MapaInterativo } from "./mapa-interativo";
 
 export const metadata: Metadata = { title: "Mapa das casas" };
 
-/** Mapa PÚBLICO: só o desenho das quadras e números (sem nomes de moradores). */
-export default async function MapaMorador({ searchParams }: PageProps<"/mapa">) {
-  const { c } = await searchParams;
-  if (!(await condominioPublico(c))) return <PortalIndisponivel />;
+/** Mapa do morador (com login): só o desenho das quadras e números (sem nomes de moradores). */
+export default async function MapaMorador() {
+  await exigirPermissao("mapa.ver", "/mapa");
 
   return (
     <div className="flex flex-col gap-5">

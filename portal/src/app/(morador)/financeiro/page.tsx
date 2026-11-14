@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { FileDown, FileText, Wallet } from "lucide-react";
-import { comC, condominioPublico, sufixoC } from "@/server/publico";
-import { lancamentosPublicados, mesesPublicados } from "@/server/dados/publico";
+import { exigirPermissao } from "@/server/contexto";
+import { lancamentosPublicados, mesesPublicados } from "@/server/dados/morador";
 import { totaisPorCategoria } from "@/server/dados/financeiro";
 import { formatarMoeda } from "@/lib/formato";
 import { nomeDoMes, REGEX_MES } from "@/lib/financeiro";
@@ -10,21 +10,18 @@ import { classesDoBotao } from "@/components/ui/botao";
 import { CabecalhoPagina, SegmentoLinks, TituloSecao } from "@/components/ui/painel";
 import { CartoesResumo, DestaqueSaldo, ListaLancamentos, SeletorMes, TabelaEvolucao } from "@/components/financeiro/pecas";
 import { GraficoSaldo } from "@/components/financeiro/grafico-saldo";
-import { PortalIndisponivel } from "@/components/layout/faixa-topo";
 
 export const metadata: Metadata = { title: "Prestação de contas" };
 
 /**
- * Prestação de contas PÚBLICA (sem login): só os meses publicados pela administração.
+ * Prestação de contas do morador (com login): só os meses publicados pela administração.
  * Cada lançamento mostra descrição, categoria, data, valor e forma — nunca quem lançou
- * nem casa/pessoa (veja server/dados/publico.ts).
+ * nem casa/pessoa (veja server/dados/morador.ts).
  */
 export default async function FinanceiroMorador({ searchParams }: PageProps<"/financeiro">) {
-  const { mes: bruto, periodo: periodoBruto, c } = await searchParams;
-  const cp = await condominioPublico(c);
-  if (!cp) return <PortalIndisponivel />;
-  const sufixo = sufixoC(cp);
-  const meses = await mesesPublicados(cp);
+  const ctx = await exigirPermissao("financeiro.ver_publicado", "/financeiro");
+  const { mes: bruto, periodo: periodoBruto } = await searchParams;
+  const meses = await mesesPublicados(ctx);
 
   const cabecalho = (
     <CabecalhoPagina sobretitulo="Contas" titulo="Prestação de contas" subtitulo="Para onde vai o dinheiro do condomínio." />
@@ -45,16 +42,15 @@ export default async function FinanceiroMorador({ searchParams }: PageProps<"/fi
   const escolhido = typeof bruto === "string" && REGEX_MES.test(bruto) ? meses.find((m) => m.mes === bruto) : undefined;
   const atual = escolhido ?? ultimo;
   const indice = meses.indexOf(atual);
-  const lancamentos = await lancamentosPublicados(cp, atual.mes);
+  const lancamentos = await lancamentosPublicados(ctx, atual.mes);
   const categorias = totaisPorCategoria(lancamentos.filter((l) => l.tipo === "despesa"));
   const totalCategorias = categorias.reduce((soma, c) => soma + Math.max(c.totalCentavos, 0), 0);
 
-  // Período do gráfico: 6 (padrão) ou 12 meses. Os links mantêm o mês escolhido e o ?c=.
+  // Período do gráfico: 6 (padrão) ou 12 meses. Os links mantêm o mês escolhido.
   const periodo = periodoBruto === "12" ? 12 : 6;
-  const extraC = sufixo ? sufixo.slice(1) : ""; // "c=<id>" ou ""
-  const consultaPeriodo = [periodo === 12 ? "periodo=12" : "", extraC].filter(Boolean).join("&") || undefined;
+  const consultaPeriodo = periodo === 12 ? "periodo=12" : undefined;
   const linkPeriodo = (p: 6 | 12) => {
-    const partes = [escolhido ? `mes=${atual.mes}` : "", p === 12 ? "periodo=12" : "", extraC].filter(Boolean);
+    const partes = [escolhido ? `mes=${atual.mes}` : "", p === 12 ? "periodo=12" : ""].filter(Boolean);
     return partes.length ? `/financeiro?${partes.join("&")}` : "/financeiro";
   };
   const pontos = meses.slice(-periodo).map((m) => ({ mes: m.mes, saldoCentavos: m.saldoFinalCentavos }));
@@ -72,10 +68,10 @@ export default async function FinanceiroMorador({ searchParams }: PageProps<"/fi
           proximo={meses[indice + 1]?.mes ?? null}
         />
         <div className="flex flex-wrap justify-center gap-2">
-          <a href={comC(`/relatorio/financeiro?mes=${atual.mes}`, sufixo)} target="_blank" rel="noopener" className={classesDoBotao("secundario", "pequeno")}>
+          <a href={`/relatorio/financeiro?mes=${atual.mes}`} target="_blank" rel="noopener" className={classesDoBotao("secundario", "pequeno")}>
             <FileText aria-hidden className="size-4" /> Baixar em PDF
           </a>
-          <a href={comC(`/api/financeiro/exportar?mes=${atual.mes}`, sufixo)} className={classesDoBotao("secundario", "pequeno")}>
+          <a href={`/api/financeiro/exportar?mes=${atual.mes}`} className={classesDoBotao("secundario", "pequeno")}>
             <FileDown aria-hidden className="size-4" /> Planilha (Excel)
           </a>
         </div>

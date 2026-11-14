@@ -4,7 +4,6 @@ import {
   formatarTelefone,
   linkConversaWhatsApp,
   linkLigar,
-  linkPublicoMoradores,
   mensagemConviteMoradores,
   normalizarTelefone,
 } from "@/lib/validacao-informacoes";
@@ -34,14 +33,14 @@ describe("telefones", () => {
 });
 
 describe("formulário de informações", () => {
-  it("normaliza telefones, junta espaços e lê a caixa do portal", () => {
+  it("normaliza telefones e junta espaços", () => {
     const r = esquemaInformacoes.parse({
       telefonePortaria: "(94) 9 9123-4567",
       telefoneAdministracao: "",
       whatsappAdministracao: "+55 94 98888-7777",
       horarioAdministracao: "  Seg. a sex.,\n 8h às 18h ",
       aviso: "",
-      portalPublico: "on",
+      portalPublico: "on", // campo antigo: é ignorado
     });
     expect(r).toEqual({
       telefonePortaria: "94991234567",
@@ -49,12 +48,11 @@ describe("formulário de informações", () => {
       whatsappAdministracao: "94988887777",
       horarioAdministracao: "Seg. a sex., 8h às 18h",
       aviso: null,
-      portalPublico: true,
     });
   });
 
-  it("sem a caixa marcada o portal fica desligado", () => {
-    expect(esquemaInformacoes.parse({}).portalPublico).toBe(false);
+  it("não existe mais a chave de portal público", () => {
+    expect(esquemaInformacoes.parse({ portalPublico: "on" })).not.toHaveProperty("portalPublico");
   });
 
   it("recusa telefone inválido e aviso grande demais", () => {
@@ -64,21 +62,13 @@ describe("formulário de informações", () => {
   });
 });
 
-describe("link público dos moradores", () => {
-  it("condomínio padrão usa só a raiz", () => {
-    expect(linkPublicoMoradores("https://portal.exemplo.com/", "jardins-do-lago")).toBe("https://portal.exemplo.com/");
-  });
-
-  it("outro condomínio leva ?c=", () => {
-    expect(linkPublicoMoradores("https://portal.exemplo.com", "jardins-do-lago-demo")).toBe(
-      "https://portal.exemplo.com/?c=jardins-do-lago-demo",
-    );
-    expect(linkPublicoMoradores("https://p.com", "outro", "outro")).toBe("https://p.com/");
-  });
-
-  it("mensagem de convite traz o nome e o link", () => {
-    const m = mensagemConviteMoradores("Residencial Jardins do Lago", "https://p.com/");
+describe("convite dos moradores", () => {
+  it("mensagem traz o nome, o link de entrada e fala de usuário e senha (nada sem login)", () => {
+    const m = mensagemConviteMoradores("Residencial Jardins do Lago", "https://p.com/entrar");
     expect(m).toContain("Residencial Jardins do Lago");
-    expect(m).toContain("https://p.com/");
+    expect(m).toContain("https://p.com/entrar");
+    expect(m).toContain("USUÁRIO");
+    expect(m).toContain("SENHA");
+    expect(m).not.toMatch(/sem precisar de senha/i);
   });
 });

@@ -39,7 +39,7 @@ Isso liga o simulador do Firebase (login + banco), cria os dados de **demonstra�
 
 - Na tela de entrada aparecem os botões **"Entrar como Morador / Portaria / Síndico / Conselho"**. Eles só existem no computador local com o simulador.
 - Equipe demo com e-mail e senha (aba **"Sou da equipe"**) e o **morador demo da Casa 12** (aba **"Sou morador"**, usuário `DEMA22`): a senha fica em `portal/.acesso-demo.txt` (o arquivo é recriado a cada semeadura e não vai para o GitHub).
-- Informações gerais sem login: http://localhost:3000/inicio?c=jardins-do-lago-demo (no simulador não existe o condomínio padrão `jardins-do-lago`, por isso o `?c=`).
+- Entrada do morador demo: http://localhost:3000/entrar?c=jardins-do-lago-demo (no simulador não existe o condomínio padrão `jardins-do-lago`, por isso o `?c=`, que só serve para montar o login). Nada do portal abre sem login.
 - Códigos de visitante da demonstração: `K7M-4PX` (hoje, uso único), `PRT-3ZB` (prestador, 7 dias), `HGX-7QW` (amanhã).
 - Painel do simulador (ver os dados gravados): http://127.0.0.1:4000
 - Vitrine do visual: http://localhost:3000/identidade
@@ -69,7 +69,7 @@ Veja os comentários em [.env.example](.env.example). Resumo:
 | `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` | servidor | **Sim** |
 | `APP_CHECK_ENFORCE` | servidor | Não |
 | `PORTARIA_SEGREDO_CODIGO` | servidor | **Sim** (obrigatório em produção, 32+ caracteres; trocar invalida os códigos já gerados) |
-| `CONDOMINIO_PUBLICO` | servidor | Não. Condomínio do link sem `?c=` (padrão `jardins-do-lago`) |
+| `CONDOMINIO_PADRAO` | servidor | Não. Condomínio do login do morador em `/entrar` sem `?c=` (padrão `jardins-do-lago`). O nome antigo `CONDOMINIO_PUBLICO` ainda é aceito |
 | `FIRESTORE_EMULATOR_HOST`, `FIREBASE_AUTH_EMULATOR_HOST` | só local | Não. **Nunca** na Vercel |
 
 ## 5. Configurar o Firebase real (quando formos publicar)
@@ -96,7 +96,7 @@ Observação: o plano gratuito da Vercel (Hobby) não permite uso comercial. Par
 
 ## 7. Segurança (resumo)
 
-- Informações gerais (prestação de contas publicada, mapa, contatos, agenda sem casas) abrem pelo link sem login; o que é da casa exige login.
+- **Nada abre sem login**: todas as páginas, ações e exportações exigem sessão. Quem cria usuários e senhas é o síndico (admin); não existe cadastro público nem área aberta pelo link.
 - Moradores entram com usuário (código gerado pelo portal) + senha; a equipe com e-mail + senha. Senha provisória vista uma vez e troca obrigatória no 1º acesso.
 - Toda gravação passa pelo servidor, que confere sessão, vínculo com o condomínio, permissão e registra auditoria.
 - As regras do Firestore negam qualquer gravação vinda do navegador e limitam leituras por condomínio e por casa.

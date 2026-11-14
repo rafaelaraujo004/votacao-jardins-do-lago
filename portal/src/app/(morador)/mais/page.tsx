@@ -6,7 +6,6 @@ import {
   ChevronRight,
   FileText,
   KeyRound,
-  LogIn,
   MapPinned,
   Megaphone,
   MessageSquareWarning,
@@ -16,11 +15,9 @@ import {
   Vote,
   Wallet,
 } from "lucide-react";
-import { comC, condominioPublico, sufixoC } from "@/server/publico";
-import { sessaoOpcional } from "@/server/sessao-opcional";
+import { exigirPermissao } from "@/server/contexto";
 import { Cartao } from "@/components/ui/basicos";
 import { CabecalhoPagina, TituloSecao, type TomModulo } from "@/components/ui/painel";
-import { PortalIndisponivel } from "@/components/layout/faixa-topo";
 import { cx } from "@/lib/cx";
 import { Preferencias } from "./preferencias";
 
@@ -28,14 +25,14 @@ export const metadata: Metadata = { title: "Mais" };
 
 type Modulo = { icone: LucideIcon; titulo: string; descricao: string; tom: TomModulo; href?: string };
 
-// Módulos que já funcionam (são links). Os dois últimos pedem login (usuário e senha do morador).
+// Módulos que já funcionam (são links).
 const PRONTOS: Modulo[] = [
   { icone: Wallet, titulo: "Prestação de contas", descricao: "Saldo, receitas e despesas", tom: "verde", href: "/financeiro" },
   { icone: MapPinned, titulo: "Mapa das casas", descricao: "Encontre qualquer casa", tom: "lago", href: "/mapa" },
   { icone: Phone, titulo: "Contatos úteis", descricao: "Endereço, portaria e emergência", tom: "vinho", href: "/contatos" },
   { icone: CalendarDays, titulo: "Agenda das áreas de lazer", descricao: "Horários livres e pedido de reserva", tom: "verde", href: "/reservas" },
-  { icone: UserCheck, titulo: "Autorizar visita", descricao: "Precisa entrar com o seu usuário", tom: "lago", href: "/visitas" },
-  { icone: Package, titulo: "Minhas encomendas", descricao: "Precisa entrar com o seu usuário", tom: "areia", href: "/encomendas" },
+  { icone: UserCheck, titulo: "Autorizar visita", descricao: "Código para o visitante entrar", tom: "lago", href: "/visitas" },
+  { icone: Package, titulo: "Minhas encomendas", descricao: "O que chegou na portaria", tom: "areia", href: "/encomendas" },
 ];
 
 // Módulos que ainda vão chegar (sem link: não são clicáveis).
@@ -89,11 +86,8 @@ function ItemModulo({ m }: { m: Modulo }) {
   );
 }
 
-export default async function MaisMorador({ searchParams }: PageProps<"/mais">) {
-  const { c } = await searchParams;
-  const [cp, ctx] = await Promise.all([condominioPublico(c), sessaoOpcional()]);
-  if (!cp) return <PortalIndisponivel />;
-  const sufixo = sufixoC(cp);
+export default async function MaisMorador() {
+  await exigirPermissao("area.morador", "/mais");
 
   return (
     <div className="flex flex-col gap-6">
@@ -104,7 +98,7 @@ export default async function MaisMorador({ searchParams }: PageProps<"/mais">) 
         <ul className="grid gap-3 sm:grid-cols-2">
           {PRONTOS.map((m) => (
             <li key={m.titulo}>
-              <ItemModulo m={{ ...m, href: m.href ? comC(m.href, sufixo) : undefined }} />
+              <ItemModulo m={m} />
             </li>
           ))}
         </ul>
@@ -132,22 +126,12 @@ export default async function MaisMorador({ searchParams }: PageProps<"/mais">) 
         </Cartao>
       </section>
 
-      {/* Sem login: "Entrar" (morador com usuário e senha; equipe com e-mail). Com login: trocar a senha. */}
-      {ctx ? (
-        <Link
-          href="/conta/senha"
-          className="saltado flex min-h-12 w-full items-center justify-center gap-2 rounded-full px-3 font-bold text-ink-2 active:shadow-afundado"
-        >
-          <KeyRound aria-hidden className="size-5" /> Trocar minha senha
-        </Link>
-      ) : (
-        <Link
-          href={comC("/entrar", sufixo)}
-          className="saltado flex min-h-12 w-full items-center justify-center gap-2 rounded-full px-3 font-bold text-ink-2 active:shadow-afundado"
-        >
-          <LogIn aria-hidden className="size-5" /> Entrar com usuário e senha
-        </Link>
-      )}
+      <Link
+        href="/conta/senha"
+        className="saltado flex min-h-12 w-full items-center justify-center gap-2 rounded-full px-3 font-bold text-ink-2 active:shadow-afundado"
+      >
+        <KeyRound aria-hidden className="size-5" /> Trocar minha senha
+      </Link>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Ban, KeyRound, UserCheck } from "lucide-react";
-import { exigirLoginDaCasa } from "@/server/sessao-opcional";
+import { exigirPermissao } from "@/server/contexto";
 import { minhasAutorizacoes, type Autorizacao } from "@/server/dados/portaria";
 import { cancelarAutorizacao } from "@/server/acoes/portaria";
 import { hojeISO } from "@/lib/formato";
@@ -29,9 +29,9 @@ function doFiltro(a: Autorizacao, filtro: Filtro): boolean {
 }
 
 export default async function VisitasMorador({ searchParams }: PageProps<"/visitas">) {
-  const { filtro: bruto, c } = await searchParams;
+  const { filtro: bruto } = await searchParams;
   // Sem login → /entrar, voltando para cá depois.
-  const ctx = await exigirLoginDaCasa("visitantes.autorizar", bruto === "usadas" || bruto === "vencidas" ? `/visitas?filtro=${bruto}` : "/visitas", c);
+  const ctx = await exigirPermissao("visitantes.autorizar", bruto === "usadas" || bruto === "vencidas" ? `/visitas?filtro=${bruto}` : "/visitas");
   const cabecalho = (
     <CabecalhoPagina
       sobretitulo="Portaria"

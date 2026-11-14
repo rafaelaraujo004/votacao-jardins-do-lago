@@ -18,6 +18,7 @@ import { adminAuth, adminDb } from "./firebase-admin";
 import { NOME_COOKIE_SESSAO } from "./sessao";
 import { calcularPermissoes, ehPapel, type Papel, type Permissao } from "@/lib/permissoes";
 import { FUSO_PADRAO } from "@/lib/formato";
+import { linkEntrar } from "@/lib/destino-seguro";
 
 export type Contexto = {
   uid: string;
@@ -120,18 +121,19 @@ export const getContexto = cache(async (): Promise<Contexto | null> => {
 
 /**
  * Para páginas: sem login → tela de entrada; com senha provisória → troca de senha.
+ * `volta`: caminho interno para onde voltar depois de entrar (ex.: "/visitas").
  * (A tela /conta/senha usa getContexto, e não esta função, para não ficar em laço.)
  */
-export async function exigirContexto(): Promise<Contexto> {
+export async function exigirContexto(volta?: string): Promise<Contexto> {
   const ctx = await getContexto();
-  if (!ctx) redirect("/entrar");
+  if (!ctx) redirect(linkEntrar(volta));
   if (ctx.precisaTrocarSenha) redirect("/conta/senha");
   return ctx;
 }
 
-/** Para páginas: sem a permissão → tela "sem acesso". */
-export async function exigirPermissao(permissao: Permissao): Promise<Contexto> {
-  const ctx = await exigirContexto();
+/** Para páginas: sem login → /entrar?volta=...; sem a permissão → tela "sem acesso". */
+export async function exigirPermissao(permissao: Permissao, volta?: string): Promise<Contexto> {
+  const ctx = await exigirContexto(volta);
   if (!ctx.permissoes.has(permissao)) redirect("/sem-acesso");
   return ctx;
 }

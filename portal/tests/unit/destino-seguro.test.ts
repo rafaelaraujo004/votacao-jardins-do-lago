@@ -2,7 +2,7 @@
  * "?volta=" da tela de entrada: só caminhos internos (sem redirecionamento aberto).
  */
 import { describe, expect, it } from "vitest";
-import { destinoDepoisDoLogin, destinoSeguro, linkEntrar } from "@/lib/destino-seguro";
+import { destinoDaRaiz, destinoDepoisDoLogin, destinoSeguro, linkEntrar } from "@/lib/destino-seguro";
 
 describe("destinoSeguro", () => {
   it("aceita caminhos internos, com busca", () => {
@@ -66,6 +66,11 @@ describe("destinoDepoisDoLogin", () => {
     expect(destinoDepoisDoLogin("/portaria", "/admin")).toBe("/portaria");
     expect(destinoDepoisDoLogin("/admin", "/administrador")).toBe("/admin");
   });
+
+  it("síndico/conselho podem voltar ao relatório do financeiro; portaria não", () => {
+    expect(destinoDepoisDoLogin("/admin", "/relatorio/financeiro?mes=2026-10")).toBe("/relatorio/financeiro?mes=2026-10");
+    expect(destinoDepoisDoLogin("/portaria", "/relatorio/financeiro?mes=2026-10")).toBe("/portaria");
+  });
 });
 
 describe("linkEntrar", () => {
@@ -74,5 +79,22 @@ describe("linkEntrar", () => {
     expect(linkEntrar("/visitas")).toBe("/entrar?volta=%2Fvisitas");
     expect(linkEntrar("/visitas", "demo")).toBe("/entrar?c=demo&volta=%2Fvisitas");
     expect(linkEntrar("https://site-falso.com")).toBe("/entrar");
+  });
+});
+
+describe("endereço principal (/)", () => {
+  it("sem sessão vai para a tela de entrada (nada abre sem login)", () => {
+    expect(destinoDaRaiz(null)).toBe("/entrar");
+  });
+
+  it("com sessão vai para o início do papel", () => {
+    expect(destinoDaRaiz({ papel: "morador", precisaTrocarSenha: false })).toBe("/inicio");
+    expect(destinoDaRaiz({ papel: "admin", precisaTrocarSenha: false })).toBe("/admin");
+    expect(destinoDaRaiz({ papel: "conselheiro", precisaTrocarSenha: false })).toBe("/admin");
+    expect(destinoDaRaiz({ papel: "portaria", precisaTrocarSenha: false })).toBe("/portaria");
+  });
+
+  it("senha provisória vai primeiro para a troca de senha", () => {
+    expect(destinoDaRaiz({ papel: "morador", precisaTrocarSenha: true })).toBe("/conta/senha");
   });
 });

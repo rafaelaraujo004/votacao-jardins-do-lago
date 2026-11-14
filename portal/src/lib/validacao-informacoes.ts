@@ -1,5 +1,5 @@
 /**
- * Informações do condomínio (telefones, horário, aviso e portal público).
+ * Informações do condomínio (telefones, horário e aviso) e o convite dos moradores.
  * Lógica pura: valida, normaliza e formata. Usada no servidor e nos testes.
  */
 import { z } from "zod";
@@ -83,33 +83,18 @@ export const esquemaInformacoes = z.object({
   whatsappAdministracao: telefone("WhatsApp da administração"),
   horarioAdministracao: textoCurto(LIMITE_HORARIO, `Use no máximo ${LIMITE_HORARIO} caracteres no horário.`),
   aviso: textoCurto(LIMITE_AVISO, `Use no máximo ${LIMITE_AVISO} caracteres no aviso.`),
-  // Caixa de seleção: só chega "on" quando está marcada.
-  portalPublico: z
-    .union([z.literal("on"), z.literal("true")])
-    .optional()
-    .transform((v) => v !== undefined),
 });
 export type DadosInformacoes = z.infer<typeof esquemaInformacoes>;
 
-// ---------- Link público dos moradores ----------
-
-export const CONDOMINIO_PUBLICO_PADRAO = "jardins-do-lago";
-
-/**
- * Link que o síndico manda aos moradores.
- * O condomínio padrão usa só a raiz ("/"); outro condomínio leva "?c=<id>".
- */
-export function linkPublicoMoradores(base: string, condominioId: string, padrao = CONDOMINIO_PUBLICO_PADRAO): string {
-  const raiz = base.replace(/\/+$/, "");
-  return condominioId === padrao ? `${raiz}/` : `${raiz}/?c=${encodeURIComponent(condominioId)}`;
-}
+// ---------- Convite dos moradores ----------
+// O link de acesso (".../entrar") é montado por linkAcessoMoradores, em src/lib/condominio-id.ts.
 
 /** Mensagem pronta para o síndico convidar os moradores pelo WhatsApp. */
 export function mensagemConviteMoradores(nomeCondominio: string, link: string): string {
   return [
     `Olá, moradores do ${nomeCondominio}!`,
-    "O portal do condomínio já está no ar. Pelo link abaixo você vê a prestação de contas, os contatos, o mapa e a agenda das áreas de lazer, sem precisar de senha:",
+    "O portal do condomínio já está no ar. Entre pelo link abaixo com o USUÁRIO e a SENHA que a administração enviou para a sua casa:",
     link,
-    "Para pedir reserva, autorizar visitas ou ver encomendas, entre com o usuário e a senha que a administração enviar para você.",
+    "Lá você vê a prestação de contas, os contatos, o mapa e a agenda das áreas de lazer, pede reservas, autoriza visitas e acompanha as encomendas. Não passe o seu usuário e a sua senha para ninguém. Se ainda não recebeu, fale com a administração.",
   ].join("\n\n");
 }

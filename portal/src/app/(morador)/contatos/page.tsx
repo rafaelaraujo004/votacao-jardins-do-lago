@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import type { LucideIcon } from "lucide-react";
 import { Ambulance, Clock, DoorOpen, Flame, MessageCircle, Phone, Shield, UserRound } from "lucide-react";
-import { condominioPublico } from "@/server/publico";
-import { informacoesPublicas, type InformacoesPublicas } from "@/server/dados/informacoes";
+import { exigirPermissao } from "@/server/contexto";
+import { informacoesDoCondominio, type InformacoesDoCondominio } from "@/server/dados/informacoes";
 import { EMERGENCIAS } from "@/lib/condominio";
 import { Alerta, Cartao, EstadoVazio } from "@/components/ui/basicos";
 import { CabecalhoPagina, TituloSecao } from "@/components/ui/painel";
 import { EnderecoCopiavel } from "@/components/ui/endereco";
-import { PortalIndisponivel } from "@/components/layout/faixa-topo";
 
 export const metadata: Metadata = { title: "Contatos úteis" };
 
@@ -28,7 +27,7 @@ function digitosBR(telefone: string): string | null {
 type Contato = { nome: string; detalhe: string | null; telefone: string | null; whatsapp: string | null; icone: LucideIcon };
 
 /** Monta os cartões a partir do cadastro da administração (sem inventar números). */
-function contatosDoCadastro(info: InformacoesPublicas): Contato[] {
+function contatosDoCadastro(info: InformacoesDoCondominio): Contato[] {
   const lista: Contato[] = [];
   if (info.telefonePortaria) {
     lista.push({ nome: "Portaria", detalhe: null, telefone: info.telefonePortaria, whatsapp: null, icone: DoorOpen });
@@ -50,15 +49,13 @@ const classeBotaoVerde =
 const classeBotaoSaltado =
   "saltado inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-2 font-bold text-pine active:shadow-afundado";
 
-/** Contatos PÚBLICOS: endereço, telefones do condomínio (cadastro da administração) e emergência. */
-export default async function ContatosMorador({ searchParams }: PageProps<"/contatos">) {
-  const { c } = await searchParams;
-  const cp = await condominioPublico(c);
-  if (!cp) return <PortalIndisponivel />;
+/** Contatos (com login): endereço, telefones do condomínio (cadastro da administração) e emergência. */
+export default async function ContatosMorador() {
+  const ctx = await exigirPermissao("informacoes.ver", "/contatos");
 
-  let info: InformacoesPublicas | null = null;
+  let info: InformacoesDoCondominio | null = null;
   try {
-    info = await informacoesPublicas(cp.id);
+    info = await informacoesDoCondominio(ctx);
   } catch (erro) {
     // Se o cadastro falhar, a página continua com endereço e emergência.
     console.error("Contatos: não foi possível carregar as informações", erro);

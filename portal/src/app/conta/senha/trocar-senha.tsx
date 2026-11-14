@@ -87,9 +87,9 @@ export function TrocarSenha({
   inicio = null,
   entrarHref = "/entrar",
 }: {
-  /** Início com o ?c= do condomínio (morador); usado no lugar de "/inicio". */
+  /** Início do papel da pessoa (ex.: "/inicio"); usado no lugar de "/inicio". */
   inicio?: string | null;
-  /** Tela de entrada com o ?c= do condomínio. */
+  /** Tela de entrada (com ?c= só se não for o condomínio padrão: monta o login do morador). */
   entrarHref?: string;
   email: string;
   uid: string;

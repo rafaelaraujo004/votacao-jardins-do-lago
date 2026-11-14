@@ -1,19 +1,18 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { CircleCheck, CirclePause, Globe, Phone } from "lucide-react";
+import { KeyRound, Phone } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { informacoesParaEdicao } from "@/server/dados/informacoes";
-import { idPublicoPadrao } from "@/server/publico";
+import { idCondominioPadrao, linkAcessoMoradores } from "@/lib/condominio-id";
 import { salvarInformacoes } from "@/server/acoes/informacoes";
 import { linkWhatsApp } from "@/lib/portaria";
 import {
   formatarTelefone,
   LIMITE_AVISO,
   LIMITE_HORARIO,
-  linkPublicoMoradores,
   mensagemConviteMoradores,
 } from "@/lib/validacao-informacoes";
-import { Alerta, Campo, Cartao, classeEntrada, Etiqueta, TituloPagina } from "@/components/ui/basicos";
+import { Campo, Cartao, classeEntrada, TituloPagina } from "@/components/ui/basicos";
 import { BotaoEnviar, Formulario } from "@/components/ui/formulario";
 import { LinkMoradores } from "./link-moradores";
 
@@ -36,9 +35,8 @@ export default async function PaginaInformacoes() {
   const ctx = await exigirPermissao("informacoes.gerenciar");
   const [info, base] = await Promise.all([informacoesParaEdicao(ctx), enderecoBase()]);
 
-  // Mesmo padrão do link público (variável CONDOMINIO_PUBLICO, conferida em server/publico.ts).
-  const padrao = idPublicoPadrao();
-  const link = linkPublicoMoradores(base, ctx.condominioId, padrao);
+  // Link da tela de entrada (com ?c= só quando não é o condomínio padrão).
+  const link = linkAcessoMoradores(base, ctx.condominioId, idCondominioPadrao());
   const convite = linkWhatsApp(mensagemConviteMoradores(ctx.condominioNome, link));
   // Telefones já gravados aparecem formatados no campo.
   const tel = (d: string | null) => (d ? formatarTelefone(d) : "");
@@ -48,30 +46,17 @@ export default async function PaginaInformacoes() {
       <TituloPagina
         sobretitulo="Configurações"
         titulo="Informações do condomínio"
-        descricao="Telefones, horário e aviso que os moradores veem no portal, sem precisar de senha."
+        descricao="Telefones, horário e aviso que os moradores veem no portal depois de entrar."
       />
 
       <Cartao aria-labelledby="titulo-link" className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 id="titulo-link" className="flex items-center gap-2 text-[1.1rem] font-bold text-destaque">
-            <Globe aria-hidden className="size-5" /> Portal dos moradores
-          </h2>
-          {info.portalPublico ? (
-            <Etiqueta tom="ok" icone={CircleCheck}>Ligado</Etiqueta>
-          ) : (
-            <Etiqueta tom="neutro" icone={CirclePause}>Desligado</Etiqueta>
-          )}
-        </div>
-        {info.portalPublico ? (
-          <p className="text-ink-2">
-            Mande este link no grupo dos moradores. Quem abrir vê as informações gerais do condomínio; nomes e números
-            de casas nunca aparecem.
-          </p>
-        ) : (
-          <Alerta tipo="aviso" titulo="O portal dos moradores está desligado">
-            Quem abrir o link verá que o portal não está disponível. Marque “Portal dos moradores ligado” abaixo e salve.
-          </Alerta>
-        )}
+        <h2 id="titulo-link" className="flex items-center gap-2 text-[1.1rem] font-bold text-destaque">
+          <KeyRound aria-hidden className="size-5" /> Link de acesso dos moradores
+        </h2>
+        <p className="text-ink-2">
+          Mande este link no grupo dos moradores. Nada do portal abre sem login: cada morador entra com o usuário e a
+          senha que você cria em “Moradores e equipe”. Quem não tiver usuário não vê nenhuma informação.
+        </p>
         <LinkMoradores link={link} linkWhatsApp={convite} />
       </Cartao>
 
@@ -152,23 +137,6 @@ export default async function PaginaInformacoes() {
               className={`${classeEntrada} py-3`}
             />
           </Campo>
-
-          <label
-            htmlFor="portalPublico"
-            className="saltado flex min-h-14 cursor-pointer items-center gap-3 rounded-2xl px-4 py-3"
-          >
-            <input
-              id="portalPublico"
-              name="portalPublico"
-              type="checkbox"
-              defaultChecked={info.portalPublico}
-              className="size-6 shrink-0 accent-pine"
-            />
-            <span className="flex flex-col">
-              <span className="font-bold">Portal dos moradores ligado</span>
-              <span className="text-[0.92rem] text-muted">Desmarque para tirar o link público do ar na hora.</span>
-            </span>
-          </label>
 
           <div>
             <BotaoEnviar>Salvar informações</BotaoEnviar>

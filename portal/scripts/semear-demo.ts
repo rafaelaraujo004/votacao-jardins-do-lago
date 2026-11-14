@@ -8,7 +8,7 @@
  * O morador demo (Casa 12) entra com o usuário DEMA22 e senha (aba "Sou morador").
  * A senha é nova a cada semeadura e fica em portal/.acesso-demo.txt
  * (arquivo ignorado pelo git). Ela nunca aparece na tela.
- * O condomínio demo fica com o portal público LIGADO (informações gerais abertas pelo link ?c=).
+ * Nada do portal abre sem login (não existe área pública).
  */
 import { writeFileSync } from "node:fs";
 import path from "node:path";
@@ -58,8 +58,6 @@ async function main() {
       fuso: "America/Belem",
       moeda: "BRL",
       demo: true,
-      // Só o condomínio demo principal abre as informações gerais pelo link (?c=).
-      portalPublico: c.id === CONDOMINIO_DEMO.id,
       ...(c.id === CONDOMINIO_DEMO.id ? { informacoes: INFORMACOES_DEMO } : {}),
       criadoEm: agora,
     });
@@ -267,7 +265,7 @@ async function main() {
 
   console.log(`Dados de demonstração prontos: ${CONDOMINIO_DEMO.nome}, 5 casas, 4 perfis, portaria e reservas.`);
   console.log(`Contas da equipe e do morador demo (usuário ${USUARIO_MORADOR_DEMO}): veja ${ARQUIVO_DEMO}`);
-  console.log(`Portal público do demo: /inicio?c=${CONDOMINIO_DEMO.id}`);
+  console.log(`Entrada do morador demo: /entrar?c=${CONDOMINIO_DEMO.id}`);
   console.log("Códigos de visitante da demonstração: K7M-4PX (hoje, uso único), PRT-3ZB (prestador, 7 dias), HGX-7QW (amanhã).");
 }
 

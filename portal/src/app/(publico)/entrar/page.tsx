@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getContexto } from "@/server/contexto";
@@ -8,9 +6,7 @@ import { demoAtivo } from "@/server/demo";
 import { NOME_COOKIE_SESSAO } from "@/server/sessao";
 import { inicioDoPapel, NOME_DO_PAPEL, PAPEIS } from "@/lib/permissoes";
 import { destinoDepoisDoLogin, destinoSeguro } from "@/lib/destino-seguro";
-import { linkConversaWhatsApp } from "@/lib/validacao-informacoes";
-import { comC, condominioPublico, escolherIdPublico, idPublicoPadrao, sufixoDoId } from "@/server/publico";
-import { informacoesPublicas } from "@/server/dados/informacoes";
+import { idCondominioPadrao, idDoLogin } from "@/lib/condominio-id";
 import { USUARIOS_DEMO } from "@/lib/demo";
 import { Alerta } from "@/components/ui/basicos";
 import { Logo, Petalas } from "@/components/ui/marca";
@@ -31,18 +27,13 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
   const ctx = await getContexto();
   if (ctx) {
     if (ctx.precisaTrocarSenha) redirect(volta ? `/conta/senha?volta=${encodeURIComponent(volta)}` : "/conta/senha");
-    const destino = destinoDepoisDoLogin(inicioDoPapel(ctx.papel), volta);
-    // Morador: Início do SEU condomínio (com ?c= quando não é o padrão).
-    redirect(destino === "/inicio" ? comC("/inicio", sufixoDoId(ctx.condominioId, idPublicoPadrao())) : destino);
+    redirect(destinoDepoisDoLogin(inicioDoPapel(ctx.papel), volta));
   }
 
-  // Condomínio do login do morador: o do ?c= ou o padrão (CONDOMINIO_PUBLICO).
-  const padrao = idPublicoPadrao();
-  const condominioId = escolherIdPublico(c, padrao) ?? padrao;
-  const inicioMorador = comC("/inicio", sufixoDoId(condominioId, padrao));
-  // WhatsApp da administração (só se o condomínio estiver aberto ao público).
-  const cp = await condominioPublico(condominioId === padrao ? undefined : condominioId);
-  const zap = cp ? (await informacoesPublicas(cp.id).catch(() => null))?.whatsappAdministracao : null;
+  // ?c= serve SÓ para montar o e-mail sintético do morador de outro condomínio
+  // (ex.: a demonstração). Id inválido → condomínio padrão. Nunca escolhe dados:
+  // esta tela não mostra nada do condomínio.
+  const condominioId = idDoLogin(c, idCondominioPadrao());
 
   const cookieSemVinculo = Boolean((await cookies()).get(NOME_COOKIE_SESSAO));
   const demo = demoAtivo();
@@ -94,21 +85,12 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
 
             {volta && !saiu ? (
               <Alerta tipo="info" titulo="Entre para continuar">
-                Esta parte do portal é da sua casa. Depois de entrar, você volta para onde estava.
+                O portal só abre com usuário e senha. Depois de entrar, você volta para onde estava.
               </Alerta>
             ) : null}
 
             {/* Morador (usuário + senha) e equipe (e-mail + senha), pelo Firebase Authentication. */}
-            <EntrarSenha
-              condominioId={condominioId}
-              volta={volta}
-              inicioMorador={inicioMorador}
-              whatsappAdministracao={zap ? linkConversaWhatsApp(zap) : null}
-            />
-
-            <Link href={inicioMorador} className="mx-auto flex min-h-11 w-fit items-center gap-1.5 font-bold text-lake">
-              <ArrowLeft aria-hidden className="size-4" /> Ver as informações do condomínio sem entrar
-            </Link>
+            <EntrarSenha condominioId={condominioId} volta={volta} />
 
             {/* Atalhos fictícios: só no computador local, com o simulador. */}
             {demo ? (

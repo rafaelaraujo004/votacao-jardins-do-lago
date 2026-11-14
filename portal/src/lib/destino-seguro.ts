@@ -6,8 +6,9 @@
  * num site falso. Por isso só aceitamos caminhos INTERNOS do portal.
  * Lógica pura, testada em tests/unit/destino-seguro.test.ts.
  */
+import { inicioDoPapel, type Papel } from "./permissoes";
 
-/** Áreas do morador (públicas e da casa). */
+/** Áreas do morador (todas exigem login). */
 const AREAS_MORADOR = ["/inicio", "/financeiro", "/mapa", "/contatos", "/mais", "/reservas", "/visitas", "/encomendas", "/relatorio"];
 
 /** Lugares para onde nunca voltamos (evita laços e chamadas diretas de API). */
@@ -47,7 +48,8 @@ export function destinoSeguro(volta: unknown): string | null {
  * - `destinoServidor`: o que o servidor mandou (/conta/senha, /inicio, /admin ou /portaria).
  * - Senha provisória (/conta/senha) sempre vence.
  * - O ?volta= só vale se combinar com o perfil: morador volta para áreas do morador;
- *   a equipe volta para dentro da própria área. Assim ninguém cai em "sem acesso".
+ *   a equipe volta para dentro da própria área (síndico/conselho também ao /relatorio).
+ *   Assim ninguém cai em "sem acesso".
  */
 export function destinoDepoisDoLogin(destinoServidor: string, volta: unknown): string {
   if (destinoServidor === "/conta/senha") return destinoServidor;
@@ -57,10 +59,25 @@ export function destinoDepoisDoLogin(destinoServidor: string, volta: unknown): s
   if (destinoServidor === "/inicio") {
     return AREAS_MORADOR.some((a) => dentroDe(caminho, a)) ? seguro : destinoServidor;
   }
+  // Síndico e conselho também podem voltar ao relatório (PDF) do financeiro.
+  if (destinoServidor === "/admin" && dentroDe(caminho, "/relatorio")) return seguro;
   return dentroDe(caminho, destinoServidor) ? seguro : destinoServidor;
 }
 
-/** Monta "/entrar?volta=..." (e o ?c= do condomínio, se houver). */
+/**
+ * Endereço principal ("/"): sem sessão → /entrar; senha provisória → troca de senha;
+ * com sessão → início do papel (morador /inicio, síndico e conselho /admin, portaria /portaria).
+ */
+export function destinoDaRaiz(sessao: { papel: Papel; precisaTrocarSenha: boolean } | null): string {
+  if (!sessao) return "/entrar";
+  if (sessao.precisaTrocarSenha) return "/conta/senha";
+  return inicioDoPapel(sessao.papel);
+}
+
+/**
+ * Monta "/entrar?volta=...".
+ * `c`: só para o login do morador de OUTRO condomínio (ex.: a demonstração); nunca escolhe dados.
+ */
 export function linkEntrar(volta?: string | null, c?: string | null): string {
   const busca = new URLSearchParams();
   if (c) busca.set("c", c);

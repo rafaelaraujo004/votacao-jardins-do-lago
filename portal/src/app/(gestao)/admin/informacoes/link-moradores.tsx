@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Link público dos moradores com os botões "Copiar link" e "Enviar pelo WhatsApp".
+ * Link de acesso dos moradores (tela de entrada) com os botões "Copiar link" e "Enviar pelo WhatsApp".
  * Se o navegador não deixar copiar, o link fica selecionado para copiar na mão.
  */
 import { useRef } from "react";
@@ -44,7 +44,7 @@ export function LinkMoradores({ link, linkWhatsApp }: { link: string; linkWhatsA
       <div className="afundado flex items-start gap-3 rounded-2xl px-4 py-3">
         <Link2 aria-hidden className="mt-0.5 size-5 shrink-0 text-plum" />
         <div className="min-w-0">
-          <span className="rotulo-caixa block">Link dos moradores</span>
+          <span className="rotulo-caixa block">Link de acesso dos moradores</span>
           <p ref={refLink} className="m-0 select-text break-all font-bold text-ink">
             {link}
           </p>
@@ -58,7 +58,7 @@ export function LinkMoradores({ link, linkWhatsApp }: { link: string; linkWhatsA
           <MessageCircle aria-hidden className="size-5" /> Enviar pelo WhatsApp
         </a>
         <a href={link} target="_blank" rel="noopener noreferrer" className={classesDoBotao("secundario")}>
-          <ExternalLink aria-hidden className="size-5" /> Abrir o portal
+          <ExternalLink aria-hidden className="size-5" /> Abrir a tela de entrada
         </a>
       </div>
     </div>

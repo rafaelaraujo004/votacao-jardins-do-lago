@@ -1,16 +1,12 @@
 /**
  * Faixa verde do topo: logo no selo claro, nome do condomínio, endereço curto,
  * quem está usando e os botões redondos de tema e sair.
- * Na área PÚBLICA dos moradores (informações gerais abertas pelo link):
- * - sem login: botão "Entrar" (→ /entrar);
- * - com login: "Casa 12" e o botão "Sair".
+ * Na área do morador (sempre com login): "Casa 12" e o botão "Sair".
  */
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { House, KeyRound, LockKeyhole, LogIn, LogOut, CloudOff } from "lucide-react";
+import { House, KeyRound, LogOut } from "lucide-react";
 import { Logo, Petalas } from "@/components/ui/marca";
-import { FaixaPetalas } from "@/components/ui/painel";
-import { Cartao, EstadoVazio } from "@/components/ui/basicos";
 import { BotaoTema } from "@/components/ui/tema";
 import { sair } from "@/server/acoes-sessao";
 import { ENDERECO_LINHA } from "@/lib/condominio";
@@ -47,9 +43,7 @@ export function FaixaTopo({
   demo,
   largura = "max-w-5xl",
   contaHref,
-  publico = false,
   sessao = null,
-  entrarHref = "/entrar",
   children,
 }: {
   titulo: string;
@@ -58,12 +52,8 @@ export function FaixaTopo({
   largura?: string;
   /** Endereço da tela "Trocar senha" (só para a equipe). Sem ele, o botão não aparece. */
   contaHref?: string;
-  /** true = área pública dos moradores: "Entrar" quando ninguém está logado. */
-  publico?: boolean;
-  /** Na área pública: quem está logado ("Casa 12"), ou null se ninguém. */
+  /** Área do morador: quem está logado ("Casa 12"). Vira um botão para "Minha conta". */
   sessao?: { rotulo: string } | null;
-  /** Na área pública: link do botão "Entrar" (com o ?c= do condomínio). */
-  entrarHref?: string;
   children?: ReactNode;
 }) {
   return (
@@ -88,26 +78,11 @@ export function FaixaTopo({
           </Link>
         ) : null}
         <BotaoTema className={classeBotaoFaixa} />
-        {publico && !sessao ? <LinkEntrar href={entrarHref} /> : null}
-        {publico && sessao ? <ChipCasa rotulo={sessao.rotulo} /> : null}
-        {!publico || sessao ? <BotaoSair redondo className={classeBotaoFaixa} /> : null}
+        {sessao ? <ChipCasa rotulo={sessao.rotulo} /> : null}
+        <BotaoSair redondo className={classeBotaoFaixa} />
       </div>
       {children}
     </header>
-  );
-}
-
-/** Botão "Entrar" da área pública (morador ou equipe escolhem na tela de entrada). */
-function LinkEntrar({ href }: { href: string }) {
-  return (
-    <Link
-      href={href}
-      className={cx("flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full px-3.5 text-[0.9rem] font-bold", classeBotaoFaixa)}
-    >
-      <LogIn aria-hidden className="size-[18px] shrink-0" />
-      {/* Em telas bem estreitas o texto fica só para leitores de tela (o ícone continua). */}
-      <span className="max-[360px]:sr-only">Entrar</span>
-    </Link>
   );
 }
 
@@ -126,25 +101,5 @@ function ChipCasa({ rotulo }: { rotulo: string }) {
         <span className="sr-only">. Abrir minha conta</span>
       </span>
     </Link>
-  );
-}
-
-/** Tela simples para quando o condomínio do link não está disponível ao público. */
-export function PortalIndisponivel() {
-  return (
-    <main id="conteudo" className="mx-auto flex min-h-dvh max-w-lg flex-col items-center justify-center gap-5 px-4 py-10">
-      <Logo largura={120} />
-      <Cartao semEspaco className="w-full overflow-hidden">
-        <FaixaPetalas />
-        <div className="p-4">
-          <EstadoVazio icone={CloudOff} titulo="Portal indisponível">
-            O portal deste condomínio não está aberto ao público agora. Confira o link com a administração ou tente de novo mais tarde.
-          </EstadoVazio>
-        </div>
-      </Cartao>
-      <Link href="/entrar" className="inline-flex min-h-11 items-center gap-2 rounded-full px-3 font-bold text-pine">
-        <LockKeyhole aria-hidden className="size-4" /> Entrar no portal
-      </Link>
-    </main>
   );
 }

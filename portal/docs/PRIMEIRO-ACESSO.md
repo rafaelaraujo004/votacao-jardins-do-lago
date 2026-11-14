@@ -87,16 +87,11 @@ Morador **suspenso** não entra, mesmo com a senha certa. Tudo fica na auditoria
 
 > Demonstração no Firebase real: o script `scripts/criar-demo-real.ts` cria o morador demo da Casa 12 com o usuário fixo **`DEMA22`** e a senha de `DEMO_SENHA` (sem troca obrigatória). Link: `/entrar?c=jardins-do-lago-demo`. ("DEMO12" não serve: o usuário não pode ter O nem 1.)
 
-## 7. Ligar as informações gerais abertas pelo link
+## 7. Mandar o link de acesso aos moradores
 
-Pela tela: **Configurações → Informações do condomínio** (`/admin/informacoes`) → marque **"Portal dos moradores ligado"** e salve. A mesma tela mostra o link para mandar no grupo.
+O portal **não abre nada sem login**. Em **Configurações → Informações do condomínio** (`/admin/informacoes`) está o **link de acesso dos moradores** (a tela `/entrar`), com os botões **Copiar** e **Enviar pelo WhatsApp**. Cada morador entra com o **usuário e a senha que você cria** (item 6); quem não tiver usuário não vê nenhuma informação.
 
-Pelo script (primeira vez), na pasta `portal`, com o `.env.local` do Firebase real:
-
-```bash
-npx tsx scripts/ligar-portal-publico.ts --id jardins-do-lago
-# para desligar: acrescente --desligar
-```
+> O antigo campo `portalPublico` do condomínio (e o script que o ligava) foi retirado. Se ele ainda existir no banco, não tem efeito nenhum.
 
 ## Perguntas rápidas
 

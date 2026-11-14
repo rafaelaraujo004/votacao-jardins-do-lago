@@ -1,27 +1,27 @@
 import "server-only";
-import type { CondominioPublico } from "../publico";
-import { reservasPublicasDoMes } from "./publico";
+import type { Contexto } from "../contexto";
+import { reservasSemCasaDoMes } from "./morador";
 import { dataCurta, dataISO, diasNoMes, type EventoAgenda, type TipoEvento } from "@/lib/agenda";
 
 /**
  * Eventos da agenda de um mês (mes de 1 a 12).
- * Esta agenda é PÚBLICA (link dos moradores, sem login):
+ * Agenda do Início do morador (com login; o condomínio vem da sessão):
  * - Dados REAIS: reservas confirmadas e horários fechados, mostrados só como
  *   "Salão de festas reservado" — nunca com a casa ou o nome de quem reservou.
  * - Eventos de EXEMPLO só no condomínio de demonstração (sempre marcados como exemplo).
  *   Se já houver qualquer evento real no mês, nenhum exemplo aparece.
  * - No uso real, nunca inventamos eventos.
  */
-export async function eventosDoMes(cp: CondominioPublico, ano: number, mes: number): Promise<EventoAgenda[]> {
+export async function eventosDoMes(ctx: Contexto, ano: number, mes: number): Promise<EventoAgenda[]> {
   let reais: EventoAgenda[] = [];
   try {
-    reais = await reservasPublicasDoMes(cp, ano, mes);
+    reais = await reservasSemCasaDoMes(ctx, ano, mes);
   } catch (erro) {
     // Se as reservas falharem, o Início continua abrindo.
     console.error("Agenda: não foi possível carregar as reservas", erro);
   }
   // Exemplos só no condomínio de demonstração E quando ainda não há nada de verdade.
-  if (!cp.demo || reais.length) return reais;
+  if (!ctx.demo || reais.length) return reais;
 
   const modelos: { dia: number; tipo: TipoEvento; titulo: string; extra: string }[] = [
     { dia: 10, tipo: "taxa", titulo: "Vencimento da taxa condominial", extra: "boleto do mês" },

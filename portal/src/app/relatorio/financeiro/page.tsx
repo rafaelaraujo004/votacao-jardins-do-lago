@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { getContexto } from "@/server/contexto";
-import { condominioPublico } from "@/server/publico";
+import { notFound, redirect } from "next/navigation";
+import { exigirContexto } from "@/server/contexto";
 import { lancamentosDoMes, mesesComSaldo, totaisPorCategoria, type Lancamento } from "@/server/dados/financeiro";
-import { lancamentosPublicados, mesesPublicados } from "@/server/dados/publico";
+import { lancamentosPublicados, mesesPublicados } from "@/server/dados/morador";
 import type { MesComSaldo } from "@/lib/financeiro";
 import { dataISOParaBR, formatarDataHora, formatarMoeda } from "@/lib/formato";
 import { FORMAS_PAGAMENTO, nomeDoMesTitulo, REGEX_MES } from "@/lib/financeiro";
@@ -16,37 +15,34 @@ export const metadata: Metadata = { title: "Relatório financeiro" };
  * Relatório do mês pronto para imprimir ou "Salvar como PDF" pelo navegador.
  * Sem bibliotecas extras: o próprio celular/computador gera o PDF.
  *
- * Quem vê o quê:
- * - Equipe logada com "financeiro.ver" (link do painel, sem ?c=): qualquer mês, inclusive prévia.
- * - Qualquer outra pessoa (link público): só meses PUBLICADOS do condomínio público,
- *   com os mesmos filtros de privacidade da tela (sem quem lançou, sem casas).
+ * Sempre exige login (o condomínio vem da sessão). Quem vê o quê:
+ * - Equipe com "financeiro.ver": qualquer mês, inclusive prévia.
+ * - Morador ("financeiro.ver_publicado"): só meses PUBLICADOS, com os mesmos
+ *   filtros de privacidade da tela (sem quem lançou, sem casas).
+ * - Outros perfis: "sem acesso".
  */
 export default async function RelatorioFinanceiro({ searchParams }: PageProps<"/relatorio/financeiro">) {
-  const { mes: bruto, c } = await searchParams;
+  const { mes: bruto } = await searchParams;
   const mes = typeof bruto === "string" && REGEX_MES.test(bruto) ? bruto : null;
+  const ctx = await exigirContexto(mes ? `/relatorio/financeiro?mes=${mes}` : undefined);
   if (!mes) notFound();
 
-  let nomeCondominio: string;
-  let fuso: string;
   let resumo: MesComSaldo | undefined;
   let lancamentos: Lancamento[];
 
-  // Sem ?c=, a equipe logada com acesso completo vê o próprio condomínio (inclusive prévia).
-  const ctx = c === undefined ? await getContexto() : null;
-  if (ctx && !ctx.precisaTrocarSenha && ctx.permissoes.has("financeiro.ver")) {
-    nomeCondominio = ctx.condominioNome;
-    fuso = ctx.fuso;
+  const nomeCondominio = ctx.condominioNome;
+  const fuso = ctx.fuso;
+  if (ctx.permissoes.has("financeiro.ver")) {
+    // Equipe com acesso completo: qualquer mês do próprio condomínio (inclusive prévia).
     resumo = (await mesesComSaldo(ctx)).find((m) => m.mes === mes);
     lancamentos = await lancamentosDoMes(ctx, mes);
-  } else {
-    // Link público: só meses publicados.
-    const cp = await condominioPublico(c);
-    if (!cp) notFound();
-    resumo = (await mesesPublicados(cp)).find((m) => m.mes === mes);
+  } else if (ctx.permissoes.has("financeiro.ver_publicado")) {
+    // Morador: só meses publicados.
+    resumo = (await mesesPublicados(ctx)).find((m) => m.mes === mes);
     if (!resumo) notFound();
-    nomeCondominio = cp.nome;
-    fuso = cp.fuso;
-    lancamentos = await lancamentosPublicados(cp, mes);
+    lancamentos = await lancamentosPublicados(ctx, mes);
+  } else {
+    redirect("/sem-acesso");
   }
   const categorias = totaisPorCategoria(lancamentos);
 

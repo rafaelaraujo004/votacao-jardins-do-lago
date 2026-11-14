@@ -16,7 +16,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { Eye, EyeOff, House, LogIn, MessageCircle, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, House, LogIn, ShieldCheck } from "lucide-react";
 import { cabecalhosSeguros, firebaseAuth } from "@/lib/firebase/client";
 import { codigoDoErro, esquemaLoginEquipe, mensagemErroLogin, SENHA_MAXIMA } from "@/lib/senha";
 import { emailDoMorador, normalizarUsuario } from "@/lib/usuario-morador";
@@ -87,17 +87,11 @@ function CampoSenha({ id }: { id: string }) {
 export function EntrarSenha({
   condominioId,
   volta,
-  inicioMorador,
-  whatsappAdministracao,
 }: {
-  /** Condomínio do link (usado para montar o e-mail sintético do morador). */
+  /** Condomínio do login do morador (só para montar o e-mail sintético; não mostra dados). */
   condominioId: string;
   /** Para onde voltar depois de entrar (já conferido no servidor; conferimos de novo). */
   volta: string | null;
-  /** Início do morador com o ?c= do condomínio (ex.: "/inicio?c=demo"). */
-  inicioMorador: string;
-  /** Link do WhatsApp da administração, se cadastrado. */
-  whatsappAdministracao: string | null;
 }) {
   const router = useRouter();
   const { avisar } = useAvisos();
@@ -121,8 +115,7 @@ export function EntrarSenha({
     if (doServidor === "/conta/senha") {
       return seguro ? `/conta/senha?volta=${encodeURIComponent(seguro)}` : "/conta/senha";
     }
-    const destino = destinoDepoisDoLogin(doServidor, volta);
-    return destino === "/inicio" ? inicioMorador : destino;
+    return destinoDepoisDoLogin(doServidor, volta);
   }
 
   async function entrar(evento: FormEvent<HTMLFormElement>) {
@@ -268,19 +261,9 @@ export function EntrarSenha({
       {quem === "morador" ? (
         <div className="flex flex-col gap-2 rounded-2xl bg-sand px-4 py-3 text-ink">
           <p className="text-[0.95rem]">
-            <b>Esqueci minha senha:</b> peça uma nova ao síndico. Você recebe uma senha provisória e escolhe outra no
-            primeiro acesso.
+            <b>Ainda não tem usuário ou esqueceu a senha?</b> Peça ao síndico. Você recebe uma senha provisória e
+            escolhe outra no primeiro acesso.
           </p>
-          {whatsappAdministracao ? (
-            <a
-              href={whatsappAdministracao}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex min-h-11 w-fit items-center gap-2 rounded-full font-bold text-pine"
-            >
-              <MessageCircle aria-hidden className="size-5" /> Falar com a administração pelo WhatsApp
-            </a>
-          ) : null}
         </div>
       ) : (
         <p className="text-[0.9rem] text-muted">Esqueceu a senha? Peça à administração do condomínio uma nova senha provisória.</p>
