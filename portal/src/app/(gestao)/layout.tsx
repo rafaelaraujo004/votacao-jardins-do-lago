@@ -30,7 +30,7 @@ const GRUPOS: { titulo: string; itens: Item[] }[] = [
     ],
   },
   { titulo: "Comunicação", itens: [{ rotulo: "Comunicados e documentos", icone: "Megaphone", fase: "Fase 4", permissao: "comunicados.ver" }] },
-  { titulo: "Configurações", itens: [{ rotulo: "Mapa e informações", icone: "Settings", fase: "Fase 4", permissao: "areas.configurar" }] },
+  { titulo: "Configurações", itens: [{ rotulo: "Informações do condomínio", icone: "Settings", href: "/admin/informacoes", permissao: "informacoes.gerenciar" }] },
   { titulo: "Controle", itens: [{ rotulo: "Auditoria", icone: "ScrollText", href: "/admin/auditoria", permissao: "auditoria.ver" }] },
 ];
 

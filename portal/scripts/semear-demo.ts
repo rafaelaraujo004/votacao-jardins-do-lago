@@ -4,18 +4,21 @@
  *
  * Uso: npm run semear   (o "npm run dev:emu" já roda este script sozinho)
  *
- * A equipe demo (síndico, portaria, conselho) também entra com e-mail e senha.
+ * A equipe demo (síndico, portaria, conselho) entra com e-mail e senha.
+ * O morador demo (Casa 12) entra com o usuário DEMA22 e senha (aba "Sou morador").
  * A senha é nova a cada semeadura e fica em portal/.acesso-demo.txt
  * (arquivo ignorado pelo git). Ela nunca aparece na tela.
+ * O condomínio demo fica com o portal público LIGADO (informações gerais abertas pelo link ?c=).
  */
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
-import { CONDOMINIO_DEMO, OUTRO_CONDOMINIO_DEMO, USUARIOS_DEMO } from "../src/lib/demo";
+import { CONDOMINIO_DEMO, INFORMACOES_DEMO, OUTRO_CONDOMINIO_DEMO, USUARIO_MORADOR_DEMO, USUARIOS_DEMO } from "../src/lib/demo";
 import type { Papel } from "../src/lib/permissoes";
 import { gerarSenhaProvisoria } from "../src/lib/senha";
+import { emailDoMorador } from "../src/lib/usuario-morador";
 import { hojeISO } from "../src/lib/formato";
 import { hashDoCodigo, SEGREDO_CODIGO_DESENVOLVIMENTO } from "../src/lib/portaria";
 import { AREAS_SUGERIDAS, idDaTrava, proximoMes, somarDias } from "../src/lib/reservas";
@@ -55,6 +58,9 @@ async function main() {
       fuso: "America/Belem",
       moeda: "BRL",
       demo: true,
+      // Só o condomínio demo principal abre as informações gerais pelo link (?c=).
+      portalPublico: c.id === CONDOMINIO_DEMO.id,
+      ...(c.id === CONDOMINIO_DEMO.id ? { informacoes: INFORMACOES_DEMO } : {}),
       criadoEm: agora,
     });
   }
@@ -73,7 +79,8 @@ async function main() {
 
   for (const u of Object.values(USUARIOS_DEMO)) {
     await auth.deleteUser(u.uid).catch(() => undefined);
-    const email = EMAILS_DEMO[u.papel];
+    // Equipe: e-mail fictício. Morador: e-mail sintético do usuário DEMA22.
+    const email = u.papel === "morador" ? emailDoMorador(USUARIO_MORADOR_DEMO, CONDOMINIO_DEMO.id) : EMAILS_DEMO[u.papel];
     await auth.createUser({ uid: u.uid, displayName: u.nome, ...(email ? { email, password: senhaDemo } : {}) });
 
     lote.set(db.doc(`users/${u.uid}`), {
@@ -91,10 +98,17 @@ async function main() {
       permissoesNegadas: [],
       // Na demonstração ninguém é obrigado a trocar a senha (atrapalharia os botões de entrada rápida).
       precisaTrocarSenha: false,
+      ...(u.papel === "morador" ? { usuario: USUARIO_MORADOR_DEMO, usuarioCriadoEm: agora } : {}),
       demo: true,
       criadoEm: agora,
     });
   }
+  // Índice de unicidade do usuário do morador demo (usernames/{codigo} → uid).
+  lote.set(db.doc(`condominiums/${CONDOMINIO_DEMO.id}/usernames/${USUARIO_MORADOR_DEMO}`), {
+    uid: USUARIOS_DEMO.morador.uid,
+    criadoEm: agora,
+    criadoPor: USUARIOS_DEMO.admin.uid,
+  });
 
   const c = `condominiums/${CONDOMINIO_DEMO.id}`;
   const hoje = hojeISO(new Date(), "America/Belem");
@@ -240,7 +254,10 @@ async function main() {
     [
       "CONTAS DE DEMONSTRAÇÃO (só no simulador local)",
       "",
+      "Equipe (aba \"Sou da equipe\", e-mail + senha):",
       ...Object.values(EMAILS_DEMO),
+      "",
+      `Morador da Casa 12 (aba \"Sou morador\"): usuário ${USUARIO_MORADOR_DEMO}`,
       "",
       `Senha (a mesma para todas): ${senhaDemo}`,
       "",
@@ -249,7 +266,8 @@ async function main() {
   );
 
   console.log(`Dados de demonstração prontos: ${CONDOMINIO_DEMO.nome}, 5 casas, 4 perfis, portaria e reservas.`);
-  console.log(`Contas de e-mail/senha da equipe demo: veja ${ARQUIVO_DEMO}`);
+  console.log(`Contas da equipe e do morador demo (usuário ${USUARIO_MORADOR_DEMO}): veja ${ARQUIVO_DEMO}`);
+  console.log(`Portal público do demo: /inicio?c=${CONDOMINIO_DEMO.id}`);
   console.log("Códigos de visitante da demonstração: K7M-4PX (hoje, uso único), PRT-3ZB (prestador, 7 dias), HGX-7QW (amanhã).");
 }
 

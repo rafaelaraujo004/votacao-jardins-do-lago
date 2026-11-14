@@ -5,7 +5,7 @@ Uma fase só é "concluída" com: tela funcionando, validação, integração re
 | Fase | Entrega | Situação |
 |---|---|---|
 | **1 — Fundação** | Projeto, identidade visual, Firebase, sessão, multi-condomínio, permissões, regras + testes, auditoria, documentação | **Concluída** |
-| **2 — Portal** | Login da equipe, início do morador, painel admin, unidades e moradores, financeiro (lançar, estornar, resumo mensal, PDF/Excel), contatos | **Entregue**, falta o login dos moradores (decisão 1) |
+| **2 — Portal** | Login da equipe e dos moradores, área pública (informações gerais pelo link), início do morador, painel admin, unidades e moradores, financeiro (lançar, estornar, resumo mensal, PDF/Excel), contatos e informações do condomínio | **Entregue** (login dos moradores: aguardando teste no Firebase real) |
 | **3 — Portaria** | Visitantes com código de validade e uso único, entradas e saídas, encomendas, retenção LGPD | **Entregue** (aguardando sua validação no navegador) |
 | 4 — Serviços | Reservas (sem conflito, via transação), solicitações com protocolo, comunicados, documentos | **Parcial**: reservas entregues; faltam solicitações, comunicados e documentos (documentos dependem do plano Blaze) |
 | 5 — Experiência | Mapa interativo (com a planta real), enquetes, classificados, relatórios | Precisa da planta |
@@ -31,6 +31,14 @@ Uma fase só é "concluída" com: tela funcionando, validação, integração re
 - Qualquer pessoa da equipe pode trocar a senha pelo botão com a chave (menu da gestão e topo da portaria).
 - O primeiro administrador é criado pelo script (veja [PRIMEIRO-ACESSO.md](PRIMEIRO-ACESSO.md)).
 
+## Fase 2b — área pública e login dos moradores (14/11/2026)
+
+- **Informações gerais abertas pelo link** (sem login): `/inicio`, `/financeiro` (só meses publicados), `/mapa`, `/contatos`, `/mais` e a **agenda** de `/reservas` (mostra só "Ocupado", nunca a casa). Só aparece um condomínio com `portalPublico: true` e status ativo; o `?c=<id>` escolhe outro condomínio (padrão: variável `CONDOMINIO_PUBLICO`).
+- **Informações do condomínio** (`/admin/informacoes`, permissão `informacoes.gerenciar`): telefones da portaria e da administração, WhatsApp, horário, aviso e a chave **"Portal dos moradores ligado"**; link pronto para mandar no grupo.
+- **Cada morador tem login próprio**: **usuário** = código de 6 caracteres gerado pelo portal (ex.: `K7M4PX`, sem 0/O/1/I) + **senha provisória** gerada pelo portal. O síndico gera os dois na página da pessoa (ou da unidade), vê **uma vez** e manda com **Copiar** ou **Enviar pelo WhatsApp** (mensagem pronta). No primeiro acesso o morador é **obrigado a escolher a própria senha**.
+- `/entrar` tem as abas **"Sou morador"** (usuário + senha) e **"Sou da equipe"** (e-mail + senha). Sem login, `/visitas` e `/encomendas` mandam para `/entrar?volta=...`; `/reservas` mostra a agenda e o botão **"Entrar para pedir reserva"**. Logado, o topo mostra **"Casa 12 · Sair"**.
+- Veja como o síndico cria o acesso em [PRIMEIRO-ACESSO.md](PRIMEIRO-ACESSO.md), item 6.
+
 ## Fase 3 — Portaria (entregue)
 
 - **Morador** (`/visitas`): autoriza visita (um dia ou vários dias), recebe um código de 6 caracteres (ex.: `K7M-4PX`) para copiar ou mandar pelo WhatsApp; cancela autorizações. `/encomendas`: vê o que chegou e o que já retirou.
@@ -49,14 +57,15 @@ Uma fase só é "concluída" com: tela funcionando, validação, integração re
 
 ## O que falta
 
-- **Login dos moradores** (decisão 1 abaixo). Hoje só a equipe entra com e-mail e senha; os moradores reais ainda não entram.
+- **Login dos moradores**: pronto no código; falta testar no Firebase real com um morador de teste (o simulador já aceitou o e-mail sintético `.invalid`).
+- **"Esqueci minha senha" sozinho**: hoje o morador pede uma senha nova ao síndico (o portal mostra o WhatsApp da administração).
 - **Fase 4**: solicitações com protocolo, comunicados, documentos (estes precisam de arquivos → plano Blaze).
 - **Limpeza LGPD automática**: hoje é pelo botão em `/admin/portaria`; falta a tarefa agendada (Vercel Cron) chamar `limparVisitantesAntigos`.
 - **Fases 5 e 6** como na tabela.
 
 ## Decisões em aberto
 
-1. **Método de login**: **Equipe: e-mail e senha (feito).** Moradores: em aberto (muitos não usam e-mail): e-mail e senha, link sem senha, SMS (exige Blaze) ou convite pelo WhatsApp.
+1. **Método de login**: **decidido (14/11/2026).** Equipe: e-mail e senha. Moradores: usuário (código gerado pelo portal) + senha provisória enviada pelo WhatsApp; o morador escolhe a própria senha no primeiro acesso. Informações gerais continuam abertas pelo link.
 2. **Plano Blaze** (arquivos, backup automático, SMS).
 3. **Retenção LGPD** de visitantes: implementada com 90 dias — confirmar o prazo com o síndico.
 4. **Planta** do condomínio para o mapa.

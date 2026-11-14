@@ -1,10 +1,16 @@
 /**
- * GET /api/financeiro/exportar?mes=AAAA-MM — planilha do mês (abre no Excel).
- * Gestão: qualquer mês. Morador: só meses publicados.
+ * GET /api/financeiro/exportar?mes=AAAA-MM[&c=<id>] — planilha do mês (abre no Excel).
+ * - Equipe logada com "financeiro.ver" (sem ?c=): qualquer mês do próprio condomínio.
+ * - Link público (sem login): só meses PUBLICADOS do condomínio público, sem quem
+ *   lançou e sem casas (mesmos filtros da tela).
+ * É só leitura (GET): não precisa da checagem de origem.
  */
 import { NextResponse, type NextRequest } from "next/server";
 import { getContexto } from "@/server/contexto";
-import { lancamentosDoMes, mesesComSaldo, visaoFinanceira } from "@/server/dados/financeiro";
+import { condominioPublico } from "@/server/publico";
+import { lancamentosDoMes, mesesComSaldo, type Lancamento } from "@/server/dados/financeiro";
+import { lancamentosPublicados, mesesPublicados } from "@/server/dados/publico";
+import type { MesComSaldo } from "@/lib/financeiro";
 import { dataISOParaBR } from "@/lib/formato";
 import { FORMAS_PAGAMENTO, nomeDoMesTitulo, REGEX_MES } from "@/lib/financeiro";
 
@@ -18,29 +24,31 @@ function celula(valor: string): string {
 }
 
 export async function GET(req: NextRequest) {
-  const ctx = await getContexto();
-  if (!ctx) return NextResponse.json({ erro: "Entre no portal para exportar." }, { status: 401 });
-  if (ctx.precisaTrocarSenha) {
-    return NextResponse.json({ erro: "Troque a sua senha provisória antes de continuar." }, { status: 403 });
-  }
-
-  let visao;
-  try {
-    visao = visaoFinanceira(ctx);
-  } catch {
-    return NextResponse.json({ erro: "Seu perfil não pode ver o financeiro." }, { status: 403 });
-  }
-
   const mes = req.nextUrl.searchParams.get("mes") ?? "";
   if (!REGEX_MES.test(mes)) return NextResponse.json({ erro: "Mês inválido." }, { status: 400 });
+  const c = req.nextUrl.searchParams.get("c") ?? undefined;
 
-  const meses = await mesesComSaldo(ctx);
-  const resumo = meses.find((m) => m.mes === mes);
-  if (visao === "publicada" && !resumo?.publicado) return NextResponse.json({ erro: "Mês não publicado." }, { status: 404 });
-  const lancamentos = await lancamentosDoMes(ctx, mes);
+  let nomeCondominio: string;
+  let resumo: MesComSaldo | undefined;
+  let lancamentos: Lancamento[];
+
+  // Sem ?c=, a equipe logada com acesso completo exporta o próprio condomínio (qualquer mês).
+  const ctx = c === undefined ? await getContexto() : null;
+  if (ctx && !ctx.precisaTrocarSenha && ctx.permissoes.has("financeiro.ver")) {
+    nomeCondominio = ctx.condominioNome;
+    resumo = (await mesesComSaldo(ctx)).find((m) => m.mes === mes);
+    lancamentos = await lancamentosDoMes(ctx, mes);
+  } else {
+    const cp = await condominioPublico(c);
+    if (!cp) return NextResponse.json({ erro: "Portal indisponível." }, { status: 404 });
+    resumo = (await mesesPublicados(cp)).find((m) => m.mes === mes);
+    if (!resumo) return NextResponse.json({ erro: "Mês não publicado." }, { status: 404 });
+    nomeCondominio = cp.nome;
+    lancamentos = await lancamentosPublicados(cp, mes);
+  }
 
   const linhas: string[][] = [
-    [ctx.condominioNome],
+    [nomeCondominio],
     [`Prestação de contas — ${nomeDoMesTitulo(mes)}`, resumo?.publicado ? "Publicada" : "Em aberto (não publicada)"],
     [],
     ["Saldo anterior", reais(resumo?.saldoAnteriorCentavos ?? 0)],

@@ -67,7 +67,9 @@ export async function POST(req: NextRequest) {
     acao: "sessao.entrar",
   });
 
-  const resposta = NextResponse.json({ destino: inicioDoPapel(ctx.papel) });
+  // Senha provisória (equipe ou morador): primeiro escolhe a própria senha.
+  const destino = ctx.precisaTrocarSenha ? "/conta/senha" : inicioDoPapel(ctx.papel);
+  const resposta = NextResponse.json({ destino });
   resposta.cookies.set(NOME_COOKIE_SESSAO, cookie, opcoesDoCookie(DURACAO_SESSAO_MS / 1000));
   return resposta;
 }

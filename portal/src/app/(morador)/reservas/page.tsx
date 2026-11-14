@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, CalendarX2, ChevronRight, Clock, ShieldCheck, TreePalm, Users, XCircle, Zap } from "lucide-react";
-import { exigirPermissao } from "@/server/contexto";
+import { ArrowLeft, CalendarX2, ChevronRight, Clock, LogIn, ShieldCheck, TreePalm, Users, XCircle, Zap } from "lucide-react";
+import { exigirContexto } from "@/server/contexto";
+import { sessaoOpcional } from "@/server/sessao-opcional";
+import { comC, condominioPublico, sufixoC } from "@/server/publico";
 import { listarAreas, minhasReservas, ocupacaoDaArea, type Reserva } from "@/server/dados/reservas";
+import { areasPublicas, ocupacaoPublicaDaArea } from "@/server/dados/publico";
+import { linkEntrar } from "@/lib/destino-seguro";
+import { PortalIndisponivel } from "@/components/layout/faixa-topo";
+import { BotaoLink } from "@/components/ui/botao";
 import { cancelarReserva } from "@/server/acoes/reservas";
 import { dataISOParaBR, hojeISO } from "@/lib/formato";
 import { dataCurta } from "@/lib/agenda";
@@ -18,6 +24,7 @@ import {
   proximoMes,
   situacaoDasFaixas,
   type ConfigArea,
+  type StatusReserva,
 } from "@/lib/reservas";
 import { Alerta, Cartao, EstadoVazio } from "@/components/ui/basicos";
 import { AcaoConfirmada } from "@/components/ui/acao-confirmada";
@@ -28,30 +35,94 @@ import { EtiquetaReserva, Legenda } from "@/components/reservas/pecas";
 
 export const metadata: Metadata = { title: "Reservas" };
 
-function link(area: string, mes: string, dia?: string) {
-  return `/reservas?area=${area}&mes=${mes}${dia ? `&dia=${dia}` : ""}`;
+/** Ocupação de um horário, do jeito que a tela precisa (sem a casa de quem reservou). */
+type Ocupacao = { data: string; faixaId: string; inicio: string; fim: string; status: StatusReserva; minha: boolean };
+
+/**
+ * De onde vêm os dados da agenda:
+ * - morador LOGADO (com "reservas.fazer"): áreas, ocupação, "minhas reservas" e o pedido;
+ * - qualquer outra pessoa: só a VISUALIZAÇÃO pública (áreas e horários ocupados, sem casas).
+ */
+type Fonte = {
+  logado: boolean;
+  fuso: string;
+  unitId: string | null;
+  areas: ConfigArea[];
+  minhas: Reserva[];
+  ocupacao: (areaId: string, mes: string) => Promise<Ocupacao[]>;
+  /** "" ou "?c=<id>" para manter o condomínio nos links. */
+  sufixo: string;
+};
+
+async function carregarFonte(c: string | string[] | undefined, agora: Date): Promise<Fonte | null> {
+  const sessao = await sessaoOpcional();
+  if (sessao?.permissoes.has("reservas.fazer")) {
+    // Mesmas regras de sempre (ex.: senha provisória → troca de senha).
+    const ctx = await exigirContexto();
+    const [areas, minhas, cp] = await Promise.all([listarAreas(ctx), minhasReservas(ctx, agora), condominioPublico(c)]);
+    return {
+      logado: true,
+      fuso: ctx.fuso,
+      unitId: ctx.unitId,
+      areas: areas.filter((a) => a.ativa),
+      minhas,
+      ocupacao: (areaId, mes) => ocupacaoDaArea(ctx, areaId, mes),
+      sufixo: cp && cp.id === ctx.condominioId ? sufixoC(cp) : "",
+    };
+  }
+  const cp = await condominioPublico(c);
+  if (!cp) return null;
+  return {
+    logado: false,
+    fuso: cp.fuso,
+    unitId: null,
+    areas: await areasPublicas(cp),
+    minhas: [],
+    ocupacao: (areaId, mes) => ocupacaoPublicaDaArea(cp, areaId, mes),
+    sufixo: sufixoC(cp),
+  };
 }
 
 export default async function ReservasMorador({ searchParams }: PageProps<"/reservas">) {
-  const ctx = await exigirPermissao("reservas.fazer");
-  const agora = new Date();
-  const hoje = hojeISO(agora, ctx.fuso);
-  const agoraMin = minutosAgora(agora, ctx.fuso);
-  const [areas, minhas] = await Promise.all([listarAreas(ctx), minhasReservas(ctx, agora)]);
-  const ativas = areas.filter((a) => a.ativa);
-
   const params = await searchParams;
+  const agora = new Date();
+  const fonte = await carregarFonte(params.c, agora);
+  if (!fonte) return <PortalIndisponivel />;
+
+  const { logado, sufixo, minhas } = fonte;
+  const link = (areaId: string, mes: string, dia?: string) =>
+    comC(`/reservas?area=${areaId}&mes=${mes}${dia ? `&dia=${dia}` : ""}`, sufixo);
+  const hoje = hojeISO(agora, fonte.fuso);
+  const agoraMin = minutosAgora(agora, fonte.fuso);
+  const ativas = fonte.areas;
   const area = ativas.find((a) => a.id === params.area) ?? null;
+  const c = Array.isArray(params.c) ? params.c[0] : params.c;
 
   const cabecalho = (
     <CabecalhoPagina
       sobretitulo="Lazer"
-      titulo="Reservas"
-      subtitulo={area ? area.nome : "Escolha a área, o dia e o horário. A administração confirma os pedidos."}
+      titulo={logado ? "Reservas" : "Agenda das áreas de lazer"}
+      subtitulo={
+        area
+          ? area.nome
+          : logado
+            ? "Escolha a área, o dia e o horário. A administração confirma os pedidos."
+            : "Veja os horários livres. Para pedir uma reserva, entre com o usuário da sua casa."
+      }
     />
   );
 
-  const semCasa = !ctx.unitId ? (
+  // Sem login: convite para entrar (depois volta para esta mesma tela).
+  const convite = !logado ? (
+    <Cartao className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+      <p className="flex-1 text-ink-2">Para pedir uma reserva e acompanhar as da sua casa, entre com o seu usuário e senha.</p>
+      <BotaoLink href={linkEntrar(area ? `/reservas?area=${area.id}` : "/reservas", c)} icone={<LogIn aria-hidden className="size-5" />}>
+        Entrar para pedir reserva
+      </BotaoLink>
+    </Cartao>
+  ) : null;
+
+  const semCasa = logado && !fonte.unitId ? (
     <Alerta tipo="aviso" titulo="Seu cadastro não está ligado a uma casa">
       Para reservar, peça à administração para ligar seu cadastro à sua casa.
     </Alerta>
@@ -63,6 +134,7 @@ export default async function ReservasMorador({ searchParams }: PageProps<"/rese
       <div className="flex flex-col gap-5">
         {cabecalho}
         {semCasa}
+        {convite}
         {ativas.length === 0 ? (
           <EstadoVazio icone={TreePalm} titulo="Nenhuma área disponível para reserva">
             Quando a administração cadastrar as áreas de lazer, elas aparecem aqui.
@@ -96,7 +168,7 @@ export default async function ReservasMorador({ searchParams }: PageProps<"/rese
             </ul>
           </section>
         )}
-        <MinhasReservas reservas={minhas} hoje={hoje} agoraMin={agoraMin} />
+        {logado ? <MinhasReservas reservas={minhas} hoje={hoje} agoraMin={agoraMin} /> : null}
       </div>
     );
   }
@@ -109,7 +181,7 @@ export default async function ReservasMorador({ searchParams }: PageProps<"/rese
   const mes = mesPedido < mesHoje ? mesHoje : mesPedido > ultimoMes ? ultimoMes : mesPedido;
   const dia = typeof params.dia === "string" && dataValida(params.dia) && params.dia.startsWith(mes) ? params.dia : null;
 
-  const ocupacao = await ocupacaoDaArea(ctx, area.id, mes);
+  const ocupacao = await fonte.ocupacao(area.id, mes);
   const ocupacaoComId = ocupacao.map((o, i) => ({ ...o, id: String(i) }));
 
   // Quantas reservas ativas a casa já tem nesta área em cada mês (para o limite mensal).
@@ -155,11 +227,12 @@ export default async function ReservasMorador({ searchParams }: PageProps<"/rese
 
   return (
     <div className="flex flex-col gap-5">
-      <Link href="/reservas" className="flex min-h-11 w-fit items-center gap-1.5 font-bold text-lake">
+      <Link href={comC("/reservas", sufixo)} className="flex min-h-11 w-fit items-center gap-1.5 font-bold text-lake">
         <ArrowLeft aria-hidden className="size-4" /> Todas as áreas
       </Link>
       {cabecalho}
       {semCasa}
+      {convite}
 
       <RegrasDaArea area={area} />
 
@@ -218,7 +291,16 @@ export default async function ReservasMorador({ searchParams }: PageProps<"/rese
                     </li>
                   ))}
                 </ul>
-                {!ctx.unitId ? null : problemaDoDia ? (
+                {!logado ? (
+                  livresDoDia.length > 0 ? (
+                    <BotaoLink
+                      href={linkEntrar(`/reservas?area=${area.id}&mes=${mes}&dia=${dia}`, c)}
+                      icone={<LogIn aria-hidden className="size-5" />}
+                    >
+                      Entrar para pedir reserva
+                    </BotaoLink>
+                  ) : null
+                ) : !fonte.unitId ? null : problemaDoDia ? (
                   <Alerta tipo="info" titulo="Não dá para reservar neste dia">
                     {problemaDoDia}
                   </Alerta>
@@ -235,7 +317,9 @@ export default async function ReservasMorador({ searchParams }: PageProps<"/rese
         </div>
       </section>
 
-      <MinhasReservas reservas={minhasDaArea} hoje={hoje} agoraMin={agoraMin} titulo={`Minhas reservas · ${area.nome}`} />
+      {logado ? (
+        <MinhasReservas reservas={minhasDaArea} hoje={hoje} agoraMin={agoraMin} titulo={`Minhas reservas · ${area.nome}`} />
+      ) : null}
     </div>
   );
 }

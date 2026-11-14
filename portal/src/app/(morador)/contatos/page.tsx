@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import type { LucideIcon } from "lucide-react";
-import { Ambulance, DoorOpen, Flame, FlaskConical, MessageCircle, Phone, Shield, UserRound } from "lucide-react";
-import { exigirPermissao } from "@/server/contexto";
+import { Ambulance, Clock, DoorOpen, Flame, MessageCircle, Phone, Shield, UserRound } from "lucide-react";
+import { condominioPublico } from "@/server/publico";
+import { informacoesPublicas, type InformacoesPublicas } from "@/server/dados/informacoes";
 import { EMERGENCIAS } from "@/lib/condominio";
-import { Cartao, EstadoVazio, Etiqueta } from "@/components/ui/basicos";
+import { Alerta, Cartao, EstadoVazio } from "@/components/ui/basicos";
 import { CabecalhoPagina, TituloSecao } from "@/components/ui/painel";
 import { EnderecoCopiavel } from "@/components/ui/endereco";
+import { PortalIndisponivel } from "@/components/layout/faixa-topo";
 
 export const metadata: Metadata = { title: "Contatos úteis" };
 
@@ -16,19 +18,62 @@ const ICONE_EMERGENCIA: Record<string, { icone: LucideIcon; cor: string }> = {
   "193": { icone: Flame, cor: "text-texto-laranja" },
 };
 
-// Telefones FICTÍCIOS: aparecem só na demonstração, marcados como "exemplo".
-// Os números de verdade virão do cadastro da administração.
-const CONTATOS_EXEMPLO = [
-  { nome: "Portaria", detalhe: "24 horas", telefone: "(94) 9 0000-0000", digitos: "5594900000000", icone: DoorOpen },
-  { nome: "Administração / Síndico", detalhe: "Seg. a sex., 8h às 18h", telefone: "(94) 9 0000-0001", digitos: "5594900000001", icone: UserRound },
-];
+/** Só os dígitos do telefone, com o 55 do Brasil na frente (para tel: e wa.me). */
+function digitosBR(telefone: string): string | null {
+  const so = telefone.replace(/\D/g, "");
+  if (so.length < 8 || so.length > 13) return null;
+  return so.startsWith("55") && so.length >= 12 ? so : `55${so}`;
+}
 
-export default async function ContatosMorador() {
-  const ctx = await exigirPermissao("area.morador");
+type Contato = { nome: string; detalhe: string | null; telefone: string | null; whatsapp: string | null; icone: LucideIcon };
+
+/** Monta os cartões a partir do cadastro da administração (sem inventar números). */
+function contatosDoCadastro(info: InformacoesPublicas): Contato[] {
+  const lista: Contato[] = [];
+  if (info.telefonePortaria) {
+    lista.push({ nome: "Portaria", detalhe: null, telefone: info.telefonePortaria, whatsapp: null, icone: DoorOpen });
+  }
+  if (info.telefoneAdministracao || info.whatsappAdministracao) {
+    lista.push({
+      nome: "Administração / Síndico",
+      detalhe: info.horarioAdministracao,
+      telefone: info.telefoneAdministracao,
+      whatsapp: info.whatsappAdministracao,
+      icone: UserRound,
+    });
+  }
+  return lista;
+}
+
+const classeBotaoVerde =
+  "botao-verde inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-2 font-bold active:shadow-afundado";
+const classeBotaoSaltado =
+  "saltado inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-2 font-bold text-pine active:shadow-afundado";
+
+/** Contatos PÚBLICOS: endereço, telefones do condomínio (cadastro da administração) e emergência. */
+export default async function ContatosMorador({ searchParams }: PageProps<"/contatos">) {
+  const { c } = await searchParams;
+  const cp = await condominioPublico(c);
+  if (!cp) return <PortalIndisponivel />;
+
+  let info: InformacoesPublicas | null = null;
+  try {
+    info = await informacoesPublicas(cp.id);
+  } catch (erro) {
+    // Se o cadastro falhar, a página continua com endereço e emergência.
+    console.error("Contatos: não foi possível carregar as informações", erro);
+  }
+  const contatos = info ? contatosDoCadastro(info) : [];
 
   return (
     <div className="flex flex-col gap-6">
       <CabecalhoPagina sobretitulo="Contatos" titulo="Contatos úteis" subtitulo="Um toque para ligar." />
+
+      {info?.aviso ? (
+        <Alerta tipo="info" titulo="Aviso da administração">
+          {info.aviso}
+        </Alerta>
+      ) : null}
 
       <Cartao aria-labelledby="titulo-endereco" className="flex flex-col gap-3">
         <h2 id="titulo-endereco" className="text-[1.1rem] font-bold text-destaque">
@@ -62,57 +107,57 @@ export default async function ContatosMorador() {
 
       <section aria-labelledby="titulo-condominio" className="flex flex-col gap-3">
         <TituloSecao id="titulo-condominio">Condomínio</TituloSecao>
-        {ctx.demo ? (
-          <>
-            <ul className="flex flex-col gap-3">
-              {CONTATOS_EXEMPLO.map((c) => (
-                <li key={c.nome}>
+        {contatos.length ? (
+          <ul className="flex flex-col gap-3">
+            {contatos.map((ct) => {
+              const tel = ct.telefone ? digitosBR(ct.telefone) : null;
+              const zap = ct.whatsapp ? digitosBR(ct.whatsapp) : null;
+              return (
+                <li key={ct.nome}>
                   <Cartao className="flex flex-col gap-3">
                     <div className="flex items-center gap-3">
                       <span className="grid size-11 shrink-0 place-items-center rounded-full bg-ok-soft text-pine">
-                        <c.icone aria-hidden className="size-6" />
+                        <ct.icone aria-hidden className="size-6" />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-[1.1rem] font-bold text-destaque">{c.nome}</h3>
-                        <p className="text-[0.9rem] text-muted">
-                          {c.detalhe} · {c.telefone}
-                        </p>
-                        <span className="mt-1 inline-block">
-                          <Etiqueta tom="aviso" icone={FlaskConical}>
-                            exemplo
-                          </Etiqueta>
-                        </span>
+                        <h3 className="text-[1.1rem] font-bold text-destaque">{ct.nome}</h3>
+                        {ct.telefone ? <p className="text-[0.95rem] text-ink-2">{ct.telefone}</p> : null}
+                        {ct.detalhe ? (
+                          <p className="mt-0.5 inline-flex items-center gap-1.5 text-[0.88rem] text-muted">
+                            <Clock aria-hidden className="size-4 shrink-0" /> {ct.detalhe}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <a
-                        href={`tel:+${c.digitos}`}
-                        aria-label={`Ligar para ${c.nome} (número de exemplo)`}
-                        className="botao-verde inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-2 font-bold active:shadow-afundado"
-                      >
-                        <Phone aria-hidden className="size-5" /> Ligar
-                      </a>
-                      <a
-                        href={`https://wa.me/${c.digitos}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`WhatsApp de ${c.nome} (número de exemplo, abre em outra aba)`}
-                        className="saltado inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-2 font-bold text-pine active:shadow-afundado"
-                      >
-                        <MessageCircle aria-hidden className="size-5" /> WhatsApp
-                      </a>
-                    </div>
+                    {/* Só aparecem botões com número válido (nada de botão que não faz nada). */}
+                    {tel || zap ? (
+                      <div className="grid grid-cols-2 gap-2.5">
+                        {tel ? (
+                          <a href={`tel:+${tel}`} aria-label={`Ligar para ${ct.nome}`} className={classeBotaoVerde}>
+                            <Phone aria-hidden className="size-5" /> Ligar
+                          </a>
+                        ) : null}
+                        {zap ? (
+                          <a
+                            href={`https://wa.me/${zap}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`WhatsApp de ${ct.nome} (abre em outra aba)`}
+                            className={classeBotaoSaltado}
+                          >
+                            <MessageCircle aria-hidden className="size-5" /> WhatsApp
+                          </a>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </Cartao>
                 </li>
-              ))}
-            </ul>
-            <p className="text-center text-[0.86rem] text-muted">
-              Demonstração: estes telefones são fictícios. Os números de verdade serão cadastrados pela administração.
-            </p>
-          </>
+              );
+            })}
+          </ul>
         ) : (
-          <EstadoVazio icone={Phone} titulo="Telefones em breve">
-            A administração vai cadastrar os telefones da portaria e do síndico.
+          <EstadoVazio icone={Phone} titulo="Telefones ainda não cadastrados">
+            A administração ainda não cadastrou os telefones. Em emergência, use os números acima.
           </EstadoVazio>
         )}
       </section>

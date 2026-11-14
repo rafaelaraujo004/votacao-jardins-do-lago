@@ -36,6 +36,7 @@ const DESCRICAO: Record<string, { texto: string; icone: LucideIcon }> = {
   "membro.criar": { texto: "Cadastrou uma pessoa", icone: Settings },
   // Acesso com senha (equipe)
   "acesso.criar_senha": { texto: "Criou o acesso com senha de alguém da equipe", icone: KeyRound },
+  "acesso.criar_morador": { texto: "Criou o usuário e a senha de um morador", icone: KeyRound },
   "acesso.redefinir_senha": { texto: "Gerou nova senha provisória", icone: KeyRound },
   "acesso.trocar_senha": { texto: "Trocou a própria senha", icone: KeyRound },
   // Portaria
@@ -54,6 +55,8 @@ const DESCRICAO: Record<string, { texto: string; icone: LucideIcon }> = {
   "reserva.bloquear": { texto: "Bloqueou horário de área", icone: Ban },
   "area.criar": { texto: "Cadastrou área de lazer", icone: TreePalm },
   "area.editar": { texto: "Alterou área de lazer", icone: Pencil },
+  // Configurações
+  "informacoes.alterar": { texto: "Alterou as informações do condomínio", icone: Settings },
 };
 
 export default async function PaginaAuditoria() {

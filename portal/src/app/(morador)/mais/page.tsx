@@ -5,6 +5,8 @@ import {
   CalendarDays,
   ChevronRight,
   FileText,
+  KeyRound,
+  LogIn,
   MapPinned,
   Megaphone,
   MessageSquareWarning,
@@ -14,10 +16,11 @@ import {
   Vote,
   Wallet,
 } from "lucide-react";
-import { exigirPermissao } from "@/server/contexto";
+import { comC, condominioPublico, sufixoC } from "@/server/publico";
+import { sessaoOpcional } from "@/server/sessao-opcional";
 import { Cartao } from "@/components/ui/basicos";
 import { CabecalhoPagina, TituloSecao, type TomModulo } from "@/components/ui/painel";
-import { BotaoSair } from "@/components/layout/faixa-topo";
+import { PortalIndisponivel } from "@/components/layout/faixa-topo";
 import { cx } from "@/lib/cx";
 import { Preferencias } from "./preferencias";
 
@@ -25,14 +28,14 @@ export const metadata: Metadata = { title: "Mais" };
 
 type Modulo = { icone: LucideIcon; titulo: string; descricao: string; tom: TomModulo; href?: string };
 
-// Módulos que já funcionam (são links).
+// Módulos que já funcionam (são links). Os dois últimos pedem login (usuário e senha do morador).
 const PRONTOS: Modulo[] = [
   { icone: Wallet, titulo: "Prestação de contas", descricao: "Saldo, receitas e despesas", tom: "verde", href: "/financeiro" },
   { icone: MapPinned, titulo: "Mapa das casas", descricao: "Encontre qualquer casa", tom: "lago", href: "/mapa" },
   { icone: Phone, titulo: "Contatos úteis", descricao: "Endereço, portaria e emergência", tom: "vinho", href: "/contatos" },
-  { icone: CalendarDays, titulo: "Reservas de lazer", descricao: "Salão, churrasqueira e quadra", tom: "verde", href: "/reservas" },
-  { icone: UserCheck, titulo: "Autorização de visitas", descricao: "Libere visitas e entregas", tom: "lago", href: "/visitas" },
-  { icone: Package, titulo: "Encomendas", descricao: "Veja o que chegou para você", tom: "areia", href: "/encomendas" },
+  { icone: CalendarDays, titulo: "Agenda das áreas de lazer", descricao: "Horários livres e pedido de reserva", tom: "verde", href: "/reservas" },
+  { icone: UserCheck, titulo: "Autorizar visita", descricao: "Precisa entrar com o seu usuário", tom: "lago", href: "/visitas" },
+  { icone: Package, titulo: "Minhas encomendas", descricao: "Precisa entrar com o seu usuário", tom: "areia", href: "/encomendas" },
 ];
 
 // Módulos que ainda vão chegar (sem link: não são clicáveis).
@@ -86,8 +89,11 @@ function ItemModulo({ m }: { m: Modulo }) {
   );
 }
 
-export default async function MaisMorador() {
-  await exigirPermissao("area.morador");
+export default async function MaisMorador({ searchParams }: PageProps<"/mais">) {
+  const { c } = await searchParams;
+  const [cp, ctx] = await Promise.all([condominioPublico(c), sessaoOpcional()]);
+  if (!cp) return <PortalIndisponivel />;
+  const sufixo = sufixoC(cp);
 
   return (
     <div className="flex flex-col gap-6">
@@ -98,7 +104,7 @@ export default async function MaisMorador() {
         <ul className="grid gap-3 sm:grid-cols-2">
           {PRONTOS.map((m) => (
             <li key={m.titulo}>
-              <ItemModulo m={m} />
+              <ItemModulo m={{ ...m, href: m.href ? comC(m.href, sufixo) : undefined }} />
             </li>
           ))}
         </ul>
@@ -126,7 +132,22 @@ export default async function MaisMorador() {
         </Cartao>
       </section>
 
-      <BotaoSair className="saltado min-h-12 w-full justify-center text-plum active:shadow-afundado" />
+      {/* Sem login: "Entrar" (morador com usuário e senha; equipe com e-mail). Com login: trocar a senha. */}
+      {ctx ? (
+        <Link
+          href="/conta/senha"
+          className="saltado flex min-h-12 w-full items-center justify-center gap-2 rounded-full px-3 font-bold text-ink-2 active:shadow-afundado"
+        >
+          <KeyRound aria-hidden className="size-5" /> Trocar minha senha
+        </Link>
+      ) : (
+        <Link
+          href={comC("/entrar", sufixo)}
+          className="saltado flex min-h-12 w-full items-center justify-center gap-2 rounded-full px-3 font-bold text-ink-2 active:shadow-afundado"
+        >
+          <LogIn aria-hidden className="size-5" /> Entrar com usuário e senha
+        </Link>
+      )}
     </div>
   );
 }

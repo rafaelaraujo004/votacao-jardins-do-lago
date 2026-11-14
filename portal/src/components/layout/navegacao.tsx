@@ -4,13 +4,13 @@
  * Menus do portal. Itens sem `href` ainda não existem: aparecem esmaecidos,
  * não são clicáveis e dizem "em breve" (nada de botão que não faz nada).
  */
+import { Suspense } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   CalendarDays,
   LayoutGrid,
   Map as IconeMapa,
-  Phone,
   Wallet,
   Ellipsis,
   House,
@@ -25,6 +25,8 @@ import {
   Settings,
   ScrollText,
   DoorOpen,
+  LogIn,
+  Package,
   type LucideIcon,
 } from "lucide-react";
 import { cx } from "@/lib/cx";
@@ -57,17 +59,90 @@ function ativo(caminho: string, href?: string) {
   return caminho === href || caminho.startsWith(`${href}/`);
 }
 
-// ---------- Morador: barra inferior no celular, coluna no computador ----------
+// ---------- Morador (área pública): barra inferior no celular, coluna no computador ----------
 
 const ITENS_MORADOR: ItemMenu[] = [
   { rotulo: "Início", icone: House, href: "/inicio" },
   { rotulo: "Contas", icone: Wallet, href: "/financeiro" },
   { rotulo: "Mapa", icone: IconeMapa, href: "/mapa" },
-  { rotulo: "Contatos", icone: Phone, href: "/contatos" },
+  { rotulo: "Agenda", icone: CalendarDays, href: "/reservas" },
   { rotulo: "Mais", icone: LayoutGrid, href: "/mais" },
 ];
 
-export function NavMorador() {
+/** Mantém o ?c= (condomínio do link público) nos links do menu. */
+function hrefComC(href: string, c: string | null): string {
+  return c ? `${href}?c=${encodeURIComponent(c)}` : href;
+}
+
+/** Itens da casa (precisam de login). No computador aparecem abaixo do menu. */
+const ITENS_CASA: ItemMenu[] = [
+  { rotulo: "Autorizar visita", icone: UserCheck, href: "/visitas" },
+  { rotulo: "Encomendas", icone: Package, href: "/encomendas" },
+];
+
+/**
+ * Menu do morador. Lê o ?c= da URL para não perder o condomínio ao navegar
+ * (ex.: demonstração em "/?c=jardins-do-lago-demo").
+ * `casa`: "Casa 12" quando o morador está logado; null quando ninguém está.
+ */
+export function NavMorador({ casa = null }: { casa?: string | null }) {
+  // useSearchParams pede um Suspense em volta; enquanto carrega, o menu sai sem o ?c=.
+  return (
+    <Suspense fallback={<MenuMorador c={null} casa={casa} />}>
+      <NavMoradorComC casa={casa} />
+    </Suspense>
+  );
+}
+
+function NavMoradorComC({ casa }: { casa: string | null }) {
+  const c = useSearchParams().get("c");
+  return <MenuMorador c={c && c.trim() ? c.trim() : null} casa={casa} />;
+}
+
+/** Bloco "Minha casa" (só no computador; no celular o topo mostra Entrar / Casa · Sair). */
+function BlocoCasa({ c, casa, caminho }: { c: string | null; casa: string | null; caminho: string }) {
+  if (!casa) {
+    return (
+      <div className="mt-3 hidden flex-col gap-2 border-t border-line px-1 pt-3 lg:flex">
+        <p className="px-2 text-[0.85rem] text-muted">Visitas e encomendas da sua casa ficam depois de entrar.</p>
+        <Link
+          href={hrefComC("/entrar", c)}
+          className="flex min-h-12 items-center gap-3 rounded-2xl px-3 font-bold text-pine hover:shadow-afundado"
+        >
+          <LogIn aria-hidden className="size-[22px]" />
+          Entrar
+        </Link>
+      </div>
+    );
+  }
+  return (
+    <div className="mt-3 hidden flex-col gap-1.5 border-t border-line pt-3 lg:flex">
+      <p className="px-3 text-[0.74rem] font-bold uppercase tracking-[0.1em] text-muted">{casa}</p>
+      <ul className="flex flex-col gap-1.5">
+        {ITENS_CASA.map(({ rotulo, icone: Icone, href = "" }) => {
+          const atual = ativo(caminho, href);
+          return (
+            <li key={rotulo}>
+              <Link
+                href={hrefComC(href, c)}
+                aria-current={atual ? "page" : undefined}
+                className={cx(
+                  "flex min-h-12 items-center gap-3 rounded-2xl px-3 font-bold",
+                  atual ? "text-destaque shadow-afundado" : "text-muted hover:text-ink",
+                )}
+              >
+                <Icone aria-hidden className={cx("size-[22px]", atual && "text-pine")} />
+                {rotulo}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function MenuMorador({ c, casa }: { c: string | null; casa: string | null }) {
   const caminho = usePathname();
   return (
     <nav
@@ -88,7 +163,7 @@ export function NavMorador() {
           return (
             <li key={rotulo}>
               {href ? (
-                <Link href={href} className={classes} aria-current={atual ? "page" : undefined}>
+                <Link href={hrefComC(href, c)} className={classes} aria-current={atual ? "page" : undefined}>
                   <span className={pilula}>
                     <Icone aria-hidden className="size-[22px]" />
                   </span>
@@ -107,6 +182,7 @@ export function NavMorador() {
           );
         })}
       </ul>
+      <BlocoCasa c={c} casa={casa} caminho={caminho} />
     </nav>
   );
 }

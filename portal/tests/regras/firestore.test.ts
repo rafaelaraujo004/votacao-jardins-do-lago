@@ -71,6 +71,7 @@ beforeEach(async () => {
     await setDoc(doc(db, `condominiums/${C}/documents/d1`), { visivelPara: ["admin", "conselheiro"] });
     await setDoc(doc(db, `condominiums/${C}/documents/d2`), { visivelPara: ["morador", "portaria"] });
     await setDoc(doc(db, `condominiums/${OUTRO}/tickets/tb`), { unitId: "casa-1" });
+    await setDoc(doc(db, `condominiums/${C}/usernames/K7M4PX`), { uid: "morador1" });
   });
 });
 
@@ -193,6 +194,17 @@ describe("auditoria", () => {
     await assertFails(updateDoc(doc(db, `condominiums/${C}/auditLogs/a1`), { acao: "outra" }));
     await assertFails(deleteDoc(doc(db, `condominiums/${C}/auditLogs/a1`)));
     await assertFails(setDoc(doc(db, `condominiums/${C}/auditLogs/novo`), { acao: "falsa" }));
+  });
+});
+
+describe("usuários dos moradores (usernames)", () => {
+  it("ninguém lê nem grava o índice pelo navegador, nem o síndico (só o servidor)", async () => {
+    for (const uid of ["sindico", "morador1", "porteiro"]) {
+      await assertFails(getDoc(doc(como(uid), `condominiums/${C}/usernames/K7M4PX`)));
+      await assertFails(getDocs(collection(como(uid), `condominiums/${C}/usernames`)));
+      await assertFails(setDoc(doc(como(uid), `condominiums/${C}/usernames/ABCDEF`), { uid }));
+    }
+    await assertFails(getDoc(doc(anonimo(), `condominiums/${C}/usernames/K7M4PX`)));
   });
 });
 

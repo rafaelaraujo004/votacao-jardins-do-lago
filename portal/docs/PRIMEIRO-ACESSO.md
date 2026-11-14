@@ -1,6 +1,6 @@
-# Primeiro acesso: criar o administrador e trocar senhas
+# Primeiro acesso: criar o administrador, a equipe e os moradores
 
-Este guia explica, passo a passo, como o primeiro administrador (o síndico) passa a entrar no portal **de verdade**, e como cada pessoa da equipe troca a própria senha.
+Este guia explica, passo a passo, como o primeiro administrador (o síndico) passa a entrar no portal **de verdade**, como cria o acesso da equipe e dos **moradores** (usuário + senha enviados pelo WhatsApp), e como cada pessoa troca a própria senha.
 
 > No computador local, com o simulador, nada disso é preciso: a tela de entrada tem os botões de demonstração, e a equipe demo também entra com e-mail e senha (veja `portal/.acesso-demo.txt`).
 
@@ -57,15 +57,46 @@ Quem faz: o síndico (ou quem tiver a permissão "Cadastrar portaria, conselho e
 
 Esqueceu a senha? Na mesma página, use **"Gerar nova senha provisória"**. A senha antiga deixa de valer e a pessoa troca de novo no próximo acesso. Tudo fica registrado na auditoria (sem a senha).
 
-Moradores ainda **não** entram com senha: o método de login deles está em aberto (veja `docs/FASES.md`).
+Moradores entram de outro jeito (usuário + senha): veja o item 6.
 
 ## 5. Trocar a própria senha a qualquer momento
 
 - **Administração / conselho:** no menu lateral, botão com a **chave** ("Trocar senha"). No celular, fica dentro de **Menu**.
 - **Portaria:** botão com a **chave** no topo da tela.
+- **Morador:** toque em **"Casa 12"** no topo, ou **Mais → Trocar minha senha**.
 - Ou abra direto: `/conta/senha`.
 
 Trocar a senha **encerra a sessão em todos os outros aparelhos**.
+
+## 6. Criar o acesso dos MORADORES (usuário + senha pelo WhatsApp)
+
+Quem faz: o síndico (permissão "Cadastrar, alterar e suspender moradores").
+
+1. **Pessoas → Adicionar pessoa** com o perfil **Morador** e a casa (se ainda não estiver cadastrado). Vale cadastrar o **telefone**: assim o WhatsApp já abre na conversa da pessoa.
+2. Abrir a página do morador → cartão **"Usuário e senha do morador"** → **"Criar acesso do morador"**.
+   (Atalho: na página da **unidade**, cada morador sem acesso tem o botão **"Criar acesso"**.)
+3. O portal gera o **usuário** (6 letras/números, ex.: `K7M 4PX`) e uma **senha provisória**, e mostra os dois **uma única vez**, com os botões:
+   - **Copiar usuário**, **Copiar senha**, **Copiar tudo (mensagem pronta)**;
+   - **Enviar pelo WhatsApp**: abre o WhatsApp com a mensagem pronta (saudação, link do portal, usuário, senha provisória e o aviso de que a pessoa vai escolher a própria senha). Confira a conversa e toque em enviar.
+4. Clique em **"Já anotei ou enviei"**.
+5. No primeiro acesso, o morador abre o link → **Entrar** → aba **"Sou morador"** → digita o usuário (pode ser em minúsculas, com ou sem espaço) e a senha provisória. O portal **obriga** a escolher a própria senha (mínimo de 10 caracteres). Depois disso, o topo mostra **"Casa 12 · Sair"**.
+
+Esqueceu a senha? Na página do morador, **"Gerar nova senha provisória"**: o usuário continua o mesmo, a senha antiga deixa de valer e a pessoa troca de novo no próximo acesso. Na lista de pessoas, cada morador mostra **"Sem acesso"**, **"Senha provisória"** (ainda não entrou) ou **"Acesso ativo"**.
+
+Morador **suspenso** não entra, mesmo com a senha certa. Tudo fica na auditoria (sem a senha).
+
+> Demonstração no Firebase real: o script `scripts/criar-demo-real.ts` cria o morador demo da Casa 12 com o usuário fixo **`DEMA22`** e a senha de `DEMO_SENHA` (sem troca obrigatória). Link: `/entrar?c=jardins-do-lago-demo`. ("DEMO12" não serve: o usuário não pode ter O nem 1.)
+
+## 7. Ligar as informações gerais abertas pelo link
+
+Pela tela: **Configurações → Informações do condomínio** (`/admin/informacoes`) → marque **"Portal dos moradores ligado"** e salve. A mesma tela mostra o link para mandar no grupo.
+
+Pelo script (primeira vez), na pasta `portal`, com o `.env.local` do Firebase real:
+
+```bash
+npx tsx scripts/ligar-portal-publico.ts --id jardins-do-lago
+# para desligar: acrescente --desligar
+```
 
 ## Perguntas rápidas
 
@@ -73,5 +104,6 @@ Trocar a senha **encerra a sessão em todos os outros aparelhos**.
 |---|---|
 | Perdi o arquivo `.acesso-inicial.txt` antes do primeiro acesso | Se já existe outro administrador, ele gera nova senha provisória na página da pessoa. Se não existe, apague a conta no Firebase Authentication e o condomínio no Firestore e rode o script de novo. |
 | O script disse que o e-mail já tem conta | Use `--admin-uid <UID>` com o UID dessa conta (Firebase → Authentication). |
-| A pessoa diz "senha incorreta" | A mensagem é a mesma para e-mail errado e senha errada (de propósito). Confira o e-mail; se precisar, gere nova senha provisória. |
+| A pessoa diz "senha incorreta" | A mensagem é a mesma para e-mail (ou usuário) errado e senha errada (de propósito). Confira o e-mail ou o usuário; se precisar, gere nova senha provisória. |
+| O morador abriu o link de outro condomínio | O usuário só vale no condomínio dele. O link enviado pelo WhatsApp já leva o condomínio certo (`?c=` quando não é o padrão). |
 | Muitas tentativas erradas | O Firebase bloqueia por alguns minutos. Espere e tente de novo. |

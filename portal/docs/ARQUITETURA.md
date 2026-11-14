@@ -76,6 +76,6 @@ Peças: `Botao`, `BotaoLink`, `Cartao`, `Alerta`, `Etiqueta`, `EstadoVazio`, `Ca
 
 ## Navegação
 
-- **Morador** (celular primeiro): faixa verde com nome e casa; 9 atalhos grandes na ordem Financeiro, Visitantes, Reservas, Mapa, Encomendas, Comunicados, Informar um problema, Documentos, Contatos; barra inferior Início · Visitantes · Reservas · Mais (no computador vira coluna).
+- **Morador** (celular primeiro): área **pública** pelo link (informações gerais, sem login) com faixa verde, botão **Entrar** ou **"Casa 12 · Sair"** no topo; barra inferior Início · Contas · Mapa · Agenda · Mais (no computador vira coluna, com o bloco da casa: Autorizar visita e Encomendas). `/entrar` tem as abas "Sou morador" (usuário + senha) e "Sou da equipe" (e-mail + senha).
 - **Portaria** (tablet/computador): uma tela de trabalho com buscar, validar código, entrada/saída, nova encomenda e listas do dia.
-- **Gestão** (síndico e conselho): menu lateral em grupos, filtrado pelas permissões. Conselho vê "Somente consulta".
+- **Gestão** (síndico e conselho): menu lateral em grupos, filtrado pelas permissões (inclui Configurações → Informações do condomínio). Conselho vê "Somente consulta".

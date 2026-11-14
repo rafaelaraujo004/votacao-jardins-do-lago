@@ -6,11 +6,16 @@ Todos os dados de um condomínio ficam **dentro** de `condominiums/{condominioId
 users/{uid}                          nome, condominioIds[], condominioAtivo     (só a própria pessoa lê)
 rateLimits/{hash}                    limite de tentativas (só servidor; expira via TTL em expiraEm)
 
-condominiums/{c}                     nome, status, fuso, moeda
+condominiums/{c}                     nome, status, fuso, moeda, portalPublico (true = informações gerais abertas pelo link),
+                                     informacoes {telefonePortaria, telefoneAdministracao, whatsappAdministracao,
+                                     horarioAdministracao, aviso, atualizadoEm}
   members/{uid}                      nome, papel, unitId, status, permissoesExtras[], permissoesNegadas[],
                                      precisaTrocarSenha?, senhaProvisoriaValidaDesde? (ms, marca do Firebase),
-                                     senhaProvisoriaEm?, senhaProvisoriaPor?, senhaTrocadaEm?
+                                     senhaProvisoriaEm?, senhaProvisoriaPor?, senhaTrocadaEm?,
+                                     usuario? (só morador: código de 6 caracteres, ex. "K7M4PX"), usuarioCriadoEm?
                                      (nenhuma senha nem e-mail fica no Firestore: o e-mail fica só no Authentication)
+  usernames/{codigo}                 uid, criadoEm, criadoPor — índice "um usuário, uma pessoa" (criado em transação;
+                                     só o servidor lê e grava)
   units/{unitId}                     rotulo, numero, quadra, titularUid, status
   financialCategories/{id}           nome, tipo (receita/despesa)
   financialEntries/{id}              tipo, categoriaId, valorCentavos, data (AAAA-MM-DD), forma, descricao,
@@ -54,6 +59,9 @@ Coleções em inglês (padrão do Firebase e da sugestão inicial); campos em po
 | Lançamentos nunca apagados | Correção é feita por **estorno** (lançamento inverso ligado ao original), com auditoria. |
 | `codigoHash` dos visitantes | Como na votação: no banco fica só o HMAC do código; uma cópia do banco não revela códigos válidos. |
 | `rateLimits` com hash do IP | Limita tentativas sem guardar o IP em texto. |
+| Usuário do morador vira e-mail sintético | O Firebase Auth só entende e-mail + senha. `K7M4PX` no condomínio `c` vira `k7m4px@morador.c.portal.invalid` (sempre o mesmo, então o login não consulta o banco antes). `.invalid` nunca existe na internet. |
+| `usernames/{codigo}` | Garante que o mesmo código não é dado a duas pessoas do condomínio (o Firebase também recusa dois e-mails iguais). |
+| `portalPublico` e `informacoes` no documento do condomínio | A área pública lê um documento só e devolve uma lista fechada de campos (nunca o documento inteiro). |
 
 ## Índices
 

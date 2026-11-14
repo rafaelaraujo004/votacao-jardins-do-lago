@@ -4,6 +4,11 @@
  *
  * - Condomínio "jardins-do-lago-demo" (marcado demo: true → o portal mostra "dados fictícios").
  * - Uma conta demo com papel de administrador SÓ desse condomínio (não vê o condomínio real).
+ * - Um MORADOR demo da Casa 12, que entra na aba "Sou morador" com o usuário DEMA22
+ *   e a MESMA senha (DEMO_SENHA), sem troca obrigatória. ("DEMO12" não serve: o usuário
+ *   não pode ter O nem 1 — veja src/lib/usuario-morador.ts.)
+ * - Portal público LIGADO (portalPublico: true) e informações fictícias (telefones de mentira):
+ *   as informações gerais abrem por "/inicio?c=jardins-do-lago-demo" sem login.
  * - Casas, visitantes, encomendas, áreas de lazer e reservas fictícias.
  *
  * Uso (na pasta portal), com a senha numa variável de ambiente (não fica no histórico do git):
@@ -14,11 +19,16 @@ import { cert, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { hojeISO } from "../src/lib/formato";
+import { INFORMACOES_DEMO, USUARIO_MORADOR_DEMO } from "../src/lib/demo";
+import { emailDoMorador } from "../src/lib/usuario-morador";
 import { hashDoCodigo } from "../src/lib/portaria";
 import { AREAS_SUGERIDAS, idDaTrava, proximoMes, somarDias } from "../src/lib/reservas";
 
 const ID = "jardins-do-lago-demo";
 const NOME = "Jardins do Lago — DEMONSTRAÇÃO";
+/** uid fixo do morador demo no Firebase real. */
+const UID_MORADOR = "demo-real-morador-casa-012";
+const NOME_MORADOR = "Ana Demonstração";
 
 const { values } = parseArgs({ options: { email: { type: "string" }, nome: { type: "string" } } });
 const email = (values.email ?? "").trim().toLowerCase();
@@ -63,8 +73,27 @@ async function main() {
     uid = (await auth.createUser({ email, password: senha, displayName: nomeConta })).uid;
   }
 
+  // Morador demo (Casa 12): e-mail sintético do usuário DEMA22 + a mesma senha da conta demo.
+  const emailMorador = emailDoMorador(USUARIO_MORADOR_DEMO, ID);
+  try {
+    const existente = await auth.getUser(UID_MORADOR);
+    await auth.updateUser(existente.uid, { email: emailMorador, password: senha, displayName: NOME_MORADOR, disabled: false });
+  } catch (erro) {
+    if ((erro as { code?: string }).code !== "auth/user-not-found") throw erro;
+    await auth.createUser({ uid: UID_MORADOR, email: emailMorador, password: senha, displayName: NOME_MORADOR });
+  }
+
   const lote = db.batch();
-  lote.set(db.doc(c), { nome: NOME, status: "ativo", fuso: "America/Belem", moeda: "BRL", demo: true, criadoEm: agora });
+  lote.set(db.doc(c), {
+    nome: NOME,
+    status: "ativo",
+    fuso: "America/Belem",
+    moeda: "BRL",
+    demo: true,
+    portalPublico: true, // informações gerais abertas pelo link ?c=jardins-do-lago-demo
+    informacoes: INFORMACOES_DEMO,
+    criadoEm: agora,
+  });
   lote.set(db.doc(`users/${uid}`), { nome: nomeConta, condominioIds: [ID], condominioAtivo: ID, demo: true });
   lote.set(db.doc(`${c}/members/${uid}`), {
     nome: nomeConta,
@@ -77,6 +106,23 @@ async function main() {
     demo: true,
     criadoEm: agora,
   });
+
+  lote.set(db.doc(`users/${UID_MORADOR}`), { nome: NOME_MORADOR, condominioIds: [ID], condominioAtivo: ID, demo: true });
+  lote.set(db.doc(`${c}/members/${UID_MORADOR}`), {
+    nome: NOME_MORADOR,
+    papel: "morador",
+    unitId: "casa-012",
+    status: "ativo",
+    permissoesExtras: [],
+    permissoesNegadas: [],
+    usuario: USUARIO_MORADOR_DEMO,
+    usuarioCriadoEm: agora,
+    precisaTrocarSenha: false, // conta de testes: senha combinada, sem troca obrigatória
+    demo: true,
+    criadoEm: agora,
+  });
+  // Índice de unicidade do usuário (usernames/{codigo} → uid).
+  lote.set(db.doc(`${c}/usernames/${USUARIO_MORADOR_DEMO}`), { uid: UID_MORADOR, criadoEm: agora, criadoPor: uid });
 
   for (const n of [1, 2, 12, 45, 120]) {
     lote.set(db.doc(`${c}/units/casa-${String(n).padStart(3, "0")}`), {
@@ -205,6 +251,8 @@ async function main() {
 
   await lote.commit();
   console.log(`Pronto: "${NOME}" com a conta demo ${email} (administrador só da demonstração).`);
+  console.log(`Morador demo (Casa 12): aba "Sou morador", usuário ${USUARIO_MORADOR_DEMO}, a mesma senha (DEMO_SENHA). Link: /entrar?c=${ID}`);
+  console.log(`Informações gerais abertas: /inicio?c=${ID}`);
   console.log("Códigos de visitante: K7M-4PX (hoje) e PRT-3ZB (prestador, 7 dias).");
 }
 

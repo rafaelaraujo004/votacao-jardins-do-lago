@@ -6,6 +6,7 @@ import { adminDb } from "./firebase-admin";
 import { getContexto } from "./contexto";
 import { auditarSozinho } from "./auditoria";
 import { NOME_COOKIE_SESSAO } from "./sessao";
+import { idPublicoPadrao, sufixoDoId } from "./publico";
 
 /**
  * Sair: apaga o cookie de sessão deste aparelho e registra na auditoria.
@@ -23,5 +24,7 @@ export async function sair(): Promise<void> {
     });
   }
   (await cookies()).delete(NOME_COOKIE_SESSAO);
-  redirect("/entrar?saiu=1");
+  // Mantém o ?c= do condomínio da pessoa: o login do morador depende dele.
+  const sufixo = ctx ? sufixoDoId(ctx.condominioId, idPublicoPadrao()) : "";
+  redirect(sufixo ? `/entrar?saiu=1&${sufixo.slice(1)}` : "/entrar?saiu=1");
 }

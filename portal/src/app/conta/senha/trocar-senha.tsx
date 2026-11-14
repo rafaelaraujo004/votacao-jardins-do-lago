@@ -21,6 +21,7 @@ import { Eye, EyeOff, KeyRound } from "lucide-react";
 import { cabecalhosSeguros, firebaseAuth } from "@/lib/firebase/client";
 import { codigoDoErro, esquemaTrocaSenha, mensagemErroTroca, SENHA_MINIMA } from "@/lib/senha";
 import { concluirTrocaDeSenha } from "@/server/acoes/acesso";
+import { destinoDepoisDoLogin } from "@/lib/destino-seguro";
 import { useAvisos } from "@/components/ui/avisos";
 import { Alerta, Campo, classeEntrada } from "@/components/ui/basicos";
 import { Botao, BotaoLink } from "@/components/ui/botao";
@@ -77,7 +78,28 @@ function CampoSenha({
   );
 }
 
-export function TrocarSenha({ email, uid }: { email: string; uid: string }) {
+export function TrocarSenha({
+  email,
+  uid,
+  rotuloConta,
+  provisoria = false,
+  volta = null,
+  inicio = null,
+  entrarHref = "/entrar",
+}: {
+  /** Início com o ?c= do condomínio (morador); usado no lugar de "/inicio". */
+  inicio?: string | null;
+  /** Tela de entrada com o ?c= do condomínio. */
+  entrarHref?: string;
+  email: string;
+  uid: string;
+  /** "Usuário: K7M 4PX" (morador) ou "Conta: email" (equipe). */
+  rotuloConta: string;
+  /** true = está com a senha provisória (muda o texto do campo "senha atual"). */
+  provisoria?: boolean;
+  /** Caminho interno para onde voltar depois (já conferido no servidor). */
+  volta?: string | null;
+}) {
   const router = useRouter();
   const { avisar } = useAvisos();
   const [enviando, setEnviando] = useState(false);
@@ -142,7 +164,8 @@ export function TrocarSenha({ email, uid }: { email: string; uid: string }) {
       if (!resposta.ok || !corpo?.destino) throw new ErroPronto(corpo?.erro ?? "Não foi possível abrir a sessão.");
 
       avisar("sucesso", "Senha trocada. Use a nova senha nas próximas vezes.");
-      router.replace(corpo.destino);
+      const destino = destinoDepoisDoLogin(corpo.destino, volta);
+      router.replace(destino === "/inicio" && inicio ? inicio : destino);
       router.refresh();
     } catch (e) {
       const mensagem = e instanceof ErroPronto ? e.message : mensagemErroTroca(codigoDoErro(e));
@@ -163,7 +186,7 @@ export function TrocarSenha({ email, uid }: { email: string; uid: string }) {
         <Alerta tipo="erro" titulo={precisaEntrarDeNovo ? "Quase lá" : "Não foi possível trocar a senha"}>
           <p>{erro}</p>
           {precisaEntrarDeNovo ? (
-            <BotaoLink href="/entrar" variante="secundario" tamanho="pequeno" className="mt-2">
+            <BotaoLink href={entrarHref} variante="secundario" tamanho="pequeno" className="mt-2">
               Ir para a entrada
             </BotaoLink>
           ) : null}
@@ -171,10 +194,15 @@ export function TrocarSenha({ email, uid }: { email: string; uid: string }) {
       ) : null}
 
       <p className="text-ink-2">
-        Conta: <strong className="text-ink">{email}</strong>
+        <strong className="text-ink">{rotuloConta}</strong>
       </p>
 
-      <CampoSenha id="atual" rotulo="Senha atual" erro={erros.atual} autoComplete="current-password" />
+      <CampoSenha
+        id="atual"
+        rotulo={provisoria ? "Senha provisória (a que você recebeu)" : "Senha atual"}
+        erro={erros.atual}
+        autoComplete="current-password"
+      />
       <CampoSenha
         id="nova"
         rotulo="Nova senha"
@@ -191,7 +219,7 @@ export function TrocarSenha({ email, uid }: { email: string; uid: string }) {
           disabled={precisaEntrarDeNovo}
           icone={<KeyRound aria-hidden className="size-5" />}
         >
-          {enviando ? "Trocando…" : "Trocar senha"}
+          {enviando ? "Salvando…" : provisoria ? "Salvar minha senha" : "Trocar senha"}
         </Botao>
       </div>
     </form>

@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getContexto } from "@/server/contexto";
 import { demoAtivo } from "@/server/demo";
 import { NOME_COOKIE_SESSAO } from "@/server/sessao";
 import { inicioDoPapel, NOME_DO_PAPEL, PAPEIS } from "@/lib/permissoes";
+import { destinoDepoisDoLogin, destinoSeguro } from "@/lib/destino-seguro";
+import { linkConversaWhatsApp } from "@/lib/validacao-informacoes";
+import { comC, condominioPublico, escolherIdPublico, idPublicoPadrao, sufixoDoId } from "@/server/publico";
+import { informacoesPublicas } from "@/server/dados/informacoes";
 import { USUARIOS_DEMO } from "@/lib/demo";
 import { Alerta } from "@/components/ui/basicos";
 import { Logo, Petalas } from "@/components/ui/marca";
@@ -18,10 +24,26 @@ import { EntrarSenha } from "./entrar-senha";
 export const metadata: Metadata = { title: "Entrar" };
 
 export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
-  const ctx = await getContexto();
-  if (ctx) redirect(inicioDoPapel(ctx.papel));
+  const { saiu, volta: voltaBruta, c } = await searchParams;
+  const volta = destinoSeguro(Array.isArray(voltaBruta) ? voltaBruta[0] : voltaBruta);
 
-  const { saiu } = await searchParams;
+  // Já está logado: segue para onde ia (senha provisória → troca de senha).
+  const ctx = await getContexto();
+  if (ctx) {
+    if (ctx.precisaTrocarSenha) redirect(volta ? `/conta/senha?volta=${encodeURIComponent(volta)}` : "/conta/senha");
+    const destino = destinoDepoisDoLogin(inicioDoPapel(ctx.papel), volta);
+    // Morador: Início do SEU condomínio (com ?c= quando não é o padrão).
+    redirect(destino === "/inicio" ? comC("/inicio", sufixoDoId(ctx.condominioId, idPublicoPadrao())) : destino);
+  }
+
+  // Condomínio do login do morador: o do ?c= ou o padrão (CONDOMINIO_PUBLICO).
+  const padrao = idPublicoPadrao();
+  const condominioId = escolherIdPublico(c, padrao) ?? padrao;
+  const inicioMorador = comC("/inicio", sufixoDoId(condominioId, padrao));
+  // WhatsApp da administração (só se o condomínio estiver aberto ao público).
+  const cp = await condominioPublico(condominioId === padrao ? undefined : condominioId);
+  const zap = cp ? (await informacoesPublicas(cp.id).catch(() => null))?.whatsappAdministracao : null;
+
   const cookieSemVinculo = Boolean((await cookies()).get(NOME_COOKIE_SESSAO));
   const demo = demoAtivo();
 
@@ -52,7 +74,7 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
               <div className="flex flex-col gap-1.5">
                 <h1 className="text-[1.9rem] font-bold text-destaque">Portal do condomínio</h1>
                 <p className="text-[1.05rem] text-ink-2">
-                  Contas, visitantes, reservas e avisos do Jardins do Lago num só lugar.
+                  Visitas, encomendas e reservas da sua casa num só lugar.
                 </p>
               </div>
             </div>
@@ -70,13 +92,23 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
               </Alerta>
             ) : null}
 
-            {/* Equipe: e-mail e senha (Firebase Authentication). */}
-            <EntrarSenha />
+            {volta && !saiu ? (
+              <Alerta tipo="info" titulo="Entre para continuar">
+                Esta parte do portal é da sua casa. Depois de entrar, você volta para onde estava.
+              </Alerta>
+            ) : null}
 
-            <Alerta tipo="info" titulo="Moradores">
-              O acesso será liberado em breve pela administração. Enquanto isso, qualquer dúvida pode ser tirada
-              diretamente com a portaria.
-            </Alerta>
+            {/* Morador (usuário + senha) e equipe (e-mail + senha), pelo Firebase Authentication. */}
+            <EntrarSenha
+              condominioId={condominioId}
+              volta={volta}
+              inicioMorador={inicioMorador}
+              whatsappAdministracao={zap ? linkConversaWhatsApp(zap) : null}
+            />
+
+            <Link href={inicioMorador} className="mx-auto flex min-h-11 w-fit items-center gap-1.5 font-bold text-lake">
+              <ArrowLeft aria-hidden className="size-4" /> Ver as informações do condomínio sem entrar
+            </Link>
 
             {/* Atalhos fictícios: só no computador local, com o simulador. */}
             {demo ? (

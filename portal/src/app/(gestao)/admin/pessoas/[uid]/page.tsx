@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, CirclePause, CirclePlay, KeyRound, ShieldCheck } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { obterPessoa } from "@/server/dados/pessoas";
-import { situacaoDoAcesso } from "@/server/dados/acesso";
+import { situacaoAcessoMorador, situacaoDoAcesso } from "@/server/dados/acesso";
 import { listarUnidades } from "@/server/dados/unidades";
 import { alterarSituacao, salvarPermissoes, salvarPessoa } from "@/server/acoes/pessoas";
 import { idDocumento } from "@/lib/validacao";
@@ -24,6 +24,7 @@ import { BotaoLink } from "@/components/ui/botao";
 import { CamposPessoa } from "../campos-pessoa";
 import { EtiquetaSituacaoPessoa } from "../etiquetas";
 import { AcessoSenha } from "./acesso-senha";
+import { AcessoMorador } from "@/components/acesso/acesso-morador";
 
 export const metadata: Metadata = { title: "Pessoa" };
 
@@ -45,6 +46,10 @@ export default async function PaginaPessoa({ params, searchParams }: PageProps<"
   const ehEquipe = pessoa.papel !== "morador";
   const podeCriarSenha = ehEquipe && !ehVoce && pessoa.status === "ativo" && ctx.permissoes.has("equipe.gerenciar");
   const situacaoSenha = podeCriarSenha ? await situacaoDoAcesso(ctx, pessoa.uid) : null;
+  // Morador entra com usuário (código) + senha; quem cuida dos moradores cria esse acesso.
+  const podeCriarAcessoMorador =
+    pessoa.papel === "morador" && !ehVoce && pessoa.status === "ativo" && ctx.permissoes.has("moradores.gerenciar");
+  const situacaoMorador = podeCriarAcessoMorador ? await situacaoAcessoMorador(ctx, pessoa.uid) : null;
   const efetivas = calcularPermissoes(pessoa.papel, pessoa.permissoesExtras, pessoa.permissoesNegadas);
 
   return (
@@ -62,7 +67,7 @@ export default async function PaginaPessoa({ params, searchParams }: PageProps<"
         <Alerta tipo="sucesso" titulo="Pessoa adicionada.">
           {ehEquipe
             ? "O cadastro está pronto. Agora crie o acesso com e-mail e senha no cartão “Entrar com e-mail e senha”."
-            : "O cadastro está pronto. O acesso dos moradores será liberado em breve pela administração."}
+            : "O cadastro está pronto. Agora crie o usuário e a senha no cartão “Usuário e senha do morador” e envie pelo WhatsApp."}
         </Alerta>
       ) : null}
 
@@ -134,6 +139,15 @@ export default async function PaginaPessoa({ params, searchParams }: PageProps<"
                 <KeyRound aria-hidden className="size-5 text-pine" /> Entrar com e-mail e senha
               </h2>
               <AcessoSenha uid={pessoa.uid} nome={pessoa.nome} situacao={situacaoSenha} />
+            </Cartao>
+          ) : null}
+
+          {situacaoMorador ? (
+            <Cartao id="acesso-morador" className="flex scroll-mt-24 flex-col gap-3">
+              <h2 className="flex items-center gap-2 text-lg font-bold">
+                <KeyRound aria-hidden className="size-5 text-pine" /> Usuário e senha do morador
+              </h2>
+              <AcessoMorador uid={pessoa.uid} nome={pessoa.nome} situacao={situacaoMorador} />
             </Cartao>
           ) : null}
 

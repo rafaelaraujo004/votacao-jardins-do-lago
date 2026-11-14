@@ -18,7 +18,7 @@ const ATALHOS: { titulo: string; icone: LucideIcon; tom: TomModulo; permissao: P
   { titulo: "Portaria (operar)", icone: ShieldCheck, tom: "vinho", permissao: "portaria.operar", href: "/portaria" },
   { titulo: "Histórico da portaria", icone: DoorOpen, tom: "lago", permissao: "visitantes.ver_todos", href: "/admin/portaria" },
   { titulo: "Comunicados", icone: Megaphone, tom: "lago", permissao: "comunicados.ver" },
-  { titulo: "Configurações", icone: Settings, tom: "areia", permissao: "areas.configurar" },
+  { titulo: "Informações do condomínio", icone: Settings, tom: "areia", permissao: "informacoes.gerenciar", href: "/admin/informacoes" },
 ];
 
 export default async function PainelGestao() {
