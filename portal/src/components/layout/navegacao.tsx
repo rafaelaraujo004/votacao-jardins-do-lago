@@ -24,6 +24,7 @@ import {
   Megaphone,
   Settings,
   ScrollText,
+  DoorOpen,
   type LucideIcon,
 } from "lucide-react";
 import { cx } from "@/lib/cx";
@@ -45,6 +46,7 @@ const ICONES = {
   Megaphone,
   Settings,
   ScrollText,
+  DoorOpen,
 } satisfies Record<string, LucideIcon>;
 export type NomeIcone = keyof typeof ICONES;
 export type ItemMenuSerializavel = Omit<ItemMenu, "icone"> & { icone: NomeIcone };

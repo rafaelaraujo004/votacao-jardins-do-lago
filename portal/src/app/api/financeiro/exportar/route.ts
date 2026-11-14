@@ -20,6 +20,9 @@ function celula(valor: string): string {
 export async function GET(req: NextRequest) {
   const ctx = await getContexto();
   if (!ctx) return NextResponse.json({ erro: "Entre no portal para exportar." }, { status: 401 });
+  if (ctx.precisaTrocarSenha) {
+    return NextResponse.json({ erro: "Troque a sua senha provisória antes de continuar." }, { status: 403 });
+  }
 
   let visao;
   try {

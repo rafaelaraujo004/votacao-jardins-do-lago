@@ -17,6 +17,9 @@ import {
 export const ACOES_AUDITADAS = [
   "sessao.entrar",
   "sessao.sair",
+  "acesso.criar_senha",
+  "acesso.redefinir_senha",
+  "acesso.trocar_senha",
   "condominio.criar",
   "membro.criar",
   "membro.alterar",
@@ -35,8 +38,16 @@ export const ACOES_AUDITADAS = [
   "visitante.cancelar",
   "acesso.entrada",
   "acesso.saida",
+  "encomenda.registrar",
+  "encomenda.entregar",
+  "visitante.anonimizar",
   "reserva.criar",
   "reserva.cancelar",
+  "reserva.aprovar",
+  "reserva.recusar",
+  "reserva.bloquear",
+  "area.criar",
+  "area.editar",
   "admin.alterar",
 ] as const;
 export type AcaoAuditada = (typeof ACOES_AUDITADAS)[number];

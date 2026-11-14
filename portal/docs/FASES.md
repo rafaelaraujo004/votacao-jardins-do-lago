@@ -4,10 +4,10 @@ Uma fase só é "concluída" com: tela funcionando, validação, integração re
 
 | Fase | Entrega | Situação |
 |---|---|---|
-| **1 — Fundação** | Projeto, identidade visual, Firebase, sessão, multi-condomínio, permissões, regras + testes, auditoria, documentação | **Concluída** (aguardando sua validação) |
-| 2 — Portal | Login real, início do morador, painel admin, unidades e moradores, financeiro (lançar, estornar, resumo mensal, PDF/Excel), contatos | Decidir o método de login antes |
-| 3 — Portaria | Visitantes + código/QR com validade e uso único, entradas e saídas, encomendas, retenção LGPD | |
-| 4 — Serviços | Reservas (sem conflito, via transação), solicitações com protocolo, comunicados, documentos | Decidir plano Blaze (arquivos) |
+| **1 — Fundação** | Projeto, identidade visual, Firebase, sessão, multi-condomínio, permissões, regras + testes, auditoria, documentação | **Concluída** |
+| **2 — Portal** | Login da equipe, início do morador, painel admin, unidades e moradores, financeiro (lançar, estornar, resumo mensal, PDF/Excel), contatos | **Entregue**, falta o login dos moradores (decisão 1) |
+| **3 — Portaria** | Visitantes com código de validade e uso único, entradas e saídas, encomendas, retenção LGPD | **Entregue** (aguardando sua validação no navegador) |
+| 4 — Serviços | Reservas (sem conflito, via transação), solicitações com protocolo, comunicados, documentos | **Parcial**: reservas entregues; faltam solicitações, comunicados e documentos (documentos dependem do plano Blaze) |
 | 5 — Experiência | Mapa interativo (com a planta real), enquetes, classificados, relatórios | Precisa da planta |
 | 6 — Produção | Testes de segurança e concorrência, CSP com nonce, importação da planilha, treinamento, deploy definitivo | |
 
@@ -21,13 +21,42 @@ Uma fase só é "concluída" com: tela funcionando, validação, integração re
 - Regras do Firestore para todas as coleções planejadas (gravação do cliente sempre negada).
 - Auditoria (entrar/sair já registrados) e tela de auditoria para o síndico.
 - Limite de tentativas; cabeçalhos de segurança.
-- Telas iniciais de cada perfil (itens futuros marcados "Em breve", sem clique).
 - Login de demonstração apenas local; script para criar o condomínio real.
-- Testes: 16 unitários + 30 no simulador.
+
+## Fase 2 — login da equipe (e-mail e senha)
+
+- `/entrar` tem o formulário **"Equipe do condomínio"** (e-mail e senha). As mensagens de erro não revelam se o e-mail existe.
+- O síndico cria o acesso de cada pessoa da equipe em **Pessoas → (pessoa) → "Entrar com e-mail e senha"**. O portal mostra uma **senha provisória uma única vez**.
+- No primeiro acesso, o portal **obriga a trocar a senha** (`/conta/senha`). Enquanto a senha for provisória, nenhuma página abre e nenhuma ação grava nada.
+- Qualquer pessoa da equipe pode trocar a senha pelo botão com a chave (menu da gestão e topo da portaria).
+- O primeiro administrador é criado pelo script (veja [PRIMEIRO-ACESSO.md](PRIMEIRO-ACESSO.md)).
+
+## Fase 3 — Portaria (entregue)
+
+- **Morador** (`/visitas`): autoriza visita (um dia ou vários dias), recebe um código de 6 caracteres (ex.: `K7M-4PX`) para copiar ou mandar pelo WhatsApp; cancela autorizações. `/encomendas`: vê o que chegou e o que já retirou.
+- **Portaria** (`/portaria`): valida código, registra entrada (com ou sem código, confirmando com o morador por telefone), quem está dentro, saída, esperados hoje, encomendas (registrar e entregar) e **reservas de hoje**. Atualiza sozinha a cada 60 s.
+- **Administração** (`/admin/portaria`): histórico de entradas, saídas e encomendas; botão **"Remover nomes antigos agora"** (LGPD, 90 dias).
+- **Decisão do uso do código**: autorização de **um dia** vale **uma vez só** (vira "usada" na entrada); autorização com **período** (ex.: pedreiro a semana toda) vale várias vezes dentro do período, mas a mesma pessoa não "entra" duas vezes sem ter saído.
+- No banco fica só o HMAC do código (segredo `PORTARIA_SEGREDO_CODIGO`).
+
+## Fase 4 — Reservas (entregue)
+
+- **Áreas** (`/admin/reservas/areas`): cadastro com regras, capacidade, aprovação, antecedência, limite por casa/mês e faixas de horário. Botão "Criar áreas sugeridas" (salão, churrasqueira, quadra; sem taxas). A piscina é de uso livre, fica fora.
+- **Agenda da administração** (`/admin/reservas`): pedidos aguardando aprovação (aprovar/recusar com motivo), calendário do mês por área, reservar para uma casa, bloquear horário, cancelar/desbloquear com motivo.
+- **Morador** (`/reservas`): escolhe a área, o dia e uma faixa livre; vê "Ocupado" sem saber de qual casa; acompanha e cancela as próprias reservas.
+- **Agenda do Início**: mostra as reservas reais (sem a casa dos outros) e os bloqueios.
+- Conflito impossível: trava por horário + conferência de sobreposição dentro da mesma transação.
+
+## O que falta
+
+- **Login dos moradores** (decisão 1 abaixo). Hoje só a equipe entra com e-mail e senha; os moradores reais ainda não entram.
+- **Fase 4**: solicitações com protocolo, comunicados, documentos (estes precisam de arquivos → plano Blaze).
+- **Limpeza LGPD automática**: hoje é pelo botão em `/admin/portaria`; falta a tarefa agendada (Vercel Cron) chamar `limparVisitantesAntigos`.
+- **Fases 5 e 6** como na tabela.
 
 ## Decisões em aberto
 
-1. **Método de login** dos moradores (muitos não usam e-mail): e-mail e senha, link sem senha, SMS (exige Blaze) ou convite pelo WhatsApp.
+1. **Método de login**: **Equipe: e-mail e senha (feito).** Moradores: em aberto (muitos não usam e-mail): e-mail e senha, link sem senha, SMS (exige Blaze) ou convite pelo WhatsApp.
 2. **Plano Blaze** (arquivos, backup automático, SMS).
-3. **Retenção LGPD** de visitantes (proposta: 90 dias) — confirmar com o síndico.
+3. **Retenção LGPD** de visitantes: implementada com 90 dias — confirmar o prazo com o síndico.
 4. **Planta** do condomínio para o mapa.

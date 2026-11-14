@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import {
   BookUser,
@@ -22,6 +21,7 @@ import { nomeDoMes, type MesComSaldo } from "@/lib/financeiro";
 import { COR_EVENTO, mesCurto } from "@/lib/agenda";
 import { cx } from "@/lib/cx";
 import { Cartao, EstadoVazio, Etiqueta } from "@/components/ui/basicos";
+import { IlustracaoCondominio } from "@/components/ui/ilustracao-condominio";
 import { AtalhoModulo, BlocoNumero, FaixaPetalas, TituloSecao, type TomModulo } from "@/components/ui/painel";
 import { EnderecoCopiavel } from "@/components/ui/endereco";
 import { Calendario } from "@/components/ui/calendario";
@@ -34,8 +34,8 @@ const ATALHOS: { icone: LucideIcon; titulo: string; href?: string; tom: TomModul
   { icone: ReceiptText, titulo: "Prestação de contas", href: "/financeiro", tom: "verde" },
   { icone: MapPinned, titulo: "Mapa das casas", href: "/mapa", tom: "lago" },
   { icone: Megaphone, titulo: "Comunicados", tom: "areia" },
-  { icone: CalendarDays, titulo: "Reservas", tom: "verde" },
-  { icone: UserCheck, titulo: "Visitas", tom: "lago" },
+  { icone: CalendarDays, titulo: "Reservas", href: "/reservas", tom: "verde" },
+  { icone: UserCheck, titulo: "Visitas", href: "/visitas", tom: "lago" },
   { icone: Wrench, titulo: "Solicitações", tom: "areia" },
   { icone: Vote, titulo: "Votações", tom: "vinho" },
   { icone: BookUser, titulo: "Contatos úteis", href: "/contatos", tom: "vinho" },
@@ -76,21 +76,14 @@ export default async function InicioMorador() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Identidade: logo em selo claro (claro também no modo escuro) + endereço */}
+      {/* Identidade: ilustração do condomínio + endereço */}
       <div className="grid gap-4 sm:grid-cols-2">
         <section
           aria-label="Residencial Jardins do Lago"
-          className="surgir overflow-hidden rounded-[var(--radius-card)] border border-white bg-surface-clara pb-4 shadow-card"
+          className="surgir overflow-hidden rounded-[var(--radius-card)] border border-borda-luz shadow-card"
         >
           <FaixaPetalas />
-          <Image
-            src="/logo-jardins-do-lago.png"
-            alt="Residencial Jardins do Lago"
-            width={630}
-            height={358}
-            priority
-            className="mx-auto mt-4 h-auto w-[min(260px,74%)]"
-          />
+          <IlustracaoCondominio />
         </section>
         {/* O endereço fica num cartão normal: assim acompanha o tema claro/escuro sem ficar estranho. */}
         <Cartao aria-label="Endereço do condomínio" className="surgir flex flex-col justify-center p-4">

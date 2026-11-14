@@ -4,7 +4,7 @@ Portal do condomínio (moradores, portaria, síndico e conselho): contas, visita
 
 **Tecnologia:** Next.js 16 + TypeScript + Tailwind CSS 4 · Firebase (Authentication, Firestore, App Check) · hospedagem na Vercel.
 
-**Fase atual:** 1 — Fundação (veja [docs/FASES.md](docs/FASES.md)).
+**Fase atual:** 3 (Portaria) e 4 (Reservas) entregues; falta o login dos moradores (veja [docs/FASES.md](docs/FASES.md)).
 
 | Documento | Conteúdo |
 |---|---|
@@ -13,6 +13,7 @@ Portal do condomínio (moradores, portaria, síndico e conselho): contas, visita
 | [docs/PERMISSOES.md](docs/PERMISSOES.md) | Perfis, permissões e como são aplicadas |
 | [docs/SEGURANCA-LGPD.md](docs/SEGURANCA-LGPD.md) | Medidas de segurança, LGPD, backup |
 | [docs/FASES.md](docs/FASES.md) | Roteiro e situação de cada fase |
+| [docs/PRIMEIRO-ACESSO.md](docs/PRIMEIRO-ACESSO.md) | Como criar o primeiro administrador e como a equipe troca a senha |
 
 ---
 
@@ -37,6 +38,8 @@ npm run dev:emu
 Isso liga o simulador do Firebase (login + banco), cria os dados de **demonstração** (fictícios) e abre o portal em http://localhost:3000.
 
 - Na tela de entrada aparecem os botões **"Entrar como Morador / Portaria / Síndico / Conselho"**. Eles só existem no computador local com o simulador.
+- Equipe demo com e-mail e senha: os e-mails e a senha ficam em `portal/.acesso-demo.txt` (o arquivo é recriado a cada semeadura e não vai para o GitHub).
+- Códigos de visitante da demonstração: `K7M-4PX` (hoje, uso único), `PRT-3ZB` (prestador, 7 dias), `HGX-7QW` (amanhã).
 - Painel do simulador (ver os dados gravados): http://127.0.0.1:4000
 - Vitrine do visual: http://localhost:3000/identidade
 
@@ -46,8 +49,8 @@ Isso liga o simulador do Firebase (login + banco), cria os dados de **demonstra�
 
 | Comando | O que testa |
 |---|---|
-| `npm test` | Permissões, formatos (R$, datas, fuso), login demo desligado em produção |
-| `npm run test:emu` | Regras do Firestore (isolamento entre casas e condomínios, ninguém grava direto, auditoria imutável) e o contexto do usuário |
+| `npm test` | Permissões, formatos (R$, datas, fuso), login demo desligado em produção, senhas, códigos e horários da portaria, regras das reservas |
+| `npm run test:emu` | Regras do Firestore (isolamento entre casas e condomínios, ninguém grava direto, auditoria imutável), o contexto do usuário, portaria e reservas (inclusive dois pedidos no mesmo horário) |
 | `npm run lint` / `npm run typecheck` | Qualidade e tipos do código |
 | `npm run test:tudo` | Tudo acima |
 
@@ -64,19 +67,21 @@ Veja os comentários em [.env.example](.env.example). Resumo:
 | `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` | navegador | Não |
 | `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` | servidor | **Sim** |
 | `APP_CHECK_ENFORCE` | servidor | Não |
+| `PORTARIA_SEGREDO_CODIGO` | servidor | **Sim** (obrigatório em produção, 32+ caracteres; trocar invalida os códigos já gerados) |
 | `FIRESTORE_EMULATOR_HOST`, `FIREBASE_AUTH_EMULATOR_HOST` | só local | Não. **Nunca** na Vercel |
 
 ## 5. Configurar o Firebase real (quando formos publicar)
 
 1. Em https://console.firebase.google.com crie um projeto (ex.: `jardins-do-lago`). Analytics pode ficar desligado.
-2. **Authentication** → Começar. O método de login será escolhido antes da Fase 2.
+2. **Authentication** → Começar → ative **E-mail/senha**. Em Configurações → Política de senha, defina mínimo de 10 caracteres. Mantenha ligada a **proteção contra enumeração de e-mail**.
 3. **Firestore Database** → Criar banco → região `southamerica-east1` (São Paulo) → modo **produção**.
 4. **Configurações do projeto → Seus apps → Web**: registre o app e copie `apiKey`, `authDomain`, `projectId`, `appId` para as variáveis `NEXT_PUBLIC_FIREBASE_*`.
 5. **Configurações do projeto → Contas de serviço → Gerar nova chave privada**: do JSON baixado, copie `client_email` e `private_key` para `FIREBASE_CLIENT_EMAIL` e `FIREBASE_PRIVATE_KEY`. Guarde o arquivo em local seguro e **não** o coloque na pasta do projeto.
 6. Publique regras e índices: `npx firebase login` e depois `npx firebase deploy --only firestore --project <id-do-projeto>`.
 7. **App Check** → registre o app com reCAPTCHA v3, coloque a chave do site em `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`, teste, e só então ligue `APP_CHECK_ENFORCE=true` e a aplicação obrigatória no Firestore.
-8. Crie a conta do síndico no Authentication e rode:
-   `npm run criar-condominio -- --id jardins-do-lago --nome "Residencial Jardins do Lago" --admin-uid <UID>`
+8. Crie o condomínio e o primeiro administrador (passo a passo em [docs/PRIMEIRO-ACESSO.md](docs/PRIMEIRO-ACESSO.md)):
+   `npm run criar-condominio -- --id jardins-do-lago --nome "Residencial Jardins do Lago" --admin-email "<email>" --admin-nome "<nome>"`
+   A senha provisória fica em `portal/.acesso-inicial.txt`. Apague o arquivo depois da troca. A alternativa `--admin-uid <UID>` continua valendo.
 
 ## 6. Deploy na Vercel
 

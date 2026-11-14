@@ -16,6 +16,7 @@ export const metadata: Metadata = { title: "Relatório financeiro" };
 export default async function RelatorioFinanceiro({ searchParams }: PageProps<"/relatorio/financeiro">) {
   const ctx = await getContexto();
   if (!ctx) redirect("/entrar");
+  if (ctx.precisaTrocarSenha) redirect("/conta/senha");
   let visao;
   try {
     visao = visaoFinanceira(ctx);

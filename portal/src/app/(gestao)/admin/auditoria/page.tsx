@@ -1,5 +1,25 @@
 import type { Metadata } from "next";
-import { LogIn, LogOut, ScrollText, Settings, type LucideIcon } from "lucide-react";
+import {
+  Ban,
+  CalendarCheck,
+  CalendarPlus,
+  CalendarX2,
+  DoorClosed,
+  DoorOpen,
+  Eraser,
+  KeyRound,
+  LogIn,
+  LogOut,
+  Package,
+  PackageCheck,
+  Pencil,
+  ScrollText,
+  Settings,
+  TreePalm,
+  UserCheck,
+  UserX,
+  type LucideIcon,
+} from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { ultimosRegistrosDeAuditoria } from "@/server/dados/gestao";
 import { formatarDataHora } from "@/lib/formato";
@@ -14,6 +34,26 @@ const DESCRICAO: Record<string, { texto: string; icone: LucideIcon }> = {
   "sessao.sair": { texto: "Saiu do portal", icone: LogOut },
   "condominio.criar": { texto: "Criou o condomínio no sistema", icone: Settings },
   "membro.criar": { texto: "Cadastrou uma pessoa", icone: Settings },
+  // Acesso com senha (equipe)
+  "acesso.criar_senha": { texto: "Criou o acesso com senha de alguém da equipe", icone: KeyRound },
+  "acesso.redefinir_senha": { texto: "Gerou nova senha provisória", icone: KeyRound },
+  "acesso.trocar_senha": { texto: "Trocou a própria senha", icone: KeyRound },
+  // Portaria
+  "visitante.autorizar": { texto: "Autorizou uma visita", icone: UserCheck },
+  "visitante.cancelar": { texto: "Cancelou uma autorização de visita", icone: UserX },
+  "visitante.anonimizar": { texto: "Removeu nomes antigos de visitantes (LGPD)", icone: Eraser },
+  "acesso.entrada": { texto: "Registrou entrada na portaria", icone: DoorOpen },
+  "acesso.saida": { texto: "Registrou saída na portaria", icone: DoorClosed },
+  "encomenda.registrar": { texto: "Registrou encomenda", icone: Package },
+  "encomenda.entregar": { texto: "Entregou encomenda", icone: PackageCheck },
+  // Reservas
+  "reserva.criar": { texto: "Criou reserva", icone: CalendarPlus },
+  "reserva.aprovar": { texto: "Aprovou reserva", icone: CalendarCheck },
+  "reserva.recusar": { texto: "Recusou pedido de reserva", icone: CalendarX2 },
+  "reserva.cancelar": { texto: "Cancelou reserva", icone: CalendarX2 },
+  "reserva.bloquear": { texto: "Bloqueou horário de área", icone: Ban },
+  "area.criar": { texto: "Cadastrou área de lazer", icone: TreePalm },
+  "area.editar": { texto: "Alterou área de lazer", icone: Pencil },
 };
 
 export default async function PaginaAuditoria() {

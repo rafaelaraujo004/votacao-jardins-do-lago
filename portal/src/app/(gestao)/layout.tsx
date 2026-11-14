@@ -1,4 +1,5 @@
-import { Menu } from "lucide-react";
+import Link from "next/link";
+import { KeyRound, Menu } from "lucide-react";
 import { exigirPermissao, type Contexto } from "@/server/contexto";
 import { NOME_DO_PAPEL, type Permissao } from "@/lib/permissoes";
 import { NavGestao, type GrupoMenu, type ItemMenuSerializavel } from "@/components/layout/navegacao";
@@ -19,10 +20,17 @@ const GRUPOS: { titulo: string; itens: Item[] }[] = [
       { rotulo: "Moradores e equipe", icone: "Users", href: "/admin/pessoas", permissao: "moradores.ver" },
     ],
   },
+  { titulo: "Portaria", itens: [{ rotulo: "Histórico da portaria", icone: "DoorOpen", href: "/admin/portaria", permissao: "visitantes.ver_todos" }] },
   { titulo: "Finanças", itens: [{ rotulo: "Prestação de contas", icone: "Landmark", href: "/admin/financeiro", permissao: "financeiro.ver" }] },
-  { titulo: "Serviços", itens: [{ rotulo: "Reservas e solicitações", icone: "Wrench", fase: "Fase 4", permissao: "reservas.ver_todas" }] },
+  {
+    titulo: "Serviços",
+    itens: [
+      { rotulo: "Reservas e áreas", icone: "CalendarDays", href: "/admin/reservas", permissao: "reservas.ver_todas" },
+      { rotulo: "Solicitações", icone: "Wrench", fase: "Fase 4", permissao: "solicitacoes.gerenciar" },
+    ],
+  },
   { titulo: "Comunicação", itens: [{ rotulo: "Comunicados e documentos", icone: "Megaphone", fase: "Fase 4", permissao: "comunicados.ver" }] },
-  { titulo: "Configurações", itens: [{ rotulo: "Áreas, mapa e informações", icone: "Settings", fase: "Fase 4", permissao: "areas.configurar" }] },
+  { titulo: "Configurações", itens: [{ rotulo: "Mapa e informações", icone: "Settings", fase: "Fase 4", permissao: "areas.configurar" }] },
   { titulo: "Controle", itens: [{ rotulo: "Auditoria", icone: "ScrollText", href: "/admin/auditoria", permissao: "auditoria.ver" }] },
 ];
 
@@ -61,6 +69,12 @@ export default async function LayoutGestao({ children }: LayoutProps<"/">) {
           </summary>
           <div className="flex flex-col gap-4 px-2 pb-4">
             <NavGestao grupos={grupos} />
+            <Link
+              href="/conta/senha"
+              className={`${classeBotaoFaixa} flex min-h-11 w-fit items-center gap-2 rounded-full px-3 font-bold`}
+            >
+              <KeyRound aria-hidden className="size-5" /> Trocar senha
+            </Link>
             <BotaoSair className={`${classeBotaoFaixa} w-fit`} />
           </div>
         </details>
@@ -71,6 +85,14 @@ export default async function LayoutGestao({ children }: LayoutProps<"/">) {
 
         <div className="hidden items-center gap-2 border-t border-white/10 p-3 lg:flex">
           <span className="min-w-0 flex-1 truncate px-1 text-[0.92rem]">{ctx.nome}</span>
+          <Link
+            href="/conta/senha"
+            title="Trocar senha"
+            className={`${classeBotaoFaixa} grid size-11 place-items-center rounded-full`}
+          >
+            <KeyRound aria-hidden className="size-5" />
+            <span className="sr-only">Trocar senha</span>
+          </Link>
           <BotaoTema className={classeBotaoFaixa} />
           <BotaoSair redondo className={classeBotaoFaixa} />
         </div>

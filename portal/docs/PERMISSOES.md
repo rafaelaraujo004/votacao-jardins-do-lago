@@ -23,10 +23,24 @@ permissões = padrão do papel  +  extras concedidas (só as que cabem no "teto"
 
 ## Onde é aplicada
 
-1. **Páginas**: `exigirPermissao("area.gestao")` no layout de cada área. Sem login → `/entrar`; sem permissão → `/sem-acesso`.
-2. **Ações e consultas**: `garantirPermissao(ctx, "financeiro.lancar")` no início de cada função de `src/server/`.
+1. **Páginas**: `exigirPermissao("area.gestao")` no layout de cada área. Sem login → `/entrar`; senha provisória → `/conta/senha`; sem permissão → `/sem-acesso`.
+2. **Ações e consultas**: `garantirPermissao(ctx, "financeiro.lancar")` no início de cada função de `src/server/`. Com senha provisória, `garantirPermissao` recusa tudo até a pessoa trocar a senha.
 3. **Menus**: só mostram o que a pessoa pode usar.
 4. **Regras do Firestore**: espelham o essencial (papel, unidade, condomínio, publicado/visível). Gravação direta: negada para todos.
+
+## Permissões por tela (módulos novos)
+
+| Tela | Permissão |
+|---|---|
+| `/visitas` (morador) | `visitantes.autorizar` |
+| `/encomendas` (morador) | `encomendas.ver_proprias` |
+| `/reservas` (morador) | `reservas.fazer` |
+| `/portaria` | `portaria.operar` (reservas de hoje: `reservas.ver_todas`) |
+| `/admin/portaria` | `visitantes.ver_todos`; o botão de limpeza LGPD exige também `moradores.gerenciar` (só o admin) |
+| `/admin/reservas` | `reservas.ver_todas` para ver; `reservas.gerenciar` para aprovar, recusar, reservar, bloquear e cancelar |
+| `/admin/reservas/areas` | `areas.configurar` |
+| Acesso com senha da equipe (página da pessoa) | `equipe.gerenciar` |
+| `/conta/senha` | só estar logado (fica fora das áreas, para não entrar em laço) |
 
 ## Testes
 

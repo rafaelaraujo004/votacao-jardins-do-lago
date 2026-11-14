@@ -50,6 +50,7 @@ beforeEach(async () => {
     await membro(C, "sindico", { papel: "admin", unitId: null });
     await membro(C, "conselheiro", { papel: "conselheiro", unitId: null });
     await membro(C, "suspenso", { papel: "morador", unitId: "casa-1", status: "suspenso" });
+    await membro(C, "provisorio", { papel: "portaria", unitId: null, precisaTrocarSenha: true });
     await membro(OUTRO, "moradorB", { papel: "morador", unitId: "casa-1" });
 
     await setDoc(doc(db, "users/morador1"), { nome: "M1", condominioIds: [C], condominioAtivo: C });
@@ -139,6 +140,15 @@ describe("vínculo suspenso", () => {
   it("não lê nem os dados da própria casa", async () => {
     await assertFails(getDoc(doc(como("suspenso"), `condominiums/${C}/tickets/t1`)));
     await assertFails(getDoc(doc(como("suspenso"), `condominiums/${C}/announcements/an1`)));
+  });
+});
+
+describe("senha provisória", () => {
+  it("não lê nada do condomínio até trocar a senha; lê o próprio vínculo", async () => {
+    await assertFails(getDoc(doc(como("provisorio"), `condominiums/${C}/visitors/v1`)));
+    await assertFails(getDoc(doc(como("provisorio"), `condominiums/${C}/packages/p1`)));
+    await assertFails(getDoc(doc(como("provisorio"), `condominiums/${C}/announcements/an1`)));
+    await assertSucceeds(getDoc(doc(como("provisorio"), `condominiums/${C}/members/provisorio`)));
   });
 });
 

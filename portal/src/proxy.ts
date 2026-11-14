@@ -25,5 +25,9 @@ export const config = {
     "/portaria/:path*",
     "/admin/:path*",
     "/relatorio/:path*",
+    "/conta/:path*",
+    "/visitas/:path*",
+    "/encomendas/:path*",
+    "/reservas/:path*",
   ],
 };

@@ -30,14 +30,14 @@ const PRONTOS: Modulo[] = [
   { icone: Wallet, titulo: "Prestação de contas", descricao: "Saldo, receitas e despesas", tom: "verde", href: "/financeiro" },
   { icone: MapPinned, titulo: "Mapa das casas", descricao: "Encontre qualquer casa", tom: "lago", href: "/mapa" },
   { icone: Phone, titulo: "Contatos úteis", descricao: "Endereço, portaria e emergência", tom: "vinho", href: "/contatos" },
+  { icone: CalendarDays, titulo: "Reservas de lazer", descricao: "Salão, churrasqueira e quadra", tom: "verde", href: "/reservas" },
+  { icone: UserCheck, titulo: "Autorização de visitas", descricao: "Libere visitas e entregas", tom: "lago", href: "/visitas" },
+  { icone: Package, titulo: "Encomendas", descricao: "Veja o que chegou para você", tom: "areia", href: "/encomendas" },
 ];
 
 // Módulos que ainda vão chegar (sem link: não são clicáveis).
 const EM_BREVE: Modulo[] = [
   { icone: Megaphone, titulo: "Comunicados", descricao: "Avisos da administração", tom: "areia" },
-  { icone: CalendarDays, titulo: "Reservas de lazer", descricao: "Salão, churrasqueira e quadra", tom: "verde" },
-  { icone: UserCheck, titulo: "Autorização de visitas", descricao: "Libere visitas e entregas", tom: "lago" },
-  { icone: Package, titulo: "Encomendas", descricao: "Veja o que chegou para você", tom: "areia" },
   { icone: MessageSquareWarning, titulo: "Solicitações", descricao: "Peça reparos e tire dúvidas", tom: "vinho" },
   { icone: Vote, titulo: "Votações e assembleias", descricao: "Eleições e decisões do condomínio", tom: "verde" },
   { icone: FileText, titulo: "Documentos", descricao: "Regimento, convenção e atas", tom: "lago" },

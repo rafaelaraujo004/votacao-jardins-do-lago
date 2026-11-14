@@ -30,6 +30,8 @@ export type Contexto = {
   unidadeRotulo: string | null;
   permissoes: ReadonlySet<Permissao>;
   demo: boolean;
+  /** Equipe com senha provisória: precisa trocar antes de usar o portal. */
+  precisaTrocarSenha: boolean;
 };
 
 export class ErroDeAcesso extends Error {
@@ -93,6 +95,7 @@ export async function carregarContexto(db: Firestore, uid: string): Promise<Cont
       Array.isArray(negadas) ? negadas : [],
     ),
     demo: membro.get("demo") === true,
+    precisaTrocarSenha: membro.get("precisaTrocarSenha") === true,
   };
 }
 
@@ -115,10 +118,14 @@ export const getContexto = cache(async (): Promise<Contexto | null> => {
   return carregarContexto(adminDb(), uid);
 });
 
-/** Para páginas: sem login → tela de entrada. */
+/**
+ * Para páginas: sem login → tela de entrada; com senha provisória → troca de senha.
+ * (A tela /conta/senha usa getContexto, e não esta função, para não ficar em laço.)
+ */
 export async function exigirContexto(): Promise<Contexto> {
   const ctx = await getContexto();
   if (!ctx) redirect("/entrar");
+  if (ctx.precisaTrocarSenha) redirect("/conta/senha");
   return ctx;
 }
 
@@ -132,6 +139,10 @@ export async function exigirPermissao(permissao: Permissao): Promise<Contexto> {
 /** Para ações e rotas: lança erro em vez de redirecionar. */
 export function garantirPermissao(ctx: Contexto | null, permissao: Permissao): Contexto {
   if (!ctx) throw new ErroDeAcesso("sem-sessao", "Sua sessão terminou. Entre novamente.");
+  // Senha provisória: nada é gravado até a pessoa criar a própria senha.
+  if (ctx.precisaTrocarSenha) {
+    throw new ErroDeAcesso("sem-permissao", "Troque a sua senha provisória antes de continuar.");
+  }
   if (!ctx.permissoes.has(permissao)) {
     throw new ErroDeAcesso("sem-permissao", "Seu perfil não permite fazer isso.");
   }

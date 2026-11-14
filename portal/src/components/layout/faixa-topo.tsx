@@ -3,7 +3,8 @@
  * quem está usando e os botões redondos de tema e sair.
  */
 import type { ReactNode } from "react";
-import { LogOut } from "lucide-react";
+import Link from "next/link";
+import { KeyRound, LogOut } from "lucide-react";
 import { Logo, Petalas } from "@/components/ui/marca";
 import { BotaoTema } from "@/components/ui/tema";
 import { sair } from "@/server/acoes-sessao";
@@ -40,12 +41,15 @@ export function FaixaTopo({
   subtitulo,
   demo,
   largura = "max-w-5xl",
+  contaHref,
   children,
 }: {
   titulo: string;
   subtitulo?: string;
   demo?: boolean;
   largura?: string;
+  /** Endereço da tela "Trocar senha" (só para a equipe). Sem ele, o botão não aparece. */
+  contaHref?: string;
   children?: ReactNode;
 }) {
   return (
@@ -63,6 +67,12 @@ export function FaixaTopo({
           <span className="mt-0.5 truncate text-[0.8rem] text-band-muted">{ENDERECO_LINHA}</span>
           {subtitulo ? <span className="mt-0.5 truncate text-[0.84rem] font-bold text-band-fg/90">{subtitulo}</span> : null}
         </div>
+        {contaHref ? (
+          <Link href={contaHref} title="Trocar senha" className={cx("grid size-11 place-items-center rounded-full", classeBotaoFaixa)}>
+            <KeyRound aria-hidden className="size-5" />
+            <span className="sr-only">Trocar senha</span>
+          </Link>
+        ) : null}
         <BotaoTema className={classeBotaoFaixa} />
         <BotaoSair redondo className={classeBotaoFaixa} />
       </div>

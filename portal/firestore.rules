@@ -37,10 +37,12 @@ service cloud.firestore {
     }
 
     // Vínculo ativo com o condomínio ativo.
+    // Quem está com senha provisória não lê nada até criar a própria senha.
     function ativo(c) {
       return logado()
         && exists(caminhoMembro(c))
         && membro(c).status == 'ativo'
+        && membro(c).get('precisaTrocarSenha', false) != true
         && condominioAtivo(c);
     }
 
