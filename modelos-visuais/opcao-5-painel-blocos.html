@@ -1,0 +1,944 @@
+<!-- Modelo 5 — "Painel em Blocos": mosaico estilo bento em verde-sálvia, cada bloco já mostra a informação sem precisar abrir; em tela larga vira painel de TV/computador. -->
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jardins do Lago — Painel em Blocos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef2ec;
+  --bg2:#e3ebe2;
+  --card:#fbfbf7;
+  --salvia:#cfdccd;
+  --salvia-2:#b8cbb7;
+  --salvia-3:#8faa90;
+  --pinho:#1d6b4e;
+  --profundo:#12382a;
+  --lago:#1c5c78;
+  --lago-claro:#d7e8ef;
+  --vinho:#8b2a5c;
+  --vinho-claro:#f3e1ea;
+  --areia:#e9dfc4;
+  --texto:#12382a;
+  --texto-2:#46604f;
+  --linha:#d9e2d6;
+  --sombra:0 1px 2px rgba(18,56,42,.06),0 8px 24px -10px rgba(18,56,42,.18);
+  --raio:26px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg);color:var(--texto);
+  font-size:16px;line-height:1.4;
+  min-height:100vh;overflow-x:hidden;
+  padding-bottom:104px;
+}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+a{color:inherit;text-decoration:none}
+svg.i{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+:focus-visible{outline:3px solid var(--lago);outline-offset:2px;border-radius:12px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.app{max-width:480px;margin:0 auto;padding:14px 16px 0}
+
+/* topo */
+.topo{display:flex;align-items:center;gap:12px;padding:4px 2px 14px}
+.topo img{height:46px;width:81px;object-fit:contain;flex:none;overflow:hidden;font-size:0}
+.topo .nome{flex:1;min-width:0}
+.topo h1{font-size:17px;font-weight:800;letter-spacing:-.01em;line-height:1.15}
+.topo p{font-size:12.5px;color:var(--texto-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.selo{font-size:11px;font-weight:700;color:var(--vinho);background:var(--vinho-claro);border-radius:999px;padding:5px 9px;white-space:nowrap;flex:none}
+
+/* telas */
+.tela{display:none;animation:entra .28s ease}
+.tela.ativa{display:block}
+@keyframes entra{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.titulo-tela{display:flex;align-items:center;gap:10px;margin:2px 2px 14px}
+.titulo-tela h2{font-size:24px;font-weight:800;letter-spacing:-.02em;flex:1}
+.voltar{width:44px;height:44px;border-radius:14px;background:var(--card);display:grid;place-items:center;box-shadow:var(--sombra)}
+
+/* bento */
+.bento{display:grid;grid-template-columns:1fr 1fr;gap:12px;
+  grid-template-areas:
+   "hero hero"
+   "saldo saldo"
+   "mapa aviso"
+   "voto voto"
+   "contato reserva"
+   "atalhos atalhos";
+}
+.bloco{background:var(--card);border-radius:var(--raio);box-shadow:var(--sombra);padding:16px;position:relative;overflow:hidden;text-align:left;display:flex;flex-direction:column;min-width:0;transition:transform .15s ease,box-shadow .15s ease}
+button.bloco:active,a.bloco:active{transform:scale(.98)}
+@media (hover:hover){button.bloco:hover,a.bloco:hover{transform:translateY(-2px);box-shadow:0 2px 4px rgba(18,56,42,.06),0 14px 30px -12px rgba(18,56,42,.28)}}
+.rotulo{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--texto-2);display:flex;align-items:center;gap:6px}
+.rotulo svg.i{width:16px;height:16px}
+
+.b-hero{grid-area:hero;padding:0;min-height:168px;background:linear-gradient(180deg,#cfe3e6 0%,#e7efe4 100%)}
+.b-hero svg.ilustra{position:absolute;inset:0;width:100%;height:100%}
+.b-hero .txt{position:relative;padding:16px 18px;margin-top:auto;background:linear-gradient(0deg,rgba(18,56,42,.78),rgba(18,56,42,0));color:#fff}
+.b-hero .txt b{font-size:20px;font-weight:800;letter-spacing:-.01em;display:block;line-height:1.15}
+.b-hero .txt span{font-size:13px;opacity:.95}
+
+.b-saldo{grid-area:saldo;background:var(--profundo);color:#fff}
+.b-saldo .rotulo{color:#bcd6c6}
+.b-saldo .valor{font-size:34px;font-weight:800;letter-spacing:-.03em;margin:6px 0 2px;line-height:1.1}
+.b-saldo .sub{font-size:13px;color:#cfe2d6}
+.b-saldo .linha2{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;padding:6px 10px;border-radius:999px}
+.chip svg.i{width:15px;height:15px}
+.chip.ent{background:rgba(143,214,174,.18);color:#a8e6c3}
+.chip.sai{background:rgba(240,170,200,.16);color:#f6c2d9}
+.b-saldo .spark{margin-top:12px;height:56px;width:100%}
+.b-saldo .ir{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:12px;background:rgba(255,255,255,.12);display:grid;place-items:center}
+
+.b-mapa{grid-area:mapa;background:var(--salvia)}
+.b-mapa svg.mini{width:100%;height:auto;margin:8px 0 6px;border-radius:14px}
+.b-mapa strong{font-size:15px;font-weight:800}
+.b-mapa small{font-size:12.5px;color:var(--texto-2)}
+
+.b-aviso{grid-area:aviso;background:var(--areia)}
+.b-aviso .tag{align-self:flex-start;font-size:11px;font-weight:800;color:#6b4b0e;background:#f6e9b9;padding:4px 8px;border-radius:999px;margin-top:10px}
+.b-aviso strong{font-size:16px;font-weight:800;line-height:1.2;margin-top:8px}
+.b-aviso p{font-size:13px;color:#5b5236;margin-top:4px}
+.b-aviso .mais{margin-top:auto;padding-top:10px;font-size:13px;font-weight:700;color:var(--pinho)}
+
+.b-voto{grid-area:voto;background:linear-gradient(135deg,var(--lago) 0%,#174a61 100%);color:#fff}
+.b-voto .rotulo{color:#bfe0ee}
+.b-voto strong{font-size:18px;font-weight:800;margin-top:6px}
+.b-voto p{font-size:13px;color:#d4e9f2}
+.contagem{display:flex;gap:8px;margin-top:12px}
+.contagem .cx{flex:1;display:block;background:rgba(255,255,255,.13);border-radius:16px;padding:8px 4px;text-align:center}
+.contagem b{display:block;font-size:26px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums}
+.contagem small{display:block;font-size:11px;font-weight:600;color:#cfe6f0;text-transform:uppercase;letter-spacing:.04em}
+
+.b-contato{grid-area:contato;background:var(--card)}
+.b-contato strong{font-size:15px;font-weight:800;margin-top:8px}
+.b-contato small{font-size:12.5px;color:var(--texto-2)}
+.btn-ligar{margin-top:12px;display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;border-radius:16px;background:var(--pinho);color:#fff;font-weight:800;font-size:15px}
+
+.b-reserva{grid-area:reserva;background:var(--lago-claro)}
+.b-reserva strong{font-size:15px;font-weight:800;margin-top:8px;line-height:1.2}
+.b-reserva small{font-size:12.5px;color:#2d5566}
+.dias{display:flex;gap:4px;margin-top:10px}
+.dias i{flex:1;height:30px;border-radius:9px;background:#fff;display:grid;place-items:center;font-style:normal;font-size:11px;font-weight:700;color:#2d5566}
+.dias i.oc{background:var(--lago);color:#fff}
+
+.b-atalhos{grid-area:atalhos;padding:14px}
+.grade-mod{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.mod{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 2px;border-radius:18px;min-height:84px;justify-content:center;text-align:center;font-size:12px;font-weight:700;line-height:1.15;color:var(--texto)}
+.mod .ic{width:44px;height:44px;border-radius:15px;display:grid;place-items:center}
+.mod:active{background:var(--bg2)}
+@media (hover:hover){.mod:hover{background:var(--bg2)}}
+.c1{background:#d6e9dc;color:var(--pinho)}
+.c2{background:var(--lago-claro);color:var(--lago)}
+.c3{background:var(--vinho-claro);color:var(--vinho)}
+.c4{background:#f3ecd6;color:#7a5a12}
+
+/* prestação de contas */
+.mes{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:20px;padding:6px;box-shadow:var(--sombra);margin-bottom:12px}
+.mes button{width:48px;height:48px;border-radius:15px;background:var(--bg);display:grid;place-items:center;color:var(--profundo)}
+.mes button:disabled{opacity:.35;cursor:default}
+.mes .nm{flex:1;text-align:center}
+.mes .nm b{display:block;font-size:17px;font-weight:800}
+.mes .nm small{font-size:12px;color:var(--texto-2)}
+.contas-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.contas-grid .full{grid-column:1/-1}
+.k-saldo{background:var(--profundo);color:#fff}
+.k-saldo .rotulo{color:#bcd6c6}
+.k-saldo .valor{font-size:32px;font-weight:800;letter-spacing:-.03em;margin-top:4px}
+.k-saldo .sub{font-size:13px;color:#cfe2d6;margin-top:2px}
+.k-mini .valor{font-size:20px;font-weight:800;letter-spacing:-.02em;margin-top:6px}
+.k-ent{background:#dcefe3}.k-ent .valor{color:#14583e}
+.k-sai{background:var(--vinho-claro)}.k-sai .valor{color:var(--vinho)}
+.k-mini small{font-size:12px;color:var(--texto-2)}
+.grafico svg{width:100%;height:auto;margin-top:8px}
+.legenda{display:flex;gap:14px;font-size:12.5px;font-weight:600;color:var(--texto-2);margin-top:6px;flex-wrap:wrap}
+.legenda span{display:inline-flex;align-items:center;gap:6px}
+.legenda i{width:12px;height:12px;border-radius:4px;display:inline-block}
+.movs{list-style:none;margin-top:6px}
+.movs li{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--linha)}
+.movs li:first-child{border-top:0}
+.movs .seta{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;flex:none}
+.movs .seta.e{background:#dcefe3;color:#14583e}
+.movs .seta.s{background:var(--vinho-claro);color:var(--vinho)}
+.movs .d{flex:1;min-width:0}
+.movs .d b{display:block;font-size:14.5px;font-weight:700;line-height:1.25}
+.movs .d small{font-size:12.5px;color:var(--texto-2)}
+.movs .ln{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:2px}
+.movs .v{font-weight:800;font-size:14.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.movs .v.e{color:#14583e}.movs .v.s{color:var(--vinho)}
+.clip{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;color:var(--lago);background:var(--lago-claro);flex:none}
+.cab-lista{display:flex;align-items:center;justify-content:space-between}
+.cab-lista small{font-size:12px;color:var(--texto-2);display:inline-flex;align-items:center;gap:4px}
+
+/* mapa */
+.busca{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:20px;padding:6px 6px 6px 16px;box-shadow:var(--sombra);margin-bottom:12px}
+.busca svg.i{color:var(--texto-2)}
+.busca input{flex:1;min-width:0;border:0;background:none;font-size:17px;font-weight:600;height:48px;outline:none}
+.busca input::placeholder{color:#6d8273;font-weight:500}
+.busca button{height:48px;padding:0 16px;border-radius:15px;background:var(--pinho);color:#fff;font-weight:800}
+.mapa-grid{display:grid;gap:12px}
+.b-planta{padding:10px;background:#e4ece0}
+.b-planta svg{width:100%;height:auto;display:block}
+.lote{fill:#fdfcf6;stroke:#9bb39d;stroke-width:.8;cursor:pointer;transition:fill .15s}
+.lote:hover{fill:#e6f0e6}
+.lote.q-sel{fill:#eaf3ea;stroke:var(--pinho)}
+.lote.sel{fill:var(--vinho);stroke:var(--vinho)}
+.pulso{fill:none;stroke:var(--vinho);stroke-width:2;animation:pulso 1.4s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pulso{from{opacity:.9;transform:scale(.6)}to{opacity:0;transform:scale(2.2)}}
+.cartao-casa{display:none;align-items:center;gap:12px;background:var(--vinho);color:#fff}
+.cartao-casa.on{display:flex;flex-direction:row}
+.cartao-casa .num{width:58px;height:58px;border-radius:18px;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:22px;font-weight:800;flex:none}
+.cartao-casa .d{flex:1;min-width:0}
+.cartao-casa b{font-size:18px;font-weight:800;display:block}
+.cartao-casa small{font-size:13px;color:#f6d5e5}
+.cartao-casa .x{width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.14);display:grid;place-items:center;flex:none}
+.aviso-busca{font-size:13px;color:var(--vinho);font-weight:700;min-height:18px;margin:-4px 4px 8px}
+.chips-q{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chips-q button{width:44px;height:44px;border-radius:14px;background:var(--bg);font-weight:800;font-size:16px}
+.chips-q button.on{background:var(--pinho);color:#fff}
+.lotes-q{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px;margin-top:12px}
+.lotes-q button{height:44px;border-radius:12px;background:var(--bg);font-weight:700;font-size:14px;font-variant-numeric:tabular-nums}
+.lotes-q button.on{background:var(--vinho);color:#fff}
+.leg-mapa{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;font-size:13px;font-weight:600;color:var(--texto-2);margin-top:10px}
+.leg-mapa span{display:flex;align-items:center;gap:8px}
+.leg-mapa i{width:16px;height:16px;border-radius:5px;flex:none;border:1px solid rgba(0,0,0,.08)}
+
+/* contatos */
+.contatos{display:grid;gap:12px}
+.ct{display:flex;align-items:center;gap:12px}
+.ct .av{width:50px;height:50px;border-radius:16px;display:grid;place-items:center;flex:none}
+.ct .d{flex:1;min-width:0}
+.ct .d b{display:block;font-size:16px;font-weight:800}
+.ct .d small{font-size:13px;color:var(--texto-2)}
+.acoes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.acoes a{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;border-radius:15px;font-weight:800;font-size:15px}
+.a-tel{background:var(--pinho);color:#fff}
+.a-wpp{background:#dcefe3;color:#14583e}
+.emerg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.emerg a{border-radius:22px;padding:14px 8px;text-align:center;color:#fff;display:flex;flex-direction:column;align-items:center;gap:4px;min-height:112px;justify-content:center;box-shadow:var(--sombra)}
+.emerg a b{font-size:30px;font-weight:800;line-height:1}
+.emerg a span{font-size:12.5px;font-weight:700}
+.e1{background:#1f3f73}.e2{background:#a3262a}.e3{background:#b2490f}
+.end-card .linha{display:flex;align-items:center;gap:10px;margin-top:8px}
+.end-card p{font-size:14px;line-height:1.45;flex:1}
+.btn-sec{min-height:44px;padding:0 14px;border-radius:14px;background:var(--bg);font-weight:800;font-size:14px;display:inline-flex;align-items:center;gap:6px}
+
+/* módulos */
+.mods{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mods .bloco{min-height:132px;gap:8px}
+.mods .ic{width:48px;height:48px;border-radius:16px;display:grid;place-items:center}
+.mods b{font-size:15.5px;font-weight:800;line-height:1.2}
+.estado{align-self:flex-start;font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;margin-top:auto}
+.estado.ok{background:#dcefe3;color:#14583e}
+.estado.br{background:#eceae2;color:#5d5a4c}
+.estado.es{background:#f6e9b9;color:#6b4b0e}
+
+.breve{text-align:center;align-items:center;padding:28px 20px}
+.breve .ic{width:76px;height:76px;border-radius:24px;display:grid;place-items:center;margin-bottom:14px}
+.breve .ic svg.i{width:34px;height:34px}
+.breve h3{font-size:21px;font-weight:800}
+.breve p{font-size:15px;color:var(--texto-2);margin-top:6px;max-width:320px}
+.lista-avisos{display:grid;gap:12px}
+.lista-avisos .bloco b{font-size:16px;font-weight:800;margin-top:6px}
+.lista-avisos .bloco p{font-size:14px;color:var(--texto-2);margin-top:4px}
+
+/* navegação inferior */
+.nav{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);width:calc(100% - 24px);max-width:456px;background:rgba(18,56,42,.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:26px;padding:6px;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;box-shadow:0 14px 34px -10px rgba(18,56,42,.55);z-index:20}
+.nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:58px;border-radius:20px;color:#b9cfc2;font-size:11.5px;font-weight:700}
+.nav button[aria-current="page"]{background:var(--salvia);color:var(--profundo)}
+
+.toast{position:fixed;left:50%;bottom:96px;transform:translate(-50%,20px);background:var(--texto);color:#fff;padding:12px 18px;border-radius:16px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:30;max-width:calc(100% - 32px);text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+.rodape{text-align:center;font-size:12px;color:var(--texto-2);padding:18px 0 4px}
+
+/* tela larga: painel de TV/computador */
+@media (min-width:900px){
+  body{padding-bottom:110px}
+  .app{max-width:1240px;padding:22px 28px 0}
+  .topo img{height:58px;width:102px}
+  .topo h1{font-size:22px}
+  .topo p{font-size:14px}
+  .bento{grid-template-columns:repeat(4,1fr);gap:16px;
+    grid-template-areas:
+     "hero hero saldo saldo"
+     "mapa voto voto aviso"
+     "mapa contato reserva aviso"
+     "atalhos atalhos atalhos atalhos";}
+  .b-hero{min-height:250px}
+  .b-hero .txt b{font-size:28px}
+  .b-saldo .valor{font-size:46px}
+  .b-saldo .spark{height:90px}
+  .grade-mod{grid-template-columns:repeat(8,1fr)}
+  .contas-wrap{display:grid;grid-template-columns:1.05fr 1fr;gap:16px;align-items:start}
+  .mapa-grid{grid-template-columns:1.35fr 1fr;align-items:start}
+  .contatos{grid-template-columns:1fr 1fr}
+  .contatos .full{grid-column:1/-1}
+  .mods{grid-template-columns:repeat(4,1fr)}
+  .lista-avisos{grid-template-columns:repeat(3,1fr)}
+  .tela-estreita{max-width:640px;margin:0 auto}
+}
+@media (max-width:360px){
+  .b-saldo .valor{font-size:29px}
+  .grade-mod{gap:4px}
+  .mod{font-size:11px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ícones -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-casa" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-contas" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></symbol>
+  <symbol id="i-mapa" viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></symbol>
+  <symbol id="i-tel" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></symbol>
+  <symbol id="i-grade" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="2"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="2"/></symbol>
+  <symbol id="i-aviso" viewBox="0 0 24 24"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12"/></symbol>
+  <symbol id="i-agenda" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-visita" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M16 11l2 2 4-4"/></symbol>
+  <symbol id="i-chave" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-.5-.5-2.5z"/></symbol>
+  <symbol id="i-voto" viewBox="0 0 24 24"><path d="M4 12h16v8H4zM8 12V4h8v8"/><path d="M10 8l1.5 1.5L14 6.5"/></symbol>
+  <symbol id="i-wpp" viewBox="0 0 24 24"><path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/><path d="M9 10c.5 2 2 3.5 4 4"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24"><path d="M20 11l-8 8a5 5 0 0 1-7-7l8.5-8.5a3.5 3.5 0 0 1 5 5L10 17a2 2 0 0 1-3-3l7.5-7.5"/></symbol>
+  <symbol id="i-sobe" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+  <symbol id="i-desce" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></symbol>
+  <symbol id="i-esq" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-dir" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+  <symbol id="i-seta" viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8"/></symbol>
+  <symbol id="i-busca" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-escudo" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></symbol>
+  <symbol id="i-coracao" viewBox="0 0 24 24"><path d="M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z"/><path d="M7 11h3l1-2 2 4 1-2h3"/></symbol>
+  <symbol id="i-fogo" viewBox="0 0 24 24"><path d="M12 21a7 7 0 0 0 7-7c0-4-3-6-4-10-2 2-3 4-3 6-1-1-2-2-2-4-3 3-5 5-5 8a7 7 0 0 0 7 7z"/></symbol>
+  <symbol id="i-copia" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="3"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+  <symbol id="i-relogio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-pessoa" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-portao" viewBox="0 0 24 24"><path d="M3 21V8l9-5 9 5v13"/><path d="M7 21v-8h10v8M10 13v8M14 13v8"/></symbol>
+</svg>
+
+<div class="app">
+  <header class="topo">
+    <img src="logo.png" alt="Logo do Residencial Jardins do Lago">
+    <div class="nome">
+      <h1>Jardins do Lago</h1>
+      <p>Canaã dos Carajás – PA · CEP 68352-193</p>
+    </div>
+    <span class="selo" title="Os números desta tela são ilustrativos">dados de exemplo</span>
+  </header>
+
+  <!-- ===================== INÍCIO ===================== -->
+  <section class="tela ativa" id="t-inicio" aria-label="Início">
+    <div class="bento">
+
+      <div class="bloco b-hero">
+        <svg class="ilustra" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <defs>
+            <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bfdde3"/><stop offset="1" stop-color="#eef3e6"/></linearGradient>
+            <linearGradient id="agua" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3f8aa6"/><stop offset="1" stop-color="#1c5c78"/></linearGradient>
+          </defs>
+          <rect width="400" height="200" fill="url(#ceu)"/>
+          <circle cx="330" cy="46" r="20" fill="#f6e3a8"/>
+          <path d="M0 110 Q60 80 120 100 T240 92 T400 98 V200 H0z" fill="#a9c4a6"/>
+          <path d="M0 128 Q80 108 170 122 T400 116 V200 H0z" fill="#8fb08f"/>
+          <!-- casas -->
+          <g>
+            <rect x="150" y="96" width="44" height="30" fill="#fbf7ec"/><path d="M146 98 L172 78 L198 98z" fill="#8b2a5c"/><rect x="166" y="108" width="11" height="18" fill="#1d6b4e"/>
+            <rect x="206" y="100" width="38" height="26" fill="#fbf7ec"/><path d="M202 102 L225 84 L248 102z" fill="#a8476f"/><rect x="214" y="106" width="9" height="8" fill="#bcd9e4"/><rect x="228" y="106" width="9" height="8" fill="#bcd9e4"/>
+            <rect x="256" y="98" width="42" height="28" fill="#f4eedc"/><path d="M252 100 L277 81 L302 100z" fill="#8b2a5c"/><rect x="272" y="110" width="10" height="16" fill="#1d6b4e"/>
+            <rect x="104" y="104" width="36" height="22" fill="#f4eedc"/><path d="M100 106 L122 90 L144 106z" fill="#a8476f"/><rect x="116" y="110" width="9" height="8" fill="#bcd9e4"/>
+          </g>
+          <!-- árvores -->
+          <g fill="#1d6b4e"><circle cx="80" cy="104" r="14"/><circle cx="92" cy="96" r="11"/><circle cx="318" cy="102" r="15"/><circle cx="334" cy="110" r="11"/><circle cx="44" cy="112" r="10"/></g>
+          <g fill="#12382a"><rect x="84" y="112" width="3" height="16"/><rect x="321" y="112" width="3" height="16"/></g>
+          <!-- lago -->
+          <path d="M-10 150 Q90 132 200 146 T410 142 V200 H-10z" fill="url(#agua)"/>
+          <path d="M40 162 h40 M150 170 h56 M260 160 h46 M320 176 h30" stroke="#a7d3e3" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>
+        </svg>
+        <div class="txt">
+          <b id="saudacao">Bom dia, morador</b>
+          <span>Residencial Jardins do Lago · 220 casas</span>
+        </div>
+      </div>
+
+      <button class="bloco b-saldo" data-ir="contas" aria-label="Abrir prestação de contas">
+        <span class="rotulo"><svg class="i"><use href="#i-contas"/></svg>Saldo do condomínio</span>
+        <span class="valor" id="h-saldo">R$ 48.320,15</span>
+        <span class="sub" id="h-sub">ao fim de novembro de 2026</span>
+        <span class="linha2">
+          <span class="chip ent"><svg class="i"><use href="#i-sobe"/></svg><span id="h-rec">R$ 31.240,00</span></span>
+          <span class="chip sai"><svg class="i"><use href="#i-desce"/></svg><span id="h-desp">R$ 29.040,25</span></span>
+        </span>
+        <svg class="spark" id="h-spark" viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true"></svg>
+        <span class="ir"><svg class="i"><use href="#i-seta"/></svg></span>
+      </button>
+
+      <button class="bloco b-mapa" data-ir="mapa" aria-label="Abrir mapa das casas">
+        <span class="rotulo"><svg class="i"><use href="#i-mapa"/></svg>Mapa</span>
+        <svg class="mini" viewBox="0 0 120 90" aria-hidden="true">
+          <rect width="120" height="90" fill="#f4f6ef"/>
+          <path d="M0 0 H120 V14 Q90 20 60 14 T0 16z" fill="#7fb2c6"/>
+          <g fill="#fdfcf6" stroke="#8faa90" stroke-width=".8">
+            <rect x="6" y="22" width="46" height="13" rx="2"/><rect x="68" y="22" width="46" height="13" rx="2"/>
+            <rect x="6" y="40" width="46" height="13" rx="2"/><rect x="68" y="40" width="46" height="13" rx="2"/>
+            <rect x="6" y="66" width="46" height="9" rx="2"/><rect x="68" y="66" width="46" height="9" rx="2"/>
+          </g>
+          <rect x="6" y="56" width="108" height="7" rx="2" fill="#bfd7c2"/>
+          <rect x="18" y="57.5" width="14" height="4" rx="1.5" fill="#5aa1bd"/>
+          <rect x="52" y="78" width="16" height="10" rx="2" fill="#8b2a5c"/>
+        </svg>
+        <strong>Encontre uma casa</strong>
+        <small>8 quadras · 220 lotes</small>
+      </button>
+
+      <button class="bloco b-aviso" data-ir="comunicados" aria-label="Abrir comunicados">
+        <span class="rotulo"><svg class="i"><use href="#i-aviso"/></svg>Aviso</span>
+        <span class="tag">Terça, 18/11</span>
+        <strong>Piscina fechada para limpeza</strong>
+        <p>Das 7h às 13h. Reabre à tarde.</p>
+        <span class="mais">Ver todos →</span>
+      </button>
+
+      <button class="bloco b-voto" data-modulo="votacoes" aria-label="Abrir módulo de votações">
+        <span class="rotulo"><svg class="i"><use href="#i-voto"/></svg>Votações · em breve</span>
+        <strong>Eleição do conselho</strong>
+        <p>Assembleia em 6 de dezembro, às 19h, no salão de festas.</p>
+        <span class="contagem" aria-live="polite">
+          <span class="cx"><b id="cd-d">--</b><small>dias</small></span>
+          <span class="cx"><b id="cd-h">--</b><small>horas</small></span>
+          <span class="cx"><b id="cd-m">--</b><small>min</small></span>
+        </span>
+      </button>
+
+      <div class="bloco b-contato">
+        <span class="rotulo"><svg class="i"><use href="#i-portao"/></svg>Portaria 24h</span>
+        <strong>(94) 9 0000-0001</strong>
+        <small>número de exemplo</small>
+        <a class="btn-ligar" href="tel:+5594900000001"><svg class="i"><use href="#i-tel"/></svg>Ligar</a>
+      </div>
+
+      <button class="bloco b-reserva" data-modulo="reservas" aria-label="Abrir reservas de lazer">
+        <span class="rotulo"><svg class="i"><use href="#i-agenda"/></svg>Salão</span>
+        <strong>Livre sábado, 22/11</strong>
+        <small>Próximos 7 dias</small>
+        <span class="dias" aria-hidden="true"><i>S</i><i class="oc">D</i><i>S</i><i>T</i><i>Q</i><i class="oc">Q</i><i>S</i></span>
+      </button>
+
+      <div class="bloco b-atalhos">
+        <span class="rotulo"><svg class="i"><use href="#i-grade"/></svg>Serviços</span>
+        <div class="grade-mod" id="grade-mod"></div>
+      </div>
+    </div>
+    <p class="rodape">Rodovia PA-160, Serra Dourada II · Canaã dos Carajás – PA · CEP 68352-193</p>
+  </section>
+
+  <!-- ===================== PRESTAÇÃO DE CONTAS ===================== -->
+  <section class="tela" id="t-contas" aria-label="Prestação de contas">
+    <div class="titulo-tela"><h2>Prestação de contas</h2></div>
+    <div class="contas-wrap">
+      <div>
+        <div class="mes">
+          <button id="mes-ant" aria-label="Mês anterior"><svg class="i"><use href="#i-esq"/></svg></button>
+          <div class="nm"><b id="mes-nome">Novembro de 2026</b><small>mês de referência</small></div>
+          <button id="mes-prox" aria-label="Próximo mês"><svg class="i"><use href="#i-dir"/></svg></button>
+        </div>
+        <div class="contas-grid">
+          <div class="bloco k-saldo full">
+            <span class="rotulo">Saldo no fim do mês</span>
+            <span class="valor" id="c-saldo"></span>
+            <span class="sub" id="c-ant"></span>
+          </div>
+          <div class="bloco k-mini k-ent">
+            <span class="rotulo"><svg class="i"><use href="#i-sobe"/></svg>Entrou</span>
+            <span class="valor" id="c-rec"></span>
+            <small>receitas</small>
+          </div>
+          <div class="bloco k-mini k-sai">
+            <span class="rotulo"><svg class="i"><use href="#i-desce"/></svg>Saiu</span>
+            <span class="valor" id="c-desp"></span>
+            <small>despesas</small>
+          </div>
+          <div class="bloco grafico full">
+            <span class="rotulo">Receitas x despesas · 6 meses</span>
+            <svg id="grafico" viewBox="0 0 330 170" role="img" aria-label="Gráfico de barras de receitas e despesas dos últimos seis meses"></svg>
+            <div class="legenda"><span><i style="background:#1d6b4e"></i>Receitas</span><span><i style="background:#c47aa0"></i>Despesas</span><span>Toque num mês para ver</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="bloco" style="margin-top:12px">
+        <div class="cab-lista"><span class="rotulo">Movimentações</span><small><svg class="i" style="width:14px;height:14px"><use href="#i-clip"/></svg>comprovante anexado</small></div>
+        <ul class="movs" id="movs"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== MAPA ===================== -->
+  <section class="tela" id="t-mapa" aria-label="Mapa das casas">
+    <div class="titulo-tela"><h2>Mapa das casas</h2></div>
+    <form class="busca" id="form-busca" role="search">
+      <svg class="i"><use href="#i-busca"/></svg>
+      <label for="campo-casa" class="sr">Encontre uma casa: digite o número</label>
+      <input id="campo-casa" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" placeholder="Casa nº (ex.: 57)" autocomplete="off">
+      <button type="submit">Achar</button>
+    </form>
+    <div class="aviso-busca" id="aviso-busca" aria-live="polite"></div>
+    <div class="mapa-grid">
+      <div>
+        <div class="bloco b-planta">
+          <svg id="planta" viewBox="0 0 360 560" role="img" aria-label="Planta ilustrativa do condomínio com quadras A a H, área de lazer, lago e portaria">
+            <rect width="360" height="560" fill="#eef3ea"/>
+            <!-- lago -->
+            <path d="M0 0 H360 V44 Q300 66 230 52 T110 56 T0 48z" fill="#6ea9c0"/>
+            <path d="M40 24 h34 M150 34 h44 M250 22 h40" stroke="#cfe6ef" stroke-width="2.5" stroke-linecap="round"/>
+            <text x="180" y="22" text-anchor="middle" font-size="12" font-weight="800" fill="#0f3d52">Lago</text>
+            <!-- ruas -->
+            <rect x="162" y="60" width="36" height="460" fill="#dfe3da"/>
+            <g fill="#dfe3da"><rect x="0" y="60" width="360" height="16"/><rect x="0" y="150" width="360" height="14"/><rect x="0" y="238" width="360" height="14"/><rect x="0" y="326" width="360" height="14"/><rect x="0" y="414" width="360" height="14"/><rect x="0" y="502" width="360" height="18"/></g>
+            <path d="M180 66 V510" stroke="#fff" stroke-width="2" stroke-dasharray="6 6"/>
+            <!-- lazer -->
+            <g>
+              <rect x="10" y="254" width="340" height="70" rx="10" fill="#cfe0c9"/>
+              <rect x="20" y="264" width="62" height="38" rx="9" fill="#4f9bb9"/>
+              <path d="M28 280 q8 -5 16 0 t16 0 t16 0" stroke="#d9eef5" stroke-width="2" fill="none"/>
+              <text x="51" y="316" text-anchor="middle" font-size="10" font-weight="700" fill="#12382a">Piscina</text>
+              <rect x="94" y="262" width="62" height="42" rx="6" fill="#8b2a5c"/>
+              <path d="M100 274 h50 M100 284 h50 M100 294 h50" stroke="#c780a6" stroke-width="1.5"/>
+              <text x="125" y="316" text-anchor="middle" font-size="10" font-weight="700" fill="#12382a">Salão</text>
+              <rect x="204" y="262" width="74" height="42" rx="4" fill="#5f9a6c"/>
+              <rect x="209" y="267" width="64" height="32" fill="none" stroke="#e8f3e6" stroke-width="1.5"/>
+              <path d="M241 267 v32" stroke="#e8f3e6" stroke-width="1.5"/><circle cx="241" cy="283" r="6" fill="none" stroke="#e8f3e6" stroke-width="1.5"/>
+              <text x="241" y="316" text-anchor="middle" font-size="10" font-weight="700" fill="#12382a">Quadra</text>
+              <circle cx="315" cy="282" r="20" fill="#e9c46a"/>
+              <path d="M305 292 l10 -18 l10 18" stroke="#7a5a12" stroke-width="2" fill="none"/>
+              <text x="315" y="316" text-anchor="middle" font-size="10" font-weight="700" fill="#12382a">Parquinho</text>
+            </g>
+            <!-- árvores -->
+            <g fill="#5f9a6c" opacity=".85"><circle cx="186" cy="268" r="5"/><circle cx="186" cy="308" r="5"/><circle cx="8" cy="160" r="4"/><circle cx="352" cy="245" r="4"/><circle cx="8" cy="420" r="4"/><circle cx="352" cy="508" r="4"/></g>
+            <!-- quadras/lotes gerados via JS -->
+            <g id="lotes"></g>
+            <g id="marcador"></g>
+            <!-- portaria -->
+            <rect x="150" y="520" width="60" height="30" rx="8" fill="#12382a"/>
+            <text x="180" y="539" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">Portaria</text>
+            <text x="300" y="545" text-anchor="middle" font-size="10" font-weight="700" fill="#46604f">↓ Rodovia PA-160</text>
+          </svg>
+        </div>
+      </div>
+      <div style="display:grid;gap:12px">
+        <div class="bloco cartao-casa" id="cartao-casa" aria-live="polite">
+          <div class="num" id="cc-num">57</div>
+          <div class="d"><b id="cc-tit">Casa 57 — Quadra C</b><small id="cc-sub">1º lote da quadra · fileira de cima</small></div>
+          <button class="x" id="cc-fechar" aria-label="Limpar seleção"><svg class="i"><use href="#i-x"/></svg></button>
+        </div>
+        <div class="bloco">
+          <span class="rotulo">Escolha a quadra</span>
+          <div class="chips-q" id="chips-q"></div>
+          <div class="lotes-q" id="lotes-q"></div>
+        </div>
+        <div class="bloco">
+          <span class="rotulo">Legenda</span>
+          <div class="leg-mapa">
+            <span><i style="background:#fdfcf6;border-color:#9bb39d"></i>Casas</span>
+            <span><i style="background:#8b2a5c"></i>Casa procurada</span>
+            <span><i style="background:#cfe0c9"></i>Área de lazer</span>
+            <span><i style="background:#6ea9c0"></i>Lago</span>
+            <span><i style="background:#12382a"></i>Portaria</span>
+            <span><i style="background:#dfe3da"></i>Ruas</span>
+          </div>
+          <p style="font-size:12px;color:var(--texto-2);margin-top:10px">Planta esquemática ilustrativa — fora de escala.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== CONTATOS ===================== -->
+  <section class="tela" id="t-contatos" aria-label="Contatos úteis">
+    <div class="tela-estreita">
+      <div class="titulo-tela"><h2>Contatos úteis</h2></div>
+      <div class="contatos">
+        <div class="bloco full">
+          <span class="rotulo" style="margin-bottom:10px">Emergência · toque para ligar</span>
+          <div class="emerg">
+            <a class="e1" href="tel:190"><svg class="i"><use href="#i-escudo"/></svg><b>190</b><span>Polícia</span></a>
+            <a class="e2" href="tel:192"><svg class="i"><use href="#i-coracao"/></svg><b>192</b><span>SAMU</span></a>
+            <a class="e3" href="tel:193"><svg class="i"><use href="#i-fogo"/></svg><b>193</b><span>Bombeiros</span></a>
+          </div>
+        </div>
+        <div class="bloco">
+          <div class="ct"><div class="av c1"><svg class="i"><use href="#i-portao"/></svg></div><div class="d"><b>Portaria 24h</b><small>(94) 9 0000-0001 · exemplo</small></div></div>
+          <div class="acoes"><a class="a-tel" href="tel:+5594900000001"><svg class="i"><use href="#i-tel"/></svg>Ligar</a><a class="a-wpp" href="https://wa.me/5594900000001" target="_blank" rel="noopener"><svg class="i"><use href="#i-wpp"/></svg>WhatsApp</a></div>
+        </div>
+        <div class="bloco">
+          <div class="ct"><div class="av c3"><svg class="i"><use href="#i-pessoa"/></svg></div><div class="d"><b>Síndico</b><small>(94) 9 0000-0002 · exemplo</small></div></div>
+          <div class="acoes"><a class="a-tel" href="tel:+5594900000002"><svg class="i"><use href="#i-tel"/></svg>Ligar</a><a class="a-wpp" href="https://wa.me/5594900000002" target="_blank" rel="noopener"><svg class="i"><use href="#i-wpp"/></svg>WhatsApp</a></div>
+        </div>
+        <div class="bloco">
+          <div class="ct"><div class="av c2"><svg class="i"><use href="#i-contas"/></svg></div><div class="d"><b>Administração</b><small>(94) 9 0000-0003 · seg. a sex., 8h–17h</small></div></div>
+          <div class="acoes"><a class="a-tel" href="tel:+5594900000003"><svg class="i"><use href="#i-tel"/></svg>Ligar</a><a class="a-wpp" href="https://wa.me/5594900000003" target="_blank" rel="noopener"><svg class="i"><use href="#i-wpp"/></svg>WhatsApp</a></div>
+        </div>
+        <div class="bloco">
+          <div class="ct"><div class="av c4"><svg class="i"><use href="#i-chave"/></svg></div><div class="d"><b>Manutenção</b><small>(94) 9 0000-0004 · exemplo</small></div></div>
+          <div class="acoes"><a class="a-tel" href="tel:+5594900000004"><svg class="i"><use href="#i-tel"/></svg>Ligar</a><a class="a-wpp" href="https://wa.me/5594900000004" target="_blank" rel="noopener"><svg class="i"><use href="#i-wpp"/></svg>WhatsApp</a></div>
+        </div>
+        <div class="bloco end-card full">
+          <span class="rotulo"><svg class="i"><use href="#i-pin"/></svg>Endereço para entregas</span>
+          <div class="linha">
+            <p id="endereco"><b>Residencial Jardins do Lago</b><br>Rodovia PA-160, Serra Dourada II<br>Canaã dos Carajás – PA · CEP 68352-193</p>
+            <button class="btn-sec" id="copiar"><svg class="i" style="width:18px;height:18px"><use href="#i-copia"/></svg>Copiar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== MÓDULOS ===================== -->
+  <section class="tela" id="t-modulos" aria-label="Todos os módulos">
+    <div class="titulo-tela"><h2>Módulos</h2></div>
+    <div class="mods" id="lista-mods"></div>
+  </section>
+
+  <!-- ===================== COMUNICADOS (esboço) ===================== -->
+  <section class="tela" id="t-comunicados" aria-label="Comunicados">
+    <div class="tela-estreita" style="max-width:none">
+      <div class="titulo-tela"><button class="voltar" data-voltar aria-label="Voltar"><svg class="i"><use href="#i-esq"/></svg></button><h2>Comunicados</h2></div>
+      <div class="lista-avisos">
+        <div class="bloco" style="background:var(--areia)"><span class="rotulo"><svg class="i"><use href="#i-relogio"/></svg>Terça, 18/11</span><b>Piscina fechada para limpeza</b><p>Das 7h às 13h. Reabre à tarde para todos.</p></div>
+        <div class="bloco"><span class="rotulo"><svg class="i"><use href="#i-relogio"/></svg>Segunda, 10/11</span><b>Boleto de dezembro disponível</b><p>Vencimento no dia 10. Valor da taxa: R$ 142,00.</p></div>
+        <div class="bloco" style="background:var(--lago-claro)"><span class="rotulo"><svg class="i"><use href="#i-relogio"/></svg>Quarta, 05/11</span><b>Assembleia de eleição do conselho</b><p>Dia 6/12, às 19h, no salão de festas. Participe!</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== EM BREVE (genérica) ===================== -->
+  <section class="tela" id="t-breve" aria-label="Módulo em breve">
+    <div class="tela-estreita">
+      <div class="titulo-tela"><button class="voltar" data-voltar aria-label="Voltar"><svg class="i"><use href="#i-esq"/></svg></button><h2 id="br-titulo">Módulo</h2></div>
+      <div class="bloco breve">
+        <div class="ic c2" id="br-ic"><svg class="i"><use href="#i-grade"/></svg></div>
+        <h3 id="br-h">Em breve</h3>
+        <p id="br-p">Este módulo está sendo preparado.</p>
+        <span class="estado br" style="align-self:center;margin-top:14px">em breve</span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<nav class="nav" aria-label="Navegação principal">
+  <button data-ir="inicio" aria-current="page"><svg class="i"><use href="#i-casa"/></svg>Início</button>
+  <button data-ir="contas"><svg class="i"><use href="#i-contas"/></svg>Contas</button>
+  <button data-ir="mapa"><svg class="i"><use href="#i-mapa"/></svg>Mapa</button>
+  <button data-ir="contatos"><svg class="i"><use href="#i-tel"/></svg>Contatos</button>
+  <button data-ir="modulos"><svg class="i"><use href="#i-grade"/></svg>Módulos</button>
+</nav>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(s){return document.querySelector(s);};
+  var $$ = function(s){return Array.prototype.slice.call(document.querySelectorAll(s));};
+  var fmt = new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
+  function brl(c){return fmt.format(c/100);}
+
+  /* ---------- toast ---------- */
+  var tt;
+  function toast(msg){
+    var t=$("#toast"); t.textContent=msg; t.classList.add("on");
+    clearTimeout(tt); tt=setTimeout(function(){t.classList.remove("on");},2400);
+  }
+
+  /* ---------- navegação ---------- */
+  var historico=[];
+  var atual="inicio";
+  var abaDaTela={inicio:"inicio",contas:"contas",mapa:"mapa",contatos:"contatos",modulos:"modulos",comunicados:"modulos",breve:"modulos"};
+  function ir(id,semHist){
+    var alvo=document.getElementById("t-"+id);
+    if(!alvo) return;
+    if(!semHist && id!==atual) historico.push(atual);
+    $$(".tela").forEach(function(s){s.classList.remove("ativa");});
+    alvo.classList.add("ativa");
+    atual=id;
+    var aba=abaDaTela[id]||"inicio";
+    $$(".nav button").forEach(function(b){
+      if(b.getAttribute("data-ir")===aba) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current");
+    });
+    window.scrollTo(0,0);
+  }
+  document.addEventListener("click",function(e){
+    var el=e.target.closest("[data-ir],[data-modulo],[data-voltar]");
+    if(!el) return;
+    if(el.hasAttribute("data-voltar")){ ir(historico.pop()||"inicio",true); return; }
+    if(el.hasAttribute("data-modulo")){ abrirModulo(el.getAttribute("data-modulo")); return; }
+    ir(el.getAttribute("data-ir"));
+  });
+
+  /* ---------- módulos ---------- */
+  var MODULOS=[
+    {id:"contas",nome:"Prestação de contas",ic:"i-contas",cor:"c1",estado:"ok",ir:"contas"},
+    {id:"mapa",nome:"Mapa das casas",ic:"i-mapa",cor:"c2",estado:"ok",ir:"mapa"},
+    {id:"comunicados",nome:"Comunicados",ic:"i-aviso",cor:"c4",estado:"es",ir:"comunicados"},
+    {id:"reservas",nome:"Reservas de lazer",ic:"i-agenda",cor:"c2",estado:"br",txt:"Reserve o salão de festas, a churrasqueira e a quadra pelo celular, vendo os dias livres."},
+    {id:"visitas",nome:"Autorização de visitas",ic:"i-visita",cor:"c1",estado:"br",txt:"Avise a portaria sobre visitas e entregas com antecedência, sem precisar ligar."},
+    {id:"solicitacoes",nome:"Solicitações",ic:"i-chave",cor:"c4",estado:"br",txt:"Peça reparos e acompanhe cada pedido até a solução."},
+    {id:"votacoes",nome:"Votações",ic:"i-voto",cor:"c3",estado:"br",txt:"Eleição do conselho — em breve. A votação acontece na assembleia de 6 de dezembro, às 19h."},
+    {id:"contatos",nome:"Contatos úteis",ic:"i-tel",cor:"c3",estado:"ok",ir:"contatos"}
+  ];
+  var ROT={ok:"disponível",br:"em breve",es:"esboço"};
+  var curto={contas:"Contas",mapa:"Mapa",comunicados:"Avisos",reservas:"Reservas",visitas:"Visitas",solicitacoes:"Pedidos",votacoes:"Votações",contatos:"Contatos"};
+  function abrirModulo(id){
+    var m=MODULOS.filter(function(x){return x.id===id;})[0];
+    if(!m) return;
+    if(m.ir){ ir(m.ir); return; }
+    $("#br-titulo").textContent=m.nome;
+    $("#br-h").textContent=m.id==="votacoes"?"Eleição do conselho":"Em breve";
+    $("#br-p").textContent=m.txt;
+    var ic=$("#br-ic"); ic.className="ic "+m.cor;
+    ic.innerHTML='<svg class="i"><use href="#'+m.ic+'"/></svg>';
+    ir("breve");
+  }
+  $("#grade-mod").innerHTML=MODULOS.map(function(m){
+    return '<button class="mod" data-modulo="'+m.id+'" aria-label="'+m.nome+'"><span class="ic '+m.cor+'"><svg class="i"><use href="#'+m.ic+'"/></svg></span>'+curto[m.id]+'</button>';
+  }).join("");
+  $("#lista-mods").innerHTML=MODULOS.map(function(m){
+    return '<button class="bloco" data-modulo="'+m.id+'"><span class="ic '+m.cor+'"><svg class="i"><use href="#'+m.ic+'"/></svg></span><b>'+m.nome+'</b><span class="estado '+m.estado+'">'+ROT[m.estado]+'</span></button>';
+  }).join("");
+
+  /* ---------- saudação ---------- */
+  var hr=new Date().getHours();
+  $("#saudacao").textContent=(hr<12?"Bom dia":hr<18?"Boa tarde":"Boa noite")+", morador";
+
+  /* ---------- contagem regressiva ---------- */
+  var ALVO=new Date(2026,11,6,19,0,0);
+  function pad(n){return (n<10?"0":"")+n;}
+  function contar(){
+    var ms=ALVO-new Date();
+    if(ms<0) ms=0;
+    var min=Math.floor(ms/60000);
+    $("#cd-d").textContent=Math.floor(min/1440);
+    $("#cd-h").textContent=pad(Math.floor(min%1440/60));
+    $("#cd-m").textContent=pad(min%60);
+  }
+  contar(); setInterval(contar,30000);
+
+  /* ---------- prestação de contas (valores em centavos) ---------- */
+  var TAXA=14200;
+  var MESES=[
+    {nome:"Junho",ab:"Jun",casas:215,extra:17000,extraNome:"Multas e juros por atraso",desp:2823040},
+    {nome:"Julho",ab:"Jul",casas:218,extra:6400,extraNome:"Multas e juros por atraso",desp:3241560},
+    {nome:"Agosto",ab:"Ago",casas:213,extra:11400,extraNome:"Multas e juros por atraso",desp:2795080},
+    {nome:"Setembro",ab:"Set",casas:220,extra:0,desp:3088035},
+    {nome:"Outubro",ab:"Out",casas:216,extra:30800,extraNome:"Aluguel do salão de festas",desp:2841070},
+    {nome:"Novembro",ab:"Nov",casas:220,extra:0,desp:2904025}
+  ];
+  var CAT=[["Portaria 24h",1280000,5],["Limpeza e conservação",645000,5],["Energia — áreas comuns",387460,12],["Água e esgoto",211540,15],["Manutenção da piscina",165000,20],["Jardinagem",215025,25]];
+  var BASE=2904025;
+  var saldo=3970825; // saldo anterior de junho
+  MESES.forEach(function(m){
+    m.rec=m.casas*TAXA+m.extra;
+    m.ant=saldo;
+    m.fim=saldo+m.rec-m.desp;
+    saldo=m.fim;
+  });
+  var idx=MESES.length-1;
+
+  function movimentos(m,i){
+    var mm=pad(i+6);
+    var lista=[{t:"e",d:"Taxas condominiais ("+m.casas+" casas)",dia:"10/"+mm,v:m.casas*TAXA}];
+    if(m.extra) lista.push({t:"e",d:m.extraNome,dia:"18/"+mm,v:m.extra});
+    var soma=0;
+    CAT.forEach(function(c,k){
+      var v=(k===CAT.length-1)?(m.desp-soma):Math.round(c[1]*m.desp/BASE);
+      soma+=v;
+      lista.push({t:"s",d:c[0],dia:pad(c[2])+"/"+mm,v:v});
+    });
+    return lista;
+  }
+
+  function desenharGrafico(){
+    var W=330,H=170,top=10,base=140,maxV=3500000,gw=W/MESES.length;
+    var s='';
+    [0,1000000,2000000,3000000].forEach(function(v){
+      var y=base-(v/maxV)*(base-top);
+      s+='<line x1="0" x2="'+W+'" y1="'+y+'" y2="'+y+'" stroke="#e1e8de" stroke-width="1"/>';
+    });
+    MESES.forEach(function(m,i){
+      var x=i*gw, sel=i===idx;
+      var hr=(m.rec/maxV)*(base-top), hd=(m.desp/maxV)*(base-top), bw=16;
+      s+='<g class="g-mes" data-i="'+i+'" style="cursor:pointer">';
+      s+='<rect x="'+(x+3)+'" y="2" width="'+(gw-6)+'" height="'+(H-4)+'" rx="12" fill="'+(sel?"#e6efe4":"transparent")+'"/>';
+      s+='<rect x="'+(x+gw/2-bw-2)+'" y="'+(base-hr)+'" width="'+bw+'" height="'+hr+'" rx="5" fill="#1d6b4e" opacity="'+(sel?1:.55)+'"/>';
+      s+='<rect x="'+(x+gw/2+2)+'" y="'+(base-hd)+'" width="'+bw+'" height="'+hd+'" rx="5" fill="#c47aa0" opacity="'+(sel?1:.55)+'"/>';
+      s+='<text x="'+(x+gw/2)+'" y="'+(base+20)+'" text-anchor="middle" font-size="12" font-weight="'+(sel?800:600)+'" fill="'+(sel?"#12382a":"#46604f")+'">'+m.ab+'</text>';
+      s+='</g>';
+    });
+    var g=$("#grafico"); g.innerHTML=s;
+    $$("#grafico .g-mes").forEach(function(el){
+      el.addEventListener("click",function(){ idx=+el.getAttribute("data-i"); renderContas(); });
+    });
+  }
+
+  function renderContas(){
+    var m=MESES[idx];
+    $("#mes-nome").textContent=m.nome+" de 2026";
+    $("#c-saldo").textContent=brl(m.fim);
+    $("#c-ant").textContent="Saldo anterior: "+brl(m.ant);
+    $("#c-rec").textContent=brl(m.rec);
+    $("#c-desp").textContent=brl(m.desp);
+    $("#mes-ant").disabled=idx===0;
+    $("#mes-prox").disabled=idx===MESES.length-1;
+    $("#movs").innerHTML=movimentos(m,idx).map(function(x){
+      return '<li><span class="seta '+x.t+'"><svg class="i"><use href="#'+(x.t==="e"?"i-sobe":"i-desce")+'"/></svg></span>'+
+        '<span class="d"><b>'+x.d+'</b><span class="ln"><small>'+x.dia+'/2026</small>'+
+        '<span class="v '+x.t+'">'+(x.t==="e"?"+ ":"− ")+brl(x.v)+'</span></span></span>'+
+        '<button class="clip" data-comp="'+x.d+'" aria-label="Ver comprovante de '+x.d+'"><svg class="i"><use href="#i-clip"/></svg></button></li>';
+    }).join("");
+    desenharGrafico();
+  }
+  $("#mes-ant").addEventListener("click",function(){ if(idx>0){idx--;renderContas();} });
+  $("#mes-prox").addEventListener("click",function(){ if(idx<MESES.length-1){idx++;renderContas();} });
+  $("#movs").addEventListener("click",function(e){
+    var b=e.target.closest("[data-comp]");
+    if(b) toast("Comprovante: "+b.getAttribute("data-comp")+" (exemplo)");
+  });
+  renderContas();
+
+  /* resumo no início */
+  (function(){
+    var m=MESES[MESES.length-1];
+    $("#h-saldo").textContent=brl(m.fim);
+    $("#h-rec").textContent=brl(m.rec);
+    $("#h-desp").textContent=brl(m.desp);
+    var vals=MESES.map(function(x){return x.fim;});
+    var mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals);
+    var pts=vals.map(function(v,i){
+      return [i*(300/(vals.length-1)), 54-((v-mn)/(mx-mn||1))*46];
+    });
+    var linha=pts.map(function(p,i){return (i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1);}).join(" ");
+    var ult=pts[pts.length-1];
+    $("#h-spark").innerHTML=
+      '<defs><linearGradient id="gsp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fd6ae" stop-opacity=".45"/><stop offset="1" stop-color="#8fd6ae" stop-opacity="0"/></linearGradient></defs>'+
+      '<path d="'+linha+' L300 60 L0 60z" fill="url(#gsp)"/>'+
+      '<path d="'+linha+'" fill="none" stroke="#8fd6ae" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>'+
+      '<circle cx="'+ult[0]+'" cy="'+ult[1]+'" r="4" fill="#fff"/>';
+  })();
+
+  /* ---------- mapa ---------- */
+  var LETRAS="ABCDEFGH".split("");
+  var QTD=[28,28,28,28,27,27,27,27];
+  var LINHAS_Y=[76,164,340,428];
+  var QW=150,LH=35;
+  var LOTES={}; // n -> {q, pos, x, y, w, h}
+  var QUADRAS=[];
+  var svgNS="http://www.w3.org/2000/svg";
+  var gL=document.getElementById("lotes");
+  var n=1;
+  LETRAS.forEach(function(L,q){
+    var col=q%2, row=Math.floor(q/2);
+    var x0=col?198:12, y0=LINHAS_Y[row]+2;
+    var ini=n, qtd=QTD[q], lw=QW/14;
+    QUADRAS.push({L:L,ini:ini,fim:ini+qtd-1});
+    for(var k=0;k<qtd;k++){
+      var fileira=k<14?0:1, p=k<14?k:k-14;
+      var r={q:q,pos:k+1,fileira:fileira,x:x0+p*lw+.6,y:y0+fileira*LH+.6,w:lw-1.2,h:LH-3};
+      LOTES[n]=r;
+      var el=document.createElementNS(svgNS,"rect");
+      el.setAttribute("x",r.x.toFixed(2)); el.setAttribute("y",r.y.toFixed(2));
+      el.setAttribute("width",r.w.toFixed(2)); el.setAttribute("height",r.h.toFixed(2));
+      el.setAttribute("rx","1.5"); el.setAttribute("class","lote"); el.setAttribute("data-n",n);
+      var tit=document.createElementNS(svgNS,"title"); tit.textContent="Casa "+n+" — Quadra "+L; el.appendChild(tit);
+      gL.appendChild(el);
+      n++;
+    }
+    // etiqueta da quadra na avenida
+    var bx=col?188:172, by=y0+LH-1;
+    var c=document.createElementNS(svgNS,"circle");
+    c.setAttribute("cx",bx); c.setAttribute("cy",by); c.setAttribute("r","9"); c.setAttribute("fill","#1d6b4e");
+    gL.appendChild(c);
+    var t=document.createElementNS(svgNS,"text");
+    t.setAttribute("x",bx); t.setAttribute("y",by+4); t.setAttribute("text-anchor","middle");
+    t.setAttribute("font-size","11"); t.setAttribute("font-weight","800"); t.setAttribute("fill","#fff");
+    t.textContent=L; gL.appendChild(t);
+  });
+
+  var quadraSel=2, loteSel=null;
+  function renderChips(){
+    $("#chips-q").innerHTML=QUADRAS.map(function(Q,i){
+      return '<button data-q="'+i+'" class="'+(i===quadraSel?"on":"")+'" aria-label="Quadra '+Q.L+'" aria-pressed="'+(i===quadraSel)+'">'+Q.L+'</button>';
+    }).join("");
+    var Q=QUADRAS[quadraSel], h="";
+    for(var i=Q.ini;i<=Q.fim;i++) h+='<button data-n="'+i+'" class="'+(i===loteSel?"on":"")+'" aria-label="Casa '+i+'">'+i+'</button>';
+    $("#lotes-q").innerHTML=h;
+    $$("#lotes .lote").forEach(function(el){
+      var num=+el.getAttribute("data-n");
+      el.classList.toggle("q-sel",LOTES[num].q===quadraSel);
+      el.classList.toggle("sel",num===loteSel);
+    });
+  }
+  function selecionar(num){
+    var r=LOTES[num];
+    if(!r){ $("#aviso-busca").textContent="Casa não encontrada. Digite um número de 1 a 220."; return; }
+    $("#aviso-busca").textContent="";
+    loteSel=num; quadraSel=r.q;
+    renderChips();
+    var L=LETRAS[r.q];
+    $("#cc-num").textContent=num;
+    $("#cc-tit").textContent="Casa "+num+" — Quadra "+L;
+    $("#cc-sub").textContent=r.pos+"º lote da quadra · fileira de "+(r.fileira?"baixo":"cima");
+    $("#cartao-casa").classList.add("on");
+    var cx=r.x+r.w/2, cy=r.y+r.h/2;
+    $("#marcador").innerHTML='<circle class="pulso" cx="'+cx+'" cy="'+cy+'" r="10"/><circle cx="'+cx+'" cy="'+cy+'" r="3" fill="#fff"/>';
+  }
+  function limpar(){
+    loteSel=null; $("#cartao-casa").classList.remove("on"); $("#marcador").innerHTML="";
+    $("#campo-casa").value=""; renderChips();
+  }
+  $("#form-busca").addEventListener("submit",function(e){
+    e.preventDefault();
+    var v=parseInt($("#campo-casa").value,10);
+    if(isNaN(v)){ $("#aviso-busca").textContent="Digite o número da casa."; return; }
+    selecionar(v);
+  });
+  $("#campo-casa").addEventListener("input",function(){
+    var el=this; el.value=el.value.replace(/\D/g,"");
+    var v=parseInt(el.value,10);
+    if(!isNaN(v) && LOTES[v]) selecionar(v);
+    else if(el.value==="") $("#aviso-busca").textContent="";
+  });
+  gL.addEventListener("click",function(e){
+    var el=e.target.closest(".lote");
+    if(el){ var v=+el.getAttribute("data-n"); $("#campo-casa").value=v; selecionar(v); }
+  });
+  $("#chips-q").addEventListener("click",function(e){
+    var b=e.target.closest("[data-q]"); if(!b) return;
+    quadraSel=+b.getAttribute("data-q"); renderChips();
+  });
+  $("#lotes-q").addEventListener("click",function(e){
+    var b=e.target.closest("[data-n]"); if(!b) return;
+    var v=+b.getAttribute("data-n"); $("#campo-casa").value=v; selecionar(v);
+  });
+  $("#cc-fechar").addEventListener("click",limpar);
+  renderChips();
+
+  /* ---------- copiar endereço ---------- */
+  $("#copiar").addEventListener("click",function(){
+    var txt="Residencial Jardins do Lago, Rodovia PA-160, Serra Dourada II, Canaã dos Carajás – PA, CEP 68352-193";
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(txt).then(function(){toast("Endereço copiado");},function(){toast("Não foi possível copiar");});
+      } else { toast("Não foi possível copiar"); }
+    }catch(err){ toast("Não foi possível copiar"); }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1249 @@
+<!-- Modelo 1 — "Noite Conectada": painel escuro elegante, capa ilustrada ao entardecer, atalhos em grade e números grandes em verde e salmão. -->
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jardins do Lago · Noite Conectada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#08110e;
+    --bg-2:#0c1814;
+    --card:#12201b;
+    --card-2:#172a23;
+    --line:rgba(255,255,255,.07);
+    --line-2:rgba(255,255,255,.12);
+    --txt:#ecf4ef;
+    --muted:#a3b8ae;
+    --faint:#7d948a;
+    --verde:#4fe3a1;
+    --verde-escuro:#1d6b4e;
+    --verde-chip:rgba(79,227,161,.13);
+    --salmao:#ff9a88;
+    --salmao-chip:rgba(255,154,136,.13);
+    --lavanda:#9aa9ff;
+    --agua:#5fd8c6;
+    --vinho:#c4568f;
+    --areia:#e9dfc4;
+    --raio:22px;
+    /* pétalas da logo (acentos com moderação) */
+    --p-laranja:#f6a04d;
+    --p-amarelo:#f7cf4a;
+    --p-rosa:#f07aae;
+    --p-verde:#7fd17f;
+    --p-azul:#5aaeea;
+    --p-roxo:#a98be8;
+    /* vidro fosco */
+    --vidro:linear-gradient(180deg, rgba(255,255,255,.085), rgba(255,255,255,.035));
+    --vidro-borda:rgba(255,255,255,.14);
+    --vidro-brilho:inset 0 1px 0 rgba(255,255,255,.16);
+    --sombra-funda:0 22px 44px -16px rgba(0,0,0,.75), 0 6px 14px -6px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(900px 500px at 15% -10%, rgba(29,107,78,.35), transparent 60%),
+      radial-gradient(700px 500px at 110% 10%, rgba(28,92,120,.25), transparent 60%),
+      radial-gradient(520px 420px at -10% 55%, rgba(169,139,232,.13), transparent 65%),
+      radial-gradient(520px 420px at 110% 80%, rgba(246,160,77,.10), transparent 65%),
+      var(--bg);
+    background-attachment:fixed;
+    color:var(--txt);
+    font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    font-size:16px;line-height:1.45;
+    min-height:100vh;overflow-x:hidden;
+  }
+  button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+  a{color:inherit;text-decoration:none}
+  svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  :focus-visible{outline:3px solid var(--verde);outline-offset:2px;border-radius:12px}
+
+  .app{max-width:480px;margin:0 auto;min-height:100vh;position:relative;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
+
+  /* Topo */
+  .topo{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0 10px;position:sticky;top:0;z-index:20;
+    background:linear-gradient(var(--bg) 70%, rgba(8,17,14,0));}
+  .logo-chip{background:var(--areia);border-radius:14px;padding:5px 10px;display:flex;align-items:center;height:46px;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+  .logo-chip img{height:36px;width:auto;display:block}
+  .topo-dir{display:flex;align-items:center;gap:8px}
+  .selo-exemplo{font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--muted);border:1px dashed var(--line-2);border-radius:999px;padding:5px 10px;white-space:nowrap}
+  .btn-redondo{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--card);border:1px solid var(--line);position:relative}
+  .btn-redondo .ponto{position:absolute;top:10px;right:11px;width:8px;height:8px;border-radius:50%;background:var(--salmao);box-shadow:0 0 0 2px var(--card)}
+
+  /* Telas */
+  .tela{display:none;animation:entra .32s ease}
+  .tela.ativa{display:block}
+  @keyframes entra{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  h1,h2,h3{margin:0;line-height:1.2}
+  .titulo-tela{font-size:26px;font-weight:800;letter-spacing:-.02em;margin:6px 0 4px}
+  .sub-tela{color:var(--muted);margin:0 0 16px;font-size:15px}
+  .secao{display:flex;align-items:baseline;justify-content:space-between;margin:24px 2px 12px}
+  .secao h2{font-size:18px;font-weight:700}
+  .secao button{color:var(--verde);font-weight:600;font-size:14px;min-height:44px;padding:0 4px}
+
+  .card{background:var(--vidro);border:1px solid var(--vidro-borda);border-radius:var(--raio);padding:18px;
+    box-shadow:var(--vidro-brilho), var(--sombra-funda);
+    -webkit-backdrop-filter:blur(16px) saturate(140%);backdrop-filter:blur(16px) saturate(140%)}
+
+  /* Capa */
+  .capa{position:relative;border-radius:26px;overflow:hidden;border:1px solid var(--vidro-borda);min-height:250px;isolation:isolate;box-shadow:var(--vidro-brilho), var(--sombra-funda)}
+  .capa svg.ilustra{position:absolute;inset:0;width:100%;height:100%;z-index:-1}
+  .capa::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg, rgba(8,17,14,0) 30%, rgba(8,17,14,.94) 78%)}
+  .capa-txt{padding:18px 16px 16px;display:flex;flex-direction:column;justify-content:space-between;gap:18px;min-height:250px}
+  .selo-portal{align-self:flex-start;background:var(--verde);color:#062117;font-weight:800;font-size:11px;letter-spacing:.12em;padding:7px 12px;border-radius:999px;display:inline-flex;align-items:center;gap:6px}
+  .selo-portal::before{content:"";width:7px;height:7px;border-radius:50%;background:#062117;opacity:.7}
+  .capa h1{font-size:27px;font-weight:800;letter-spacing:-.02em;text-shadow:0 2px 14px rgba(0,0,0,.5)}
+  .capa .end{margin-top:6px;color:#d9e6df;font-size:13.5px;display:flex;gap:6px;align-items:flex-start}
+  .capa .end svg{width:18px;height:18px;margin-top:1px;color:var(--verde)}
+
+  /* Resumo saldo */
+  .resumo .rot{color:var(--muted);font-size:14px;font-weight:500;display:flex;justify-content:space-between;align-items:center}
+  .resumo .rot svg{width:20px;height:20px;color:var(--faint)}
+  .valor-grande{display:block;font-size:34px;font-weight:800;letter-spacing:-.025em;margin:4px 0 14px}
+  .duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+  .mini{display:block;min-width:0;border-radius:16px;padding:12px;background:rgba(255,255,255,.035);border:1px solid var(--line)}
+  .mini .r{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .mini .v{display:block;font-size:clamp(15px,4.4vw,19px);font-weight:800;margin-top:2px;letter-spacing:-.01em;white-space:nowrap}
+  .seta{width:22px;height:22px;border-radius:50%;display:grid;place-items:center}
+  .seta svg{width:14px;height:14px;stroke-width:2.4}
+  .seta.e{background:var(--verde-chip);color:var(--verde)}
+  .seta.s{background:var(--salmao-chip);color:var(--salmao)}
+  .verde{color:var(--verde)} .salmao{color:var(--salmao)}
+
+  /* Grade de módulos */
+  .grade{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+  .modulo > span:last-child{min-width:0}
+  .modulo{display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-height:118px;padding:14px;background:var(--vidro);border:1px solid var(--vidro-borda);box-shadow:var(--vidro-brilho), var(--sombra-funda);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-radius:20px;text-align:left;transition:transform .15s, background .15s;position:relative}
+  .modulo:active{transform:scale(.97);background:rgba(255,255,255,.1)}
+  .modulo .ic{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--verde-chip);color:var(--verde);flex:none}
+  .modulo b{display:block;font-size:15.5px;font-weight:700;line-height:1.2;overflow-wrap:break-word;hyphens:auto}
+  .modulo small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+  .badge{position:absolute;top:8px;right:8px;font-size:10px;font-weight:700;letter-spacing:.04em;padding:3px 7px;border-radius:999px;background:rgba(154,169,255,.16);color:var(--lavanda)}
+
+  /* Votação destaque */
+  .votacao{display:flex;gap:14px;align-items:center;width:100%;text-align:left;background:linear-gradient(120deg, rgba(196,86,143,.20), rgba(154,169,255,.10));border:1px solid rgba(196,86,143,.35)}
+  .votacao .ic{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;background:rgba(196,86,143,.22);color:#f3a9cf;flex:none}
+  .votacao b{font-size:16px;display:block}
+  .votacao small{color:#dcc6d3;font-size:13px}
+  .votacao .chev{margin-left:auto;color:var(--muted)}
+
+  /* Avisos */
+  .aviso{display:flex;gap:12px;padding:14px 16px;align-items:flex-start}
+  .aviso + .aviso{margin-top:10px}
+  .aviso .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none}
+  .aviso .ic.a{background:rgba(95,216,198,.14);color:var(--agua)}
+  .aviso .ic.b{background:rgba(255,154,136,.14);color:var(--salmao)}
+  .aviso b{display:block;font-size:15px}
+  .aviso p{margin:2px 0 4px;color:var(--muted);font-size:13.5px}
+  .aviso time{font-size:12px;color:var(--faint)}
+
+  /* Contas */
+  .seletor{display:flex;align-items:center;justify-content:space-between;background:var(--vidro);border:1px solid var(--vidro-borda);box-shadow:var(--vidro-brilho), var(--sombra-funda);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-radius:999px;padding:6px}
+  .seletor button{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.06));border:1px solid rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.22), 0 6px 14px -4px rgba(0,0,0,.6)}
+  .seletor button:disabled{opacity:.3;cursor:default}
+  .seletor .mes{text-align:center}
+  .seletor .mes b{display:block;font-size:17px}
+  .seletor .mes small{color:var(--muted);font-size:12px}
+  .saldo-card{margin-top:12px;background:radial-gradient(400px 200px at 100% 0%, rgba(79,227,161,.16), transparent 70%), var(--card)}
+  .saldo-card .rot{color:var(--muted);font-size:14px}
+  .saldo-card .valor-grande{margin-bottom:6px}
+  .saldo-card .anterior{color:var(--faint);font-size:13px;margin-bottom:14px}
+  .kpi .v{font-size:clamp(15px,4.6vw,22px)}
+  .grafico{margin-top:12px}
+  .grafico .cab{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .grafico h3{font-size:16px}
+  .legenda-g{display:flex;gap:12px;font-size:12px;color:var(--muted)}
+  .legenda-g span{display:inline-flex;align-items:center;gap:5px}
+  .legenda-g i{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .grafico svg{width:100%;height:auto;display:block}
+  .grafico .barra-grupo{cursor:pointer}
+  .dica{color:var(--faint);font-size:12px;margin-top:4px;text-align:center}
+
+  .mov{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .mov:last-child{border-bottom:0}
+  .mov .seta{width:40px;height:40px;border-radius:12px}
+  .mov .seta svg{width:18px;height:18px}
+  .mov .d{flex:1;min-width:0}
+  .mov .d b{display:block;font-size:14.5px;font-weight:600;line-height:1.25}
+  .mov .d small{color:var(--faint);font-size:12.5px}
+  .mov .linha2{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;margin-top:3px}
+  .mov .val{font-weight:800;font-size:15px;white-space:nowrap}
+  .clip{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:var(--muted);background:rgba(255,255,255,.04);border:1px solid var(--line)}
+  .clip svg{width:19px;height:19px}
+  .lista-card{padding:6px 16px}
+
+  /* Mapa */
+  .busca{display:flex;gap:8px}
+  .campo{flex:1;min-width:0;display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.13);border-radius:999px;padding:0 18px;min-height:54px;
+    box-shadow:inset 0 2px 8px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.06)}
+  .campo svg{color:var(--muted)}
+  .campo input{flex:1;min-width:0;background:none;border:0;color:var(--txt);font:inherit;font-size:17px;outline:none;height:52px}
+  .campo input::placeholder{color:var(--faint)}
+  .campo:focus-within{border-color:var(--verde);box-shadow:inset 0 2px 8px rgba(0,0,0,.55), 0 0 0 3px rgba(79,227,161,.35)}
+  .btn-verde{background:linear-gradient(180deg,#86f3c1,#3fcf8e);color:#062117;font-weight:800;border-radius:999px;padding:0 22px;min-height:54px;min-width:64px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.55), inset 0 -2px 0 rgba(0,0,0,.14), 0 10px 22px -8px rgba(79,227,161,.6);transition:transform .12s}
+  .btn-verde:active{transform:translateY(1px) scale(.98)}
+  .mapa-box{margin-top:12px;padding:0;overflow:hidden;position:relative}
+  .mapa-wrap{overflow:auto;max-height:62vh;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  .mapa-wrap svg{display:block;width:100%;height:auto;transition:width .25s ease}
+  .zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px;z-index:2}
+  .zoom button{width:44px;height:44px;border-radius:12px;background:rgba(18,32,27,.92);border:1px solid var(--line-2);display:grid;place-items:center;backdrop-filter:blur(6px)}
+  .lote{fill:#22392f;stroke:#0d1a15;stroke-width:1;cursor:pointer;transition:fill .2s}
+  .lote:hover{fill:#2d4a3d}
+  .lote.on{fill:var(--verde);stroke:#eafff4;stroke-width:1.4}
+  .lote-n{font-size:5.4px;fill:#8fa79c;pointer-events:none;font-weight:600}
+  .lote-n.on{fill:#062117;font-weight:800}
+  .q-rot{font-size:11px;font-weight:800;fill:var(--verde);letter-spacing:.06em}
+  .m-rot{font-size:8.5px;font-weight:600;fill:#d7e5de}
+  .lazer-item{cursor:pointer}
+  .pulso{pointer-events:none;fill:none;stroke:var(--verde);stroke-width:2;animation:pulso 1.4s ease-out infinite;transform-box:fill-box;transform-origin:center}
+  @keyframes pulso{from{opacity:.9;transform:scale(1)}to{opacity:0;transform:scale(2.6)}}
+  .cartao-lote{margin-top:12px;display:none;align-items:center;gap:14px;border-color:rgba(79,227,161,.4);background:linear-gradient(120deg, rgba(79,227,161,.12), var(--card) 60%)}
+  .cartao-lote.mostra{display:flex;animation:entra .25s ease}
+  .cartao-lote .ic{width:52px;height:52px;border-radius:16px;background:var(--verde);color:#062117;display:grid;place-items:center;flex:none}
+  .cartao-lote b{font-size:18px;display:block}
+  .cartao-lote small{color:var(--muted);font-size:13px}
+  .cartao-lote .fechar{margin-left:auto;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:var(--muted)}
+  .legenda{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:12px;font-size:13px;color:var(--muted)}
+  .legenda span{display:inline-flex;align-items:center;gap:7px}
+  .legenda i{width:14px;height:14px;border-radius:4px;display:inline-block}
+  .aviso-erro{color:var(--salmao);font-size:13px;margin:8px 4px 0;min-height:18px}
+
+  /* Contatos */
+  .contato{display:flex;align-items:center;gap:12px;padding:16px}
+  .contato + .contato{margin-top:10px}
+  .contato .ic{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:var(--verde-chip);color:var(--verde);flex:none}
+  .contato .d{flex:1;min-width:0}
+  .contato .d b{display:block;font-size:16px}
+  .contato .d small{color:var(--muted);font-size:13px}
+  .acoes{display:flex;gap:8px}
+  .acao{width:48px;height:48px;border-radius:14px;display:grid;place-items:center}
+  .acao.lig{background:var(--verde);color:#062117}
+  .acao.wpp{background:rgba(95,216,198,.14);color:var(--agua);border:1px solid rgba(95,216,198,.3)}
+  .emerg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .emerg a{background:var(--vidro);border:1px solid var(--vidro-borda);box-shadow:var(--vidro-brilho), var(--sombra-funda);border-radius:20px;padding:16px 8px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;min-height:120px;justify-content:center}
+  .emerg a:active{transform:scale(.97)}
+  .emerg .n{font-size:28px;font-weight:800;letter-spacing:-.02em;color:var(--salmao)}
+  .emerg small{color:var(--muted);font-size:12.5px;font-weight:600}
+  .emerg svg{color:var(--salmao)}
+  .nota{color:var(--faint);font-size:12.5px;margin:12px 4px 0}
+
+  /* Em breve */
+  .voltar{display:inline-flex;align-items:center;gap:6px;min-height:44px;color:var(--muted);font-weight:600;margin-left:-6px;padding:0 6px}
+  .breve-hero{text-align:center;padding:28px 18px}
+  .breve-hero .ic{width:76px;height:76px;border-radius:24px;margin:0 auto 14px;display:grid;place-items:center;background:var(--verde-chip);color:var(--verde)}
+  .breve-hero .ic svg{width:36px;height:36px}
+  .breve-hero h2{font-size:22px}
+  .breve-hero p{color:var(--muted);margin:8px auto 0;max-width:300px;font-size:15px}
+  .pill{display:inline-block;margin-top:14px;padding:6px 12px;border-radius:999px;background:rgba(154,169,255,.16);color:var(--lavanda);font-size:12px;font-weight:700;letter-spacing:.05em}
+  .esboco{margin-top:12px}
+  .esboco .linha{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+  .esboco .linha:last-child{border-bottom:0}
+  .esboco .bola{width:40px;height:40px;border-radius:12px;background:var(--card-2);flex:none;display:grid;place-items:center;color:var(--faint)}
+  .esboco .bola svg{width:20px;height:20px}
+  .esboco b{display:block;font-size:14.5px}
+  .esboco small{color:var(--faint);font-size:12.5px}
+
+  /* Navegação inferior */
+  .nav{position:fixed;left:0;right:0;margin:0 auto;bottom:0;max-width:480px;z-index:30;padding:0 12px calc(10px + env(safe-area-inset-bottom))}
+  .nav-in{display:grid;grid-template-columns:repeat(4,1fr);background:linear-gradient(180deg,rgba(30,48,41,.78),rgba(14,26,21,.86));backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);border:1px solid var(--vidro-borda);border-radius:999px;padding:6px;box-shadow:var(--vidro-brilho), 0 -8px 30px rgba(0,0,0,.45), 0 18px 36px -10px rgba(0,0,0,.7)}
+  .nav button{min-height:60px;border-radius:999px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--muted);font-size:12px;font-weight:600}
+  .nav button[aria-current="page"]{color:#062117;background:linear-gradient(180deg,#86f3c1,#3fcf8e);box-shadow:inset 0 1px 0 rgba(255,255,255,.55), 0 8px 18px -8px rgba(79,227,161,.7)}
+
+  .toast{position:fixed;left:50%;bottom:110px;transform:translate(-50%,20px);opacity:0;pointer-events:none;display:flex;align-items:center;gap:10px;
+    background:linear-gradient(180deg,rgba(40,62,53,.92),rgba(20,36,30,.94));-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+    border:1px solid rgba(255,255,255,.18);color:var(--txt);font-weight:600;font-size:14.5px;padding:10px 18px 10px 10px;border-radius:999px;transition:.25s;z-index:50;max-width:calc(100% - 32px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.2), 0 18px 36px -10px rgba(0,0,0,.8)}
+  .toast.sem-icone{padding-left:18px}
+  .toast .tk{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;background:linear-gradient(180deg,#86f3c1,#3fcf8e);color:#062117;box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
+  .toast .tk svg{width:17px;height:17px;stroke-width:2.8}
+  .toast.mostra{opacity:1;transform:translate(-50%,0)}
+
+  /* ===== Soft UI · vidro fosco escuro ===== */
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .selecionavel{-webkit-user-select:text;user-select:text}
+  .saudacao{font-weight:700;font-size:15px;color:var(--muted);line-height:1.15}
+  .saudacao b{display:block;color:var(--txt);font-size:15.5px;font-weight:800;white-space:nowrap}
+  body[data-tela="inicio"] .selo-exemplo{font-size:10.5px;padding:4px 8px}
+  .saudacao{display:none}
+  body[data-tela="inicio"] .logo-chip{display:none}
+  body[data-tela="inicio"] .saudacao{display:block}
+
+  /* Logo em selo claro */
+  .logo-selo{align-self:center;background:linear-gradient(180deg,#fffdf8,#f4efe2);border-radius:24px;padding:10px 16px;
+    box-shadow:inset 0 1px 0 #fff, inset 0 -2px 0 rgba(120,90,40,.12), 0 18px 36px -10px rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.7)}
+  .logo-selo img{display:block;height:96px;width:auto;max-width:100%}
+
+  /* Botões em pílula */
+  .btn-sec{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:0 12px;border-radius:999px;font-weight:700;font-size:13.5px;white-space:nowrap;color:var(--txt);
+    background:linear-gradient(180deg,rgba(255,255,255,.17),rgba(255,255,255,.07));border:1px solid rgba(255,255,255,.22);
+    -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.25), 0 8px 18px -8px rgba(0,0,0,.7);transition:transform .12s, background .15s}
+  .btn-sec:active{transform:translateY(1px) scale(.98);background:rgba(255,255,255,.12)}
+  .btn-sec svg{width:18px;height:18px;color:var(--verde)}
+  .copiar-linha{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .copiar-linha .btn-sec{flex:1 1 auto}
+
+  /* Blocos de números */
+  .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .stat{display:flex;flex-direction:column;min-width:0;padding:12px 10px;border-radius:18px;background:var(--vidro);border:1px solid var(--vidro-borda);
+    box-shadow:var(--vidro-brilho), 0 14px 26px -14px rgba(0,0,0,.8)}
+  .s-rot{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);line-height:1.2}
+  .s-val{display:block;font-size:clamp(18px,5.2vw,24px);font-weight:800;letter-spacing:-.02em;line-height:1.1;margin-top:6px;overflow-wrap:anywhere}
+  .s-val small{font-size:.5em;font-weight:700;letter-spacing:0;opacity:.85}
+  .s-det{display:block;font-size:11px;color:var(--muted);margin-top:4px;overflow-wrap:anywhere;line-height:1.25}
+  .resumo{margin-top:14px;display:block;width:100%;text-align:left;padding:14px}
+  .resumo .rot{margin:0 2px 10px}
+  .linha-saldo{color:var(--muted);font-size:13px;margin:10px 4px 0}
+  .linha-saldo b{color:var(--txt)}
+
+  /* Seletor segmentado */
+  .seg{display:inline-flex;padding:4px;border-radius:999px;background:rgba(0,0,0,.32);border:1px solid rgba(255,255,255,.1);box-shadow:inset 0 2px 7px rgba(0,0,0,.6)}
+  .seg button{min-height:44px;padding:0 14px;border-radius:999px;font-size:13.5px;font-weight:700;color:var(--muted);border:1px solid transparent;white-space:nowrap}
+  .seg button[aria-pressed="true"]{color:var(--txt);background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,.08));border-color:rgba(255,255,255,.24);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.28), 0 6px 14px -6px rgba(0,0,0,.8)}
+
+  /* Gráfico de linha em cartão afundado */
+  .afundado{border-radius:18px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);box-shadow:inset 0 3px 12px rgba(0,0,0,.6), inset 0 -1px 0 rgba(255,255,255,.05);padding:10px 8px 4px}
+  .afundado svg{display:block;width:100%;height:auto}
+
+  /* Agenda / calendário */
+  .cal-card{padding:14px 10px}
+  .cal-cab{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 6px 10px}
+  .cal-cab b{font-size:17px}
+  .cal-cab small{color:var(--muted);font-size:12.5px}
+  .cal-sem,.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+  .cal-sem span{text-align:center;font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--muted);padding-bottom:6px}
+  .dia{height:46px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:15px;font-weight:600;color:var(--txt);position:relative;margin:1px}
+  .dia.passado{color:var(--muted)}
+  .dia .pts{display:flex;gap:3px;height:6px}
+  .dia .pts i{width:6px;height:6px;border-radius:50%;display:block}
+  .dia.hoje{color:var(--verde);font-weight:800;background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.07));border:1px solid rgba(255,255,255,.26);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 10px 18px -6px rgba(0,0,0,.85);transform:translateY(-2px)}
+  .dia[aria-pressed="true"]:not(.hoje){background:rgba(0,0,0,.3);box-shadow:inset 0 2px 6px rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.1)}
+  .cal-info{margin:10px 6px 2px;font-size:13.5px;color:var(--muted);min-height:20px}
+  .cal-info b{color:var(--txt)}
+  .leg-ev{display:flex;flex-wrap:wrap;gap:6px 14px;margin:10px 6px 0;font-size:12.5px;color:var(--muted)}
+  .leg-ev span{display:inline-flex;align-items:center;gap:6px}
+  .leg-ev i{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .evento{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .evento:last-child{border-bottom:0}
+  .evento .dt{width:48px;height:52px;border-radius:14px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.28);box-shadow:inset 0 2px 6px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.06)}
+  .evento .dt b{font-size:18px;line-height:1}
+  .evento .dt small{font-size:10px;font-weight:800;letter-spacing:.08em;color:var(--muted);margin-top:3px}
+  .evento .d{flex:1;min-width:0}
+  .evento .d b{display:block;font-size:14.5px;line-height:1.25}
+  .evento .d small{color:var(--muted);font-size:12.5px}
+  .evento .cor{width:4px;align-self:stretch;border-radius:4px;flex:none}
+
+  /* Chaves liga/desliga */
+  .prefs{padding:4px 16px}
+  .pref{display:flex;align-items:center;gap:12px;width:100%;text-align:left;min-height:64px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .pref:last-child{border-bottom:0}
+  .pref .pi{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--muted)}
+  .pref .pi svg{width:20px;height:20px}
+  .pref .pt{flex:1;min-width:0}
+  .pref .pt b{display:block;font-size:15px}
+  .pref .pt small{color:var(--muted);font-size:12.5px}
+  .chave{width:56px;height:32px;border-radius:999px;flex:none;position:relative;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 2px 6px rgba(0,0,0,.7);transition:background .2s}
+  .chave::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:linear-gradient(180deg,#f4f8f6,#c9d6d0);box-shadow:inset 0 1px 0 #fff, 0 3px 8px rgba(0,0,0,.6);transition:transform .2s}
+  .pref[aria-checked="true"] .chave{background:linear-gradient(180deg,rgba(79,227,161,.75),rgba(46,170,116,.75));border-color:rgba(134,243,193,.6)}
+  .pref[aria-checked="true"] .chave::after{transform:translateX(24px)}
+  .pref[aria-checked="true"] .pi{color:var(--verde)}
+
+  /* Endereço em Contatos */
+  .endereco .cab{display:flex;gap:12px;align-items:flex-start}
+  .endereco .ic{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:var(--verde-chip);color:var(--verde);flex:none}
+  .endereco address{font-style:normal;color:var(--txt);font-size:14.5px;line-height:1.5}
+  .endereco address b{font-size:16px}
+  .vazio{color:var(--muted);text-align:center;padding:18px 0;font-size:14px}
+
+  /* Letra grande */
+  body.letra-grande .sub-tela{font-size:17px}
+  body.letra-grande .secao h2{font-size:20px}
+  body.letra-grande .modulo b{font-size:17px}
+  body.letra-grande .modulo small{font-size:14px}
+  body.letra-grande .aviso b{font-size:17px}
+  body.letra-grande .aviso p{font-size:15.5px}
+  body.letra-grande .mov .d b{font-size:16.5px}
+  body.letra-grande .mov .d small{font-size:14px}
+  body.letra-grande .s-rot{font-size:12px}
+  body.letra-grande .s-det{font-size:12.5px}
+  body.letra-grande .contato .d b{font-size:18px}
+  body.letra-grande .contato .d small{font-size:15px}
+  body.letra-grande .capa .end{font-size:15.5px}
+  body.letra-grande .evento .d b{font-size:16.5px}
+  body.letra-grande .evento .d small{font-size:14px}
+  body.letra-grande .pref .pt b{font-size:17px}
+  body.letra-grande .pref .pt small{font-size:14px}
+  body.letra-grande .cal-info,body.letra-grande .leg-ev,body.letra-grande .linha-saldo{font-size:15px}
+  body.letra-grande .dia{font-size:17px}
+  body.letra-grande .nota,body.letra-grande .dica{font-size:14px}
+  body.letra-grande .endereco address{font-size:16.5px}
+  body.letra-grande .nav button{font-size:13px}
+
+  @media (max-width:400px){.mov .seta{width:34px;height:34px;border-radius:10px}.mov .seta svg{width:16px;height:16px}.mov{gap:10px}.lista-card{padding:6px 12px}.mov .val{font-size:14.5px}}
+  @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body data-tela="inicio">
+<div class="app">
+
+  <header class="topo">
+    <div class="logo-chip"><img src="logo.png" alt="Residencial Jardins do Lago"></div>
+    <div class="saudacao"><span id="saud">Olá</span><b>Portal do Morador</b></div>
+    <div class="topo-dir">
+      <span class="selo-exemplo">dados de exemplo</span>
+      <button class="btn-redondo" aria-label="Notificações" data-toast="Você tem 2 avisos novos"><svg class="i"><use href="#i-sino"/></svg><span class="ponto"></span></button>
+    </div>
+  </header>
+
+  <!-- ============ INÍCIO ============ -->
+  <section class="tela ativa" id="t-inicio" aria-label="Início">
+    <div class="capa">
+      <svg class="ilustra" viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#1b1f45"/>
+            <stop offset=".45" stop-color="#5a3566"/>
+            <stop offset=".75" stop-color="#d9735d"/>
+            <stop offset="1" stop-color="#f4b26b"/>
+          </linearGradient>
+          <linearGradient id="lago" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#e59a6a"/>
+            <stop offset=".3" stop-color="#6a4a6e"/>
+            <stop offset="1" stop-color="#14304a"/>
+          </linearGradient>
+          <radialGradient id="sol" cx=".5" cy=".5" r=".5">
+            <stop offset="0" stop-color="#ffe2a8"/>
+            <stop offset=".5" stop-color="#ffc07a" stop-opacity=".8"/>
+            <stop offset="1" stop-color="#ff9a6a" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <rect width="400" height="260" fill="url(#ceu)"/>
+        <circle cx="290" cy="150" r="70" fill="url(#sol)"/>
+        <circle cx="290" cy="150" r="22" fill="#ffe0a3"/>
+        <g fill="#fff" opacity=".7"><circle cx="40" cy="22" r="1"/><circle cx="90" cy="40" r=".8"/><circle cx="150" cy="18" r="1.1"/><circle cx="210" cy="34" r=".7"/><circle cx="360" cy="26" r=".9"/><circle cx="330" cy="58" r=".6"/></g>
+        <!-- serra -->
+        <path d="M0 150 L50 118 L95 140 L150 104 L210 138 L250 122 L300 140 L350 112 L400 132 V175 H0Z" fill="#3c2a4f" opacity=".8"/>
+        <path d="M0 165 L70 138 L130 158 L190 132 L260 156 L330 136 L400 152 V180 H0Z" fill="#2a2140"/>
+        <!-- lago -->
+        <rect y="172" width="400" height="88" fill="url(#lago)"/>
+        <g stroke="#ffd7a0" stroke-linecap="round" opacity=".55">
+          <line x1="262" y1="182" x2="318" y2="182" stroke-width="2"/>
+          <line x1="270" y1="190" x2="310" y2="190" stroke-width="1.6"/>
+          <line x1="278" y1="198" x2="302" y2="198" stroke-width="1.2"/>
+        </g>
+        <!-- margem e casas -->
+        <path d="M0 196 Q90 182 200 192 T400 186 V214 H0Z" fill="#0f2a20"/>
+        <g>
+          <g transform="translate(18 160)">
+            <path d="M0 22 L18 8 L36 22 V44 H0Z" fill="#183b2e"/><path d="M-3 23 L18 6 L39 23" stroke="#0b1f18" stroke-width="3" fill="none"/>
+            <rect x="7" y="27" width="8" height="8" rx="1" fill="#ffcf7a"/><rect x="22" y="27" width="8" height="8" rx="1" fill="#ffcf7a" opacity=".7"/>
+          </g>
+          <g transform="translate(64 150)">
+            <path d="M0 26 L24 8 L48 26 V54 H0Z" fill="#1d4637"/><path d="M-4 27 L24 5 L52 27" stroke="#0b1f18" stroke-width="3" fill="none"/>
+            <rect x="9" y="32" width="10" height="10" rx="1" fill="#ffcf7a"/><rect x="29" y="32" width="10" height="20" rx="1" fill="#0b1f18"/>
+          </g>
+          <g transform="translate(124 162)">
+            <path d="M0 20 L17 7 L34 20 V40 H0Z" fill="#163428"/><path d="M-3 21 L17 5 L37 21" stroke="#0b1f18" stroke-width="3" fill="none"/>
+            <rect x="12" y="25" width="9" height="8" rx="1" fill="#ffcf7a" opacity=".85"/>
+          </g>
+        </g>
+        <!-- árvores -->
+        <g fill="#0c2219">
+          <circle cx="112" cy="170" r="13"/><rect x="110" y="176" width="4" height="22"/>
+          <circle cx="170" cy="168" r="11"/><rect x="168" y="174" width="4" height="20"/>
+          <circle cx="8" cy="178" r="12"/>
+          <path d="M370 196 V150" stroke="#0c2219" stroke-width="3"/>
+          <path d="M370 150 q-18 -4 -26 8 M370 150 q18 -4 26 8 M370 150 q-10 -14 -24 -12 M370 150 q10 -14 24 -12 M370 150 q0 -12 2 -18" stroke="#0c2219" stroke-width="4" fill="none" stroke-linecap="round"/>
+        </g>
+        <rect y="206" width="400" height="54" fill="#0a1d16" opacity=".5"/>
+      </svg>
+      <div class="capa-txt">
+        <div class="logo-selo"><img src="logo.png" alt="Residencial Jardins do Lago"></div>
+        <div>
+          <h1 class="sr">Residencial Jardins do Lago</h1>
+          <span class="selo-portal">PORTAL DO MORADOR</span>
+          <div class="end" style="margin-top:10px"><svg class="i"><use href="#i-pino"/></svg><span class="selecionavel" id="end-ini">Rodovia PA-160, Serra Dourada II · Canaã dos Carajás – PA · CEP <span id="cep-ini">68352-193</span></span></div>
+          <div class="copiar-linha">
+            <button class="btn-sec" data-copiar="cep" data-alvo="cep-ini"><svg class="i"><use href="#i-copiar"/></svg>Copiar CEP</button>
+            <button class="btn-sec" data-copiar="end" data-alvo="end-ini"><svg class="i"><use href="#i-copiar"/></svg>Copiar endereço</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="card resumo" data-ir="contas" aria-label="Abrir prestação de contas de novembro">
+      <span class="rot"><span>Resumo de <span id="r-mes">novembro</span></span><svg class="i"><use href="#i-dir"/></svg></span>
+      <span class="stats" id="r-stats"></span>
+    </button>
+
+    <div class="secao"><h2>O que você precisa?</h2></div>
+    <div class="grade">
+      <button class="modulo" data-ir="contas"><span class="ic"><svg class="i"><use href="#i-carteira"/></svg></span><span><b>Prestação de contas</b><small>Entradas e saídas</small></span></button>
+      <button class="modulo" data-ir="mapa"><span class="ic"><svg class="i"><use href="#i-mapa"/></svg></span><span><b>Mapa das casas</b><small>Ache uma casa</small></span></button>
+      <button class="modulo" data-breve="comunicados"><span class="ic"><svg class="i"><use href="#i-megafone"/></svg></span><span><b>Comunicados</b><small>2 novos</small></span></button>
+      <button class="modulo" data-breve="reservas"><span class="ic"><svg class="i"><use href="#i-calendario"/></svg></span><span><b>Reservas de lazer</b><small>Salão, quadra</small></span></button>
+      <button class="modulo" data-breve="visitas"><span class="ic"><svg class="i"><use href="#i-visita"/></svg></span><span><b>Autorizar visitas</b><small>Libere na portaria</small></span></button>
+      <button class="modulo" data-breve="solicitacoes"><span class="ic"><svg class="i"><use href="#i-prancheta"/></svg></span><span><b>Solicitações</b><small>Peça um reparo</small></span></button>
+      <button class="modulo" data-breve="votacoes"><span class="badge">EM BREVE</span><span class="ic"><svg class="i"><use href="#i-urna"/></svg></span><span><b>Votações</b><small>Assembleias</small></span></button>
+      <button class="modulo" data-ir="contatos"><span class="ic"><svg class="i"><use href="#i-fone"/></svg></span><span><b>Contatos úteis</b><small>Portaria, síndico</small></span></button>
+    </div>
+
+    <div class="secao"><h2>Agenda do condomínio</h2></div>
+    <div class="card cal-card">
+      <div class="cal-cab"><div><b>Novembro/2026</b><br><small>Hoje é sábado, 14 de novembro</small></div></div>
+      <div class="cal-sem" aria-hidden="true"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+      <div class="cal" id="cal" role="group" aria-label="Calendário de novembro de 2026"></div>
+      <div class="cal-info" id="cal-info" role="status" aria-live="polite"></div>
+      <div class="leg-ev" id="leg-ev"></div>
+    </div>
+    <div class="secao"><h2>Próximos eventos</h2></div>
+    <div class="card lista-card" id="prox-ev"></div>
+
+    <div class="secao"><h2>Próxima votação</h2></div>
+    <button class="card votacao" data-breve="votacoes">
+      <span class="ic"><svg class="i"><use href="#i-urna"/></svg></span>
+      <span><b>Eleição do conselho</b><small>Sábado, 28/11 · você vota pelo celular</small></span>
+      <svg class="i chev"><use href="#i-dir"/></svg>
+    </button>
+
+    <div class="secao"><h2>Avisos recentes</h2><button data-breve="comunicados">Ver todos</button></div>
+    <div class="card aviso">
+      <span class="ic a"><svg class="i"><use href="#i-gota"/></svg></span>
+      <div><b>Limpeza da caixa d'água</b><p>Sábado, 21/11, das 8h às 12h. Pode faltar água.</p><time>há 2 dias</time></div>
+    </div>
+    <div class="card aviso">
+      <span class="ic b"><svg class="i"><use href="#i-megafone"/></svg></span>
+      <div><b>Piscina fechada para manutenção</b><p>Quinta, 19/11. Reabre na sexta às 9h.</p><time>há 4 dias</time></div>
+    </div>
+
+    <div class="secao"><h2>Preferências</h2></div>
+    <div class="card prefs">
+      <button class="pref" role="switch" aria-checked="false" data-pref="esconder">
+        <span class="pi"><svg class="i"><use href="#i-olho"/></svg></span>
+        <span class="pt"><b>Esconder valores</b><small>Oculta saldos e valores na tela</small></span>
+        <span class="chave" aria-hidden="true"></span>
+      </button>
+      <button class="pref" role="switch" aria-checked="true" data-pref="wpp">
+        <span class="pi"><svg class="i"><use href="#i-zap"/></svg></span>
+        <span class="pt"><b>Avisos pelo WhatsApp</b><small>Receba comunicados no celular</small></span>
+        <span class="chave" aria-hidden="true"></span>
+      </button>
+      <button class="pref" role="switch" aria-checked="false" data-pref="letra">
+        <span class="pi"><svg class="i"><use href="#i-letra"/></svg></span>
+        <span class="pt"><b>Letra grande</b><small>Aumenta os textos do portal</small></span>
+        <span class="chave" aria-hidden="true"></span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ PRESTAÇÃO DE CONTAS ============ -->
+  <section class="tela" id="t-contas" aria-label="Prestação de contas">
+    <h1 class="titulo-tela">Prestação de contas</h1>
+    <p class="sub-tela">Tudo o que entrou e saiu do caixa.</p>
+
+    <div class="seletor">
+      <button id="m-ant" aria-label="Mês anterior"><svg class="i"><use href="#i-esq"/></svg></button>
+      <div class="mes"><b id="m-nome">Novembro de 2026</b><small>mês de referência</small></div>
+      <button id="m-prox" aria-label="Próximo mês"><svg class="i"><use href="#i-dir"/></svg></button>
+    </div>
+
+    <div class="stats" id="c-stats" style="margin-top:12px"></div>
+    <p class="linha-saldo" id="c-linha"></p>
+
+    <div class="card grafico">
+      <div class="cab"><h3 id="l-tit">Saldo nos últimos 6 meses</h3>
+        <div class="seg" role="group" aria-label="Período do gráfico de saldo">
+          <button type="button" data-modo="mes" aria-pressed="false">Mês</button>
+          <button type="button" data-modo="6m" aria-pressed="true">6 meses</button>
+        </div>
+      </div>
+      <div class="afundado"><svg id="linha" viewBox="0 0 320 160" role="img" aria-label="Gráfico de linha do saldo"></svg></div>
+      <div class="dica" id="l-dica">Saldo no fim de cada mês</div>
+    </div>
+
+    <div class="card grafico">
+      <div class="cab"><h3>Últimos 6 meses</h3>
+        <div class="legenda-g"><span><i style="background:var(--agua)"></i>Receitas</span><span><i style="background:var(--lavanda)"></i>Despesas</span></div>
+      </div>
+      <svg id="grafico" viewBox="0 0 320 170" role="img" aria-label="Gráfico de receitas e despesas dos últimos 6 meses"></svg>
+      <div class="dica">Toque em um mês para ver os detalhes</div>
+    </div>
+
+    <div class="secao"><h2>Movimentações</h2><span style="color:var(--muted);font-size:13px" id="c-qtd"></span></div>
+    <label class="campo" style="margin-bottom:12px"><svg class="i"><use href="#i-lupa"/></svg>
+      <input id="q-mov" type="search" placeholder="Buscar (ex.: energia, taxas)" aria-label="Buscar movimentação" autocomplete="off">
+    </label>
+    <div class="card lista-card" id="lista-mov"></div>
+  </section>
+
+  <!-- ============ MAPA ============ -->
+  <section class="tela" id="t-mapa" aria-label="Mapa das casas">
+    <h1 class="titulo-tela">Mapa das casas</h1>
+    <p class="sub-tela">220 casas em 8 quadras. Encontre uma casa pelo número.</p>
+
+    <form class="busca" id="f-busca" autocomplete="off">
+      <label class="campo"><svg class="i"><use href="#i-lupa"/></svg>
+        <input id="q-casa" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" placeholder="Nº da casa (ex.: 57)" aria-label="Encontre uma casa pelo número">
+      </label>
+      <button class="btn-verde" type="submit">Ir</button>
+    </form>
+    <div class="aviso-erro" id="busca-erro" role="status"></div>
+
+    <div class="card cartao-lote" id="cartao-lote" role="status">
+      <span class="ic"><svg class="i"><use href="#i-casa"/></svg></span>
+      <div><b id="cl-tit">Casa 57</b><small id="cl-sub">Quadra C</small></div>
+      <button class="fechar" id="cl-fechar" aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+
+    <div class="card mapa-box">
+      <div class="zoom">
+        <button id="z-mais" aria-label="Aproximar"><svg class="i"><use href="#i-mais"/></svg></button>
+        <button id="z-menos" aria-label="Afastar"><svg class="i"><use href="#i-menos"/></svg></button>
+      </div>
+      <div class="mapa-wrap" id="mapa-wrap">
+        <svg id="mapa" viewBox="0 0 400 610" role="img" aria-label="Planta ilustrativa do condomínio">
+          <rect width="400" height="610" fill="#0e1b16"/>
+          <!-- ruas -->
+          <g fill="#1a2722">
+            <rect x="180" y="40" width="40" height="510"/>
+            <rect x="10" y="140" width="380" height="20"/>
+            <rect x="10" y="235" width="380" height="16"/>
+            <rect x="10" y="340" width="380" height="16"/>
+            <rect x="10" y="435" width="380" height="20"/>
+            <rect x="10" y="530" width="380" height="16"/>
+            <rect x="4" y="50" width="12" height="496"/>
+            <rect x="384" y="50" width="12" height="496"/>
+          </g>
+          <line x1="200" y1="50" x2="200" y2="545" stroke="#3a4a43" stroke-width="1" stroke-dasharray="6 6"/>
+          <text x="200" y="300" class="m-rot" text-anchor="middle" transform="rotate(-90 200 300)" style="font-size:8px;fill:#7d948a">AV. DO LAGO</text>
+          <!-- portaria -->
+          <g class="lazer-item" data-info="Portaria|Entrada principal · aberta 24h">
+            <rect x="165" y="6" width="70" height="34" rx="6" fill="#1d6b4e"/>
+            <path d="M178 30 V16 L200 11 L222 16 V30" stroke="#bff3d9" stroke-width="1.5" fill="none"/>
+            <text x="200" y="27" text-anchor="middle" class="m-rot" style="fill:#eafff4;font-weight:800">PORTARIA</text>
+          </g>
+          <!-- lazer -->
+          <g>
+            <rect x="18" y="255" width="160" height="82" rx="10" fill="#173326"/>
+            <rect x="222" y="255" width="160" height="82" rx="10" fill="#173326"/>
+            <g class="lazer-item" data-info="Piscina|Área de lazer · 8h às 20h">
+              <rect x="28" y="264" width="66" height="44" rx="10" fill="#1c5c78"/>
+              <path d="M34 280 q6 -4 12 0 t12 0 t12 0 t12 0 M34 291 q6 -4 12 0 t12 0 t12 0 t12 0" stroke="#8fd3f0" stroke-width="1.2" fill="none"/>
+              <text x="61" y="324" text-anchor="middle" class="m-rot">Piscina</text>
+            </g>
+            <g class="lazer-item" data-info="Salão de festas|Área de lazer · reserva pelo portal">
+              <rect x="104" y="264" width="64" height="50" rx="6" fill="#8b2a5c"/>
+              <path d="M116 284 h40 M116 294 h28" stroke="#f3c2db" stroke-width="1.5" stroke-linecap="round"/>
+              <text x="136" y="328" text-anchor="middle" class="m-rot">Salão de festas</text>
+            </g>
+            <g class="lazer-item" data-info="Quadra poliesportiva|Área de lazer · 7h às 22h">
+              <rect x="232" y="264" width="86" height="50" rx="4" fill="#2f6b4e"/>
+              <rect x="238" y="269" width="74" height="40" fill="none" stroke="#cfeedd" stroke-width="1"/>
+              <line x1="275" y1="269" x2="275" y2="309" stroke="#cfeedd" stroke-width="1"/>
+              <circle cx="275" cy="289" r="7" fill="none" stroke="#cfeedd" stroke-width="1"/>
+              <text x="275" y="328" text-anchor="middle" class="m-rot">Quadra</text>
+            </g>
+            <g class="lazer-item" data-info="Playground|Área de lazer · crianças acompanhadas">
+              <rect x="326" y="264" width="48" height="50" rx="8" fill="#3a5a2c"/>
+              <circle cx="340" cy="280" r="5" fill="#e9dfc4"/><circle cx="360" cy="296" r="5" fill="#e9dfc4"/>
+              <path d="M336 304 l10 -14 l10 14" stroke="#e9dfc4" stroke-width="1.5" fill="none"/>
+              <text x="350" y="328" text-anchor="middle" class="m-rot">Playground</text>
+            </g>
+          </g>
+          <!-- lago -->
+          <g class="lazer-item" data-info="Lago|Área verde · caminhada ao redor">
+            <path d="M0 556 Q60 548 120 558 T240 556 T400 552 V610 H0Z" fill="#1c5c78"/>
+            <path d="M40 576 q10 -4 20 0 M150 586 q10 -4 20 0 M280 574 q10 -4 20 0 M340 592 q10 -4 20 0" stroke="#8fd3f0" stroke-width="1.2" fill="none" opacity=".7"/>
+            <text x="200" y="590" text-anchor="middle" class="m-rot" style="font-size:11px;fill:#cfeefa;font-weight:800;letter-spacing:.2em">LAGO</text>
+          </g>
+          <!-- árvores -->
+          <g fill="#1f4a35">
+            <circle cx="30" cy="22" r="9"/><circle cx="52" cy="30" r="7"/><circle cx="360" cy="20" r="9"/><circle cx="340" cy="30" r="6"/>
+            <circle cx="110" cy="22" r="6"/><circle cx="290" cy="24" r="7"/>
+          </g>
+          <g id="lotes"></g>
+        </svg>
+      </div>
+    </div>
+
+    <div class="legenda">
+      <span><i style="background:#22392f;border:1px solid #3a5a4c"></i>Casa</span>
+      <span><i style="background:var(--verde)"></i>Casa encontrada</span>
+      <span><i style="background:#173326;border:1px solid #2f6b4e"></i>Lazer</span>
+      <span><i style="background:#1c5c78"></i>Lago</span>
+      <span><i style="background:#1d6b4e"></i>Portaria</span>
+    </div>
+    <p class="nota">Planta ilustrativa, fora de escala. Toque em uma casa para ver os detalhes.</p>
+  </section>
+
+  <!-- ============ CONTATOS ============ -->
+  <section class="tela" id="t-contatos" aria-label="Contatos úteis">
+    <h1 class="titulo-tela">Contatos úteis</h1>
+    <p class="sub-tela">Um toque para ligar ou chamar no WhatsApp.</p>
+
+    <div class="card endereco" style="margin-bottom:10px">
+      <div class="cab">
+        <span class="ic"><svg class="i"><use href="#i-pino"/></svg></span>
+        <address class="selecionavel" id="end-cont"><b>Residencial Jardins do Lago</b><br>Rodovia PA-160, Serra Dourada II<br>Canaã dos Carajás – PA<br>CEP <span id="cep-cont">68352-193</span></address>
+      </div>
+      <div class="copiar-linha">
+        <button class="btn-sec" data-copiar="cep" data-alvo="cep-cont"><svg class="i"><use href="#i-copiar"/></svg>Copiar CEP</button>
+        <button class="btn-sec" data-copiar="end" data-alvo="end-cont"><svg class="i"><use href="#i-copiar"/></svg>Copiar endereço</button>
+      </div>
+    </div>
+
+    <div class="card contato">
+      <span class="ic"><svg class="i"><use href="#i-portao"/></svg></span>
+      <div class="d"><b>Portaria</b><small>24 horas · (94) 9 0000-0000</small></div>
+      <div class="acoes">
+        <a class="acao lig" href="tel:+5594900000000" aria-label="Ligar para a portaria"><svg class="i"><use href="#i-fone"/></svg></a>
+        <a class="acao wpp" href="https://wa.me/5594900000000" target="_blank" rel="noopener" aria-label="WhatsApp da portaria"><svg class="i"><use href="#i-zap"/></svg></a>
+      </div>
+    </div>
+    <div class="card contato">
+      <span class="ic"><svg class="i"><use href="#i-predio"/></svg></span>
+      <div class="d"><b>Síndico</b><small>Seg. a sex. · (94) 9 0000-0001</small></div>
+      <div class="acoes">
+        <a class="acao lig" href="tel:+5594900000001" aria-label="Ligar para o síndico"><svg class="i"><use href="#i-fone"/></svg></a>
+        <a class="acao wpp" href="https://wa.me/5594900000001" target="_blank" rel="noopener" aria-label="WhatsApp do síndico"><svg class="i"><use href="#i-zap"/></svg></a>
+      </div>
+    </div>
+    <div class="card contato">
+      <span class="ic"><svg class="i"><use href="#i-prancheta"/></svg></span>
+      <div class="d"><b>Administração</b><small>8h às 17h · (94) 9 0000-0002</small></div>
+      <div class="acoes">
+        <a class="acao lig" href="tel:+5594900000002" aria-label="Ligar para a administração"><svg class="i"><use href="#i-fone"/></svg></a>
+        <a class="acao wpp" href="https://wa.me/5594900000002" target="_blank" rel="noopener" aria-label="WhatsApp da administração"><svg class="i"><use href="#i-zap"/></svg></a>
+      </div>
+    </div>
+
+    <div class="secao"><h2>Emergência</h2></div>
+    <div class="emerg">
+      <a href="tel:190" aria-label="Ligar para a Polícia, 190"><svg class="i"><use href="#i-escudo"/></svg><span class="n">190</span><small>Polícia</small></a>
+      <a href="tel:192" aria-label="Ligar para o SAMU, 192"><svg class="i"><use href="#i-coracao"/></svg><span class="n">192</span><small>SAMU</small></a>
+      <a href="tel:193" aria-label="Ligar para os Bombeiros, 193"><svg class="i"><use href="#i-fogo"/></svg><span class="n">193</span><small>Bombeiros</small></a>
+    </div>
+    <p class="nota">Os números da portaria, síndico e administração são de exemplo.</p>
+  </section>
+
+  <!-- ============ MÓDULO EM BREVE ============ -->
+  <section class="tela" id="t-breve" aria-label="Módulo">
+    <button class="voltar" data-ir="inicio"><svg class="i"><use href="#i-esq"/></svg>Início</button>
+    <div class="card breve-hero">
+      <div class="ic" id="b-ic"></div>
+      <h2 id="b-tit">Módulo</h2>
+      <p id="b-txt"></p>
+      <span class="pill">EM BREVE</span>
+    </div>
+    <div class="card esboco" id="b-esboco"></div>
+  </section>
+
+</div>
+
+<nav class="nav" aria-label="Navegação principal">
+  <div class="nav-in">
+    <button data-ir="inicio" aria-current="page"><svg class="i"><use href="#i-casa"/></svg>Início</button>
+    <button data-ir="contas"><svg class="i"><use href="#i-carteira"/></svg>Contas</button>
+    <button data-ir="mapa"><svg class="i"><use href="#i-mapa"/></svg>Mapa</button>
+    <button data-ir="contatos"><svg class="i"><use href="#i-fone"/></svg>Contatos</button>
+  </div>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- Ícones (traços simples) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-casa" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-carteira" viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2-2h11v3"/><path d="M4 7v11a2 2 0 0 0 2 2h14V8H6a2 2 0 0 1-2-1z"/><path d="M16 14h1.5"/></symbol>
+  <symbol id="i-mapa" viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14"/><path d="M15 6v14"/></symbol>
+  <symbol id="i-fone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></symbol>
+  <symbol id="i-megafone" viewBox="0 0 24 24"><path d="M3 11v2a1 1 0 0 0 1 1h3l7 4V6l-7 4H4a1 1 0 0 0-1 1z"/><path d="M18 9a4 4 0 0 1 0 6"/><path d="M7 14l1 5h3"/></symbol>
+  <symbol id="i-calendario" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16"/><path d="M8 3v4"/><path d="M16 3v4"/></symbol>
+  <symbol id="i-visita" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M16 11l2 2 4-4"/></symbol>
+  <symbol id="i-prancheta" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="3" rx="1"/><path d="M8 4.5H6a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5.5a1 1 0 0 0-1-1h-2"/><path d="M8.5 12h7"/><path d="M8.5 16h4.5"/></symbol>
+  <symbol id="i-urna" viewBox="0 0 24 24"><path d="M4 12h16l-1 8H5z"/><path d="M8 12V4h8v8"/><path d="M10 8l1.5 1.5L14.5 6.5"/></symbol>
+  <symbol id="i-esq" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-dir" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-clipe" viewBox="0 0 24 24"><path d="M20 11.5l-8 8a5 5 0 0 1-7-7l8-8a3.5 3.5 0 0 1 5 5l-8 8a2 2 0 0 1-3-3l7-7"/></symbol>
+  <symbol id="i-cima" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></symbol>
+  <symbol id="i-baixo" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></symbol>
+  <symbol id="i-lupa" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><path d="M4 20l1.4-4.2A8 8 0 1 1 8.4 18.8z"/><path d="M9 9c.3 2.8 2.5 5.3 5.5 5.8l1.2-1.4-1.9-1-1 .9a4 4 0 0 1-2-2l.8-1-.9-2z"/></symbol>
+  <symbol id="i-sino" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></symbol>
+  <symbol id="i-escudo" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></symbol>
+  <symbol id="i-coracao" viewBox="0 0 24 24"><path d="M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.5A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z"/><path d="M7 12h3l1-2 2 4 1-2h3"/></symbol>
+  <symbol id="i-fogo" viewBox="0 0 24 24"><path d="M12 21a6 6 0 0 0 6-6c0-4-3-6-4-11-2 2-3 4-3 6-1-.5-2-1.5-2-3-2 2-3 4.5-3 8a6 6 0 0 0 6 6z"/></symbol>
+  <symbol id="i-predio" viewBox="0 0 24 24"><path d="M4 21V6l8-3 8 3v15"/><path d="M9 21v-4h6v4"/><path d="M8 9h2"/><path d="M14 9h2"/><path d="M8 13h2"/><path d="M14 13h2"/></symbol>
+  <symbol id="i-portao" viewBox="0 0 24 24"><path d="M3 21V9l9-5 9 5v12"/><path d="M7 21v-8h10v8"/><path d="M12 13v8"/></symbol>
+  <symbol id="i-pino" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+  <symbol id="i-gota" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></symbol>
+  <symbol id="i-mais" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></symbol>
+  <symbol id="i-menos" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></symbol>
+  <symbol id="i-copiar" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M15 9V6.5A2.5 2.5 0 0 0 12.5 4h-6A2.5 2.5 0 0 0 4 6.5v6A2.5 2.5 0 0 0 6.5 15H9"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-olho" viewBox="0 0 24 24"><path d="M3 3l18 18"/><path d="M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 8.5 4 9.5 6a13 13 0 0 1-2.6 3.4"/><path d="M6.6 7.6C4.6 8.9 3.2 10.7 2.5 12c1 2 4.5 6 9.5 6 1.6 0 3-.4 4.3-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></symbol>
+  <symbol id="i-letra" viewBox="0 0 24 24"><path d="M3 19l5-13 5 13"/><path d="M4.8 14.5h6.4"/><path d="M15 19l3-8 3 8"/><path d="M16 16.5h4"/></symbol>
+</svg>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- utilidades ---------- */
+  var $ = function(s){ return document.querySelector(s); };
+  var $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
+  var fmt = new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
+  var fmt1 = new Intl.NumberFormat("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1});
+  var PREF = {esconder:false, wpp:true, letra:false};
+  function brl(c){ return PREF.esconder ? "R$ ••••" : fmt.format(c/100); }
+  function milNum(c){ return PREF.esconder ? "•••" : fmt1.format(c/100000); }
+  function milHTML(c){ return PREF.esconder ? '•••' : fmt1.format(c/100000)+'<small> mil</small>'; }
+  function ic(n){ return '<svg class="i"><use href="#i-'+n+'"/></svg>'; }
+  function pad(n){ return (n<10?"0":"")+n; }
+  function tile(rot, val, det, cor){
+    return '<span class="stat"><span class="s-rot">'+rot+'</span><span class="s-val" style="color:'+cor+'">'+val+'</span>'+(det?'<span class="s-det">'+det+'</span>':'')+'</span>';
+  }
+  var toastT;
+  function toast(msg, ok){
+    var t = $("#toast");
+    t.innerHTML = (ok ? '<span class="tk" aria-hidden="true">'+ic("check")+'</span>' : '')+'<span></span>';
+    t.lastChild.textContent = msg;
+    t.classList.toggle("sem-icone", !ok);
+    t.classList.add("mostra");
+    clearTimeout(toastT); toastT = setTimeout(function(){ t.classList.remove("mostra"); }, 2400);
+  }
+
+  /* ---------- copiar CEP / endereço ---------- */
+  var TXT_COPIA = {
+    cep:{v:"68352-193", ok:"CEP copiado"},
+    end:{v:"Residencial Jardins do Lago, Rodovia PA-160, Serra Dourada II, Canaã dos Carajás – PA, 68352-193", ok:"Endereço copiado"}
+  };
+  function selecionaVisivel(el){
+    try {
+      var r = document.createRange(); r.selectNodeContents(el);
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    } catch(e){}
+  }
+  function copiaLegado(texto){
+    var ok = false, foco = document.activeElement, ta = document.createElement("textarea");
+    ta.value = texto; ta.setAttribute("readonly","");
+    ta.style.cssText = "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;font-size:16px;border:0;padding:0";
+    document.body.appendChild(ta);
+    try { ta.focus(); ta.select(); ta.setSelectionRange(0, texto.length); ok = document.execCommand("copy"); } catch(e){ ok = false; }
+    document.body.removeChild(ta);
+    if (foco && foco.focus) { try { foco.focus({preventScroll:true}); } catch(e){} }
+    return ok;
+  }
+  function copiar(tipo, alvo){
+    var C = TXT_COPIA[tipo]; if (!C) return;
+    function deuCerto(){ toast(C.ok, true); }
+    function ultimoRecurso(){
+      if (copiaLegado(C.v)) { deuCerto(); return; }
+      if (alvo) selecionaVisivel(alvo);
+      toast("Selecione e copie o texto", false);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext){
+      try { navigator.clipboard.writeText(C.v).then(deuCerto, ultimoRecurso); return; }
+      catch(e){}
+    }
+    ultimoRecurso();
+  }
+
+  /* ---------- navegação ---------- */
+  function ir(tela){
+    document.body.setAttribute("data-tela", tela);
+    $$(".tela").forEach(function(s){ s.classList.toggle("ativa", s.id === "t-"+tela); });
+    $$(".nav button").forEach(function(b){
+      if (b.getAttribute("data-ir") === tela) b.setAttribute("aria-current","page");
+      else b.removeAttribute("aria-current");
+    });
+    window.scrollTo(0,0);
+  }
+
+  var MODULOS = {
+    comunicados:{t:"Comunicados", i:"megafone", d:"Avisos do síndico e da administração, direto no seu celular.",
+      l:[["megafone","Limpeza da caixa d'água","Sábado, 21/11 · 8h às 12h"],["megafone","Piscina fechada para manutenção","Quinta, 19/11"],["megafone","Nova empresa de jardinagem","Publicado em 03/11"]]},
+    reservas:{t:"Reservas de lazer", i:"calendario", d:"Veja os dias livres e reserve o salão ou a quadra.",
+      l:[["calendario","Salão de festas","Livre no domingo, 29/11"],["calendario","Quadra poliesportiva","Livre hoje das 18h às 20h"],["calendario","Churrasqueira","Livre no domingo, 22/11"]]},
+    visitas:{t:"Autorizar visitas", i:"visita", d:"Avise a portaria quem pode entrar, sem precisar ligar.",
+      l:[["visita","Visitante","Nome e dia da visita"],["visita","Prestador de serviço","Ex.: eletricista, entrega"],["visita","Autorizações ativas","Nenhuma no momento"]]},
+    solicitacoes:{t:"Solicitações", i:"prancheta", d:"Peça um reparo ou registre um problema nas áreas comuns.",
+      l:[["prancheta","Lâmpada queimada na Quadra C","Em andamento"],["prancheta","Poda de árvore na Quadra F","Concluída"],["prancheta","Nova solicitação","Toque para abrir"]]},
+    votacoes:{t:"Votações", i:"urna", d:"Eleição do conselho e assembleias. Vote pelo celular, com segurança.",
+      l:[["urna","Eleição do conselho","Sábado, 28/11 · assembleia às 19h"],["urna","Como votar","Passo a passo simples"],["urna","Resultados anteriores","Atas disponíveis"]]}
+  };
+  function abrirModulo(k){
+    var m = MODULOS[k]; if (!m) return;
+    $("#b-ic").innerHTML = ic(m.i);
+    $("#b-tit").textContent = m.t;
+    $("#b-txt").textContent = m.d;
+    $("#b-esboco").innerHTML = m.l.map(function(x){
+      return '<div class="linha"><span class="bola">'+ic(x[0])+'</span><span><b>'+x[1]+'</b><small>'+x[2]+'</small></span></div>';
+    }).join("");
+    ir("breve");
+  }
+
+  document.addEventListener("click", function(e){
+    var el = e.target.closest("[data-copiar],[data-pref],[data-ir],[data-breve],[data-toast]");
+    if (!el) return;
+    if (el.hasAttribute("data-copiar")) copiar(el.getAttribute("data-copiar"), document.getElementById(el.getAttribute("data-alvo")));
+    else if (el.hasAttribute("data-pref")) trocaPref(el.getAttribute("data-pref"));
+    else if (el.hasAttribute("data-ir")) ir(el.getAttribute("data-ir"));
+    else if (el.hasAttribute("data-breve")) abrirModulo(el.getAttribute("data-breve"));
+    else if (el.hasAttribute("data-toast")) toast(el.getAttribute("data-toast"));
+  });
+
+  /* ---------- finanças (centavos) ---------- */
+  var TAXA = 14200, RESERVA = 8000;
+  var FIXAS = [["Portaria 24h (empresa terceirizada)",1480000,10],["Limpeza das áreas comuns",520000,10],["Manutenção da piscina",135000,20],["Jardinagem",240000,22]];
+  var MESES = [
+    // dia = casas que pagaram a taxa do mês em dia; atr = taxas do mês anterior pagas com atraso
+    {n:"Junho",a:"Jun",m:6, dia:216,atr:4, res:0,en:302010,ag:138070,ex:["Troca de lâmpadas por LED",125000]},
+    {n:"Julho",a:"Jul",m:7, dia:210,atr:4, res:4,en:298055,ag:129530,ex:["Dedetização das áreas comuns",120000]},
+    {n:"Agosto",a:"Ago",m:8, dia:209,atr:10,res:2,en:331020,ag:150225,ex:["Reparo do portão eletrônico",430000]},
+    {n:"Setembro",a:"Set",m:9, dia:207,atr:9, res:3,en:340580,ag:148810,ex:["Pintura do salão de festas",180000]},
+    {n:"Outubro",a:"Out",m:10,dia:204,atr:14,res:3,en:325065,ag:143025,ex:["Manutenção da bomba d'água",68000]},
+    {n:"Novembro",a:"Nov",m:11,dia:204,atr:16,res:0,en:318640,ag:141285,ex:["Material de limpeza",69100]}
+  ];
+  var TOTAL_CASAS = 220;
+  MESES.forEach(function(M){
+    var mm = (M.m<10?"0":"")+M.m;
+    var movs = [{t:"e",d:"Taxas do mês — "+M.dia+" casas",dia:5,v:M.dia*TAXA}];
+    if (M.atr) movs.push({t:"e",d:"Taxas atrasadas recebidas — "+M.atr+" casas",dia:8,v:M.atr*TAXA});
+    if (M.res) movs.push({t:"e",d:"Reservas do salão de festas ("+M.res+")",dia:12,v:M.res*RESERVA});
+    FIXAS.forEach(function(f){ movs.push({t:"s",d:f[0],dia:f[2],v:f[1]}); });
+    movs.push({t:"s",d:"Energia das áreas comuns",dia:15,v:M.en});
+    movs.push({t:"s",d:"Água e esgoto",dia:18,v:M.ag});
+    movs.push({t:"s",d:M.ex[0],dia:25,v:M.ex[1]});
+    movs.sort(function(a,b){ return a.dia-b.dia; });
+    movs.forEach(function(x){ x.data = (x.dia<10?"0":"")+x.dia+"/"+mm+"/2026"; });
+    M.movs = movs;
+    M.rec = movs.filter(function(x){return x.t==="e";}).reduce(function(s,x){return s+x.v;},0);
+    M.desp = movs.filter(function(x){return x.t==="s";}).reduce(function(s,x){return s+x.v;},0);
+  });
+  // Saldo anterior de novembro fixo; calcula os meses anteriores de trás para frente
+  var ult = MESES.length-1;
+  MESES[ult].ant = 4612040;
+  for (var k = ult-1; k >= 0; k--) MESES[k].ant = MESES[k+1].ant - MESES[k].rec + MESES[k].desp;
+  MESES.forEach(function(M){ M.fim = M.ant + M.rec - M.desp; });
+
+  // resumo do início
+  var NOV = MESES[ult];
+  function resumoInicio(){
+    $("#r-mes").textContent = NOV.n.toLowerCase();
+    $("#r-stats").innerHTML =
+      tile("Saldo", milHTML(NOV.fim), brl(NOV.fim), "var(--verde)") +
+      tile("Entrou", milHTML(NOV.rec), brl(NOV.rec), "var(--agua)") +
+      tile("Saiu", milHTML(NOV.desp), brl(NOV.desp), "var(--salmao)");
+  }
+  resumoInicio();
+
+  var sel = ult, modoLinha = "6m", filtroMov = "";
+  function semAcento(s){ return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,""); }
+
+  function desenhaLinha(){
+    var M = MESES[sel], pts = [], xmin, xmax, xl = [], destaque;
+    if (modoLinha === "6m"){
+      MESES.forEach(function(Q,i){ pts.push({x:i, v:Q.fim}); xl.push([i, Q.a]); });
+      xmin = 0; xmax = MESES.length-1; destaque = sel;
+      $("#l-tit").textContent = "Saldo nos últimos 6 meses";
+      $("#l-dica").textContent = "Saldo no fim de cada mês · destaque: "+M.n.toLowerCase();
+    } else {
+      var ultimoDia = new Date(2026, M.m, 0).getDate(), corre = M.ant;
+      pts.push({x:1, v:corre});
+      M.movs.forEach(function(x, i){
+        corre += x.t==="e" ? x.v : -x.v;
+        var prox = M.movs[i+1];
+        if (!prox || prox.dia !== x.dia) pts.push({x:x.dia, v:corre});
+      });
+      pts.push({x:ultimoDia, v:M.fim});
+      xmin = 1; xmax = ultimoDia; destaque = pts.length-1;
+      xl = [[1,"1"],[10,"10"],[20,"20"],[ultimoDia,String(ultimoDia)]];
+      $("#l-tit").textContent = "Saldo dia a dia · "+M.n.toLowerCase();
+      $("#l-dica").textContent = "Começa em "+brl(M.ant)+" e fecha em "+brl(M.fim);
+    }
+    var X0 = 40, X1 = 304, Y0 = 18, Y1 = 128;
+    var lo = Infinity, hi = -Infinity;
+    pts.forEach(function(p){ lo = Math.min(lo,p.v); hi = Math.max(hi,p.v); });
+    var folga = (hi-lo)*0.18 || 100000; lo -= folga; hi += folga*1.4;
+    function px(x){ return X0 + (x-xmin)/(xmax-xmin)*(X1-X0); }
+    function py(v){ return Y1 - (v-lo)/(hi-lo)*(Y1-Y0); }
+    var h = '<defs><linearGradient id="g-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4fe3a1" stop-opacity=".38"/><stop offset="1" stop-color="#4fe3a1" stop-opacity="0"/></linearGradient></defs>';
+    [0,.5,1].forEach(function(f){
+      var v = lo + (hi-lo)*f, y = py(v);
+      h += '<line x1="'+X0+'" x2="'+X1+'" y1="'+y.toFixed(1)+'" y2="'+y.toFixed(1)+'" stroke="rgba(255,255,255,.08)" stroke-dasharray="3 4"/>';
+      h += '<text x="'+(X0-6)+'" y="'+(y+3.5).toFixed(1)+'" text-anchor="end" font-size="10" fill="#a3b8ae">'+milNum(v)+'</text>';
+    });
+    var d = "", c = pts.map(function(p){ return [px(p.x), py(p.v)]; });
+    c.forEach(function(q,i){
+      if (!i){ d = "M"+q[0].toFixed(1)+" "+q[1].toFixed(1); return; }
+      var a = c[i-1], mx = ((a[0]+q[0])/2).toFixed(1);
+      d += " C"+mx+" "+a[1].toFixed(1)+" "+mx+" "+q[1].toFixed(1)+" "+q[0].toFixed(1)+" "+q[1].toFixed(1);
+    });
+    h += '<path d="'+d+" L"+c[c.length-1][0].toFixed(1)+" "+Y1+" L"+c[0][0].toFixed(1)+" "+Y1+' Z" fill="url(#g-area)"/>';
+    h += '<path d="'+d+'" fill="none" stroke="#4fe3a1" stroke-width="2.4" stroke-linecap="round"/>';
+    c.forEach(function(q,i){
+      if (i === destaque) return;
+      h += '<circle cx="'+q[0].toFixed(1)+'" cy="'+q[1].toFixed(1)+'" r="3.4" fill="#0c1814" stroke="#4fe3a1" stroke-width="2"/>';
+    });
+    var D = c[destaque], rot = PREF.esconder ? "R$ •••" : "R$ "+milNum(pts[destaque].v)+" mil";
+    h += '<circle cx="'+D[0].toFixed(1)+'" cy="'+D[1].toFixed(1)+'" r="10" fill="#4fe3a1" opacity=".18"/>';
+    h += '<circle cx="'+D[0].toFixed(1)+'" cy="'+D[1].toFixed(1)+'" r="5.2" fill="#4fe3a1" stroke="#eafff4" stroke-width="2"/>';
+    var lx = Math.max(X0+36, Math.min(316-36, D[0])), ly = Math.max(4, D[1]-30);
+    h += '<rect x="'+(lx-36).toFixed(1)+'" y="'+ly.toFixed(1)+'" width="72" height="20" rx="10" fill="rgba(234,255,244,.94)"/>';
+    h += '<text x="'+lx.toFixed(1)+'" y="'+(ly+14).toFixed(1)+'" text-anchor="middle" font-size="11" font-weight="800" fill="#062117">'+rot+'</text>';
+    xl.forEach(function(t){
+      h += '<text x="'+px(t[0]).toFixed(1)+'" y="150" text-anchor="middle" font-size="11" font-weight="'+(t[0]===pts[destaque].x?800:500)+'" fill="'+(t[0]===pts[destaque].x?"#ecf4ef":"#a3b8ae")+'">'+t[1]+'</text>';
+    });
+    var svg = $("#linha");
+    svg.innerHTML = h;
+    svg.setAttribute("aria-label", $("#l-tit").textContent+". "+(PREF.esconder ? "Valores escondidos." : "Último valor: "+brl(pts[destaque].v)+"."));
+  }
+  $$(".seg button").forEach(function(b){
+    b.addEventListener("click", function(){
+      modoLinha = b.getAttribute("data-modo");
+      $$(".seg button").forEach(function(o){ o.setAttribute("aria-pressed", o===b ? "true" : "false"); });
+      desenhaLinha();
+    });
+  });
+  function desenhaGrafico(){
+    var svg = $("#grafico");
+    var max = 3500000, base = 140, alt = 118, gw = 320/MESES.length;
+    var h = "";
+    [0,.5,1].forEach(function(p){
+      var y = base - alt*p;
+      h += '<line x1="0" x2="320" y1="'+y+'" y2="'+y+'" stroke="rgba(255,255,255,.07)" stroke-width="1"/>';
+    });
+    MESES.forEach(function(M,i){
+      var x = i*gw + gw/2, bw = 14, on = i===sel;
+      var hr = M.rec/max*alt, hd = M.desp/max*alt;
+      h += '<g class="barra-grupo" data-i="'+i+'" opacity="'+(on?1:.42)+'">';
+      h += '<rect x="'+(x-gw/2+2)+'" y="6" width="'+(gw-4)+'" height="'+(base-2)+'" rx="10" fill="'+(on?"rgba(255,255,255,.05)":"transparent")+'"/>';
+      h += '<rect x="'+(x-bw-2)+'" y="'+(base-hr)+'" width="'+bw+'" height="'+hr+'" rx="5" fill="#5fd8c6"/>';
+      h += '<rect x="'+(x+2)+'" y="'+(base-hd)+'" width="'+bw+'" height="'+hd+'" rx="5" fill="#9aa9ff"/>';
+      h += '<text x="'+x+'" y="160" text-anchor="middle" font-size="12" font-weight="'+(on?800:500)+'" fill="'+(on?"#ecf4ef":"#a3b8ae")+'">'+M.a+'</text>';
+      h += '</g>';
+    });
+    svg.innerHTML = h;
+  }
+  function mostraMes(){
+    var M = MESES[sel];
+    $("#m-nome").textContent = M.n+" de 2026";
+    $("#m-ant").disabled = sel===0;
+    $("#m-prox").disabled = sel===ult;
+    var abertas = TOTAL_CASAS - M.dia, atual = sel === ult;
+    $("#c-stats").innerHTML =
+      tile("Saldo", milHTML(M.fim), brl(M.fim), "var(--verde)") +
+      tile("Receitas", milHTML(M.rec), brl(M.rec), "var(--agua)") +
+      tile("Despesas", milHTML(M.desp), brl(M.desp), "var(--salmao)") +
+      tile("Casas em dia", M.dia+'<small>/'+TOTAL_CASAS+'</small>', "taxa do mês paga", "var(--lavanda)") +
+      tile("Inadimplência", Math.round(abertas/TOTAL_CASAS*100)+"%", abertas+" casas em aberto", "var(--p-amarelo)") +
+      tile("Atualizado", atual ? "14/11" : "05/"+pad(M.m+1), atual ? "hoje, às 09:30" : "mês fechado", "var(--txt)");
+    $("#c-linha").innerHTML = "Saldo anterior <b>"+brl(M.ant)+"</b> · saldo final <b>"+brl(M.fim)+"</b>";
+    renderLista();
+    desenhaGrafico();
+    desenhaLinha();
+  }
+  function renderLista(){
+    var M = MESES[sel], q = semAcento(filtroMov.trim());
+    var lista = q ? M.movs.filter(function(x){ return semAcento(x.d).indexOf(q) > -1 || x.data.indexOf(q) > -1; }) : M.movs;
+    $("#c-qtd").textContent = q ? lista.length+" de "+M.movs.length+" lançamentos" : M.movs.length+" lançamentos";
+    if (!lista.length){ $("#lista-mov").innerHTML = '<p class="vazio">Nenhuma movimentação encontrada.</p>'; return; }
+    $("#lista-mov").innerHTML = lista.map(function(x){
+      var e = x.t==="e";
+      return '<div class="mov"><span class="seta '+(e?"e":"s")+'">'+ic(e?"cima":"baixo")+'</span>'+
+        '<span class="d"><b>'+x.d+'</b><span class="linha2"><small>'+x.data+'</small>'+
+        '<span class="val '+(e?"verde":"salmao")+'">'+(e?"+ ":"− ")+brl(x.v)+'</span></span></span>'+
+        '<button class="clip" data-toast="Comprovante anexado (exemplo)" aria-label="Ver comprovante de '+x.d+'">'+ic("clipe")+'</button></div>';
+    }).join("");
+  }
+  $("#m-ant").addEventListener("click", function(){ if (sel>0){ sel--; mostraMes(); } });
+  $("#m-prox").addEventListener("click", function(){ if (sel<ult){ sel++; mostraMes(); } });
+  $("#grafico").addEventListener("click", function(e){
+    var g = e.target.closest(".barra-grupo"); if (!g) return;
+    sel = +g.getAttribute("data-i"); mostraMes();
+  });
+  $("#q-mov").addEventListener("input", function(e){ filtroMov = e.target.value; renderLista(); });
+
+  /* ---------- agenda (novembro/2026) ---------- */
+  var HOJE = 14;
+  var TIPOS = {
+    taxa:{n:"Vencimento da taxa", c:"var(--p-laranja)"},
+    salao:{n:"Reserva do salão", c:"var(--p-rosa)"},
+    manut:{n:"Manutenção", c:"var(--p-azul)"},
+    assembleia:{n:"Assembleia / votação", c:"var(--p-roxo)"}
+  };
+  var EVENTOS = [
+    {d:10, k:"taxa", t:"Vencimento da taxa condominial", s:"R$ 142,00 · pague pelo boleto ou Pix"},
+    {d:15, k:"salao", t:"Reserva do salão de festas", s:"Casa 57 · das 14h às 22h"},
+    {d:19, k:"manut", t:"Manutenção da piscina", s:"Piscina fechada · reabre na sexta às 9h"},
+    {d:21, k:"manut", t:"Limpeza da caixa d'água", s:"Das 8h às 12h · pode faltar água"},
+    {d:22, k:"salao", t:"Reserva do salão de festas", s:"Casa 132 · das 12h às 18h"},
+    {d:28, k:"assembleia", t:"Assembleia e eleição do conselho", s:"Às 19h · no salão e pelo portal"}
+  ];
+  var SEMANA = ["domingo","segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado"];
+  var SEM_ABR = ["DOM","SEG","TER","QUA","QUI","SEX","SÁB"];
+  var diaSel = HOJE;
+  function evDoDia(d){ return EVENTOS.filter(function(e){ return e.d === d; }); }
+  function desenhaCal(){
+    var ini = new Date(2026,10,1).getDay(), total = new Date(2026,11,0).getDate(), h = "";
+    for (var b=0;b<ini;b++) h += '<span aria-hidden="true"></span>';
+    for (var d=1; d<=total; d++){
+      var ev = evDoDia(d), wd = new Date(2026,10,d).getDay();
+      var cls = "dia"+(d===HOJE?" hoje":"")+(d<HOJE?" passado":"");
+      var rot = d+" de novembro, "+SEMANA[wd]+(d===HOJE?", hoje":"")+(ev.length ? ": "+ev.map(function(e){return e.t;}).join(", ") : "");
+      h += '<button type="button" class="'+cls+'" data-dia="'+d+'" aria-pressed="'+(d===diaSel)+'" aria-label="'+rot+'"'+(d===HOJE?' aria-current="date"':'')+'>'+d+
+        '<span class="pts">'+ev.map(function(e){ return '<i style="background:'+TIPOS[e.k].c+'"></i>'; }).join("")+'</span></button>';
+    }
+    $("#cal").innerHTML = h;
+    var evs = evDoDia(diaSel), wdS = SEMANA[new Date(2026,10,diaSel).getDay()];
+    var cab = "<b>"+wdS.charAt(0).toUpperCase()+wdS.slice(1)+", "+diaSel+"/11"+(diaSel===HOJE?" (hoje)":"")+":</b> ";
+    $("#cal-info").innerHTML = cab + (evs.length ? evs.map(function(e){ return e.t; }).join(" · ") : "nenhum evento neste dia.");
+  }
+  $("#cal").addEventListener("click", function(e){
+    var b = e.target.closest(".dia"); if (!b) return;
+    diaSel = +b.getAttribute("data-dia"); desenhaCal();
+    var nb = $('#cal .dia[data-dia="'+diaSel+'"]'); if (nb) nb.focus();
+  });
+  $("#leg-ev").innerHTML = Object.keys(TIPOS).map(function(k){ return '<span><i style="background:'+TIPOS[k].c+'"></i>'+TIPOS[k].n+'</span>'; }).join("");
+  $("#prox-ev").innerHTML = EVENTOS.filter(function(e){ return e.d >= HOJE; }).map(function(e){
+    var wd = new Date(2026,10,e.d).getDay();
+    return '<div class="evento"><span class="cor" style="background:'+TIPOS[e.k].c+'"></span><span class="dt"><b>'+e.d+'</b><small>'+SEM_ABR[wd]+'</small></span>'+
+      '<span class="d"><b>'+e.t+'</b><small>'+e.s+'</small></span></div>';
+  }).join("");
+  desenhaCal();
+
+  /* ---------- preferências (chaves) ---------- */
+  try {
+    var salvo = JSON.parse(window.localStorage.getItem("jl-prefs") || "null");
+    if (salvo && typeof salvo === "object") Object.keys(PREF).forEach(function(k){ if (typeof salvo[k] === "boolean") PREF[k] = salvo[k]; });
+  } catch(e){}
+  function aplicaPrefs(){
+    document.body.classList.toggle("letra-grande", PREF.letra);
+    $$(".pref").forEach(function(b){ b.setAttribute("aria-checked", PREF[b.getAttribute("data-pref")] ? "true" : "false"); });
+  }
+  var MSG_PREF = {
+    esconder:["Valores escondidos","Valores visíveis"],
+    wpp:["Avisos pelo WhatsApp ativados","Avisos pelo WhatsApp desativados"],
+    letra:["Letra grande ativada","Letra normal ativada"]
+  };
+  function trocaPref(k){
+    if (!(k in PREF)) return;
+    PREF[k] = !PREF[k];
+    try { window.localStorage.setItem("jl-prefs", JSON.stringify(PREF)); } catch(e){}
+    aplicaPrefs();
+    if (k === "esconder"){ resumoInicio(); mostraMes(); }
+    toast(MSG_PREF[k][PREF[k] ? 0 : 1], true);
+  }
+  aplicaPrefs();
+  resumoInicio();
+  mostraMes();
+
+  var hr = new Date().getHours();
+  $("#saud").textContent = hr < 12 ? "Bom dia" : (hr < 18 ? "Boa tarde" : "Boa noite");
+
+  /* ---------- mapa ---------- */
+  // Quadras: A–H, numeração contínua 1–220 (A 1–28, B 29–56, C 57–84 ...)
+  var QUADRAS = [
+    {q:"A",x:20, y:62, n:28},{q:"B",x:222,y:62, n:28},
+    {q:"C",x:20, y:168,n:28},{q:"D",x:222,y:168,n:28},
+    {q:"E",x:20, y:364,n:28},{q:"F",x:222,y:364,n:28},
+    {q:"G",x:20, y:463,n:28},{q:"H",x:222,y:463,n:24}
+  ];
+  var LOTES = {};
+  (function(){
+    var g = "", num = 1, W = 158, LH = 30, GAP = 3;
+    QUADRAS.forEach(function(Q){
+      var porLinha = Q.n/2, lw = W/porLinha;
+      Q.ini = num;
+      g += '<text class="q-rot" x="'+(Q.x+2)+'" y="'+(Q.y-5)+'">QUADRA '+Q.q+'</text>';
+      for (var r=0;r<2;r++){
+        for (var c=0;c<porLinha;c++){
+          var x = Q.x + c*lw, y = Q.y + r*(LH+GAP);
+          LOTES[num] = {q:Q.q, cx:x+lw/2, cy:y+LH/2, ordem:num-Q.ini+1};
+          g += '<rect class="lote" id="lote-'+num+'" data-n="'+num+'" x="'+(x+.6).toFixed(2)+'" y="'+y+'" width="'+(lw-1.2).toFixed(2)+'" height="'+LH+'" rx="1.6"/>';
+          g += '<text class="lote-n" id="ln-'+num+'" x="'+(x+lw/2).toFixed(2)+'" y="'+(y+LH/2+1.6)+'" text-anchor="middle">'+num+'</text>';
+          num++;
+        }
+      }
+      Q.fim = num-1;
+    });
+    $("#lotes").innerHTML = g;
+  })();
+
+  var zoom = 1, ativo = null;
+  function aplicaZoom(){ $("#mapa").style.width = (zoom*100)+"%"; }
+  $("#z-mais").addEventListener("click", function(){ zoom = Math.min(3, zoom+.5); aplicaZoom(); });
+  $("#z-menos").addEventListener("click", function(){ zoom = Math.max(1, zoom-.5); aplicaZoom(); });
+
+  function limpa(){
+    if (ativo){
+      var r = $("#lote-"+ativo), t = $("#ln-"+ativo);
+      if (r) r.classList.remove("on"); if (t) t.classList.remove("on");
+    }
+    var p = $("#pulso"); if (p) p.parentNode.removeChild(p);
+    ativo = null;
+  }
+  function cartao(tit, sub){
+    $("#cl-tit").textContent = tit; $("#cl-sub").textContent = sub;
+    $("#cartao-lote").classList.add("mostra");
+  }
+  function marca(n, centraliza){
+    limpa();
+    var L = LOTES[n]; if (!L) return false;
+    ativo = n;
+    $("#lote-"+n).classList.add("on"); $("#ln-"+n).classList.add("on");
+    var NS = "http://www.w3.org/2000/svg", c = document.createElementNS(NS,"circle");
+    c.setAttribute("id","pulso"); c.setAttribute("class","pulso");
+    c.setAttribute("cx",L.cx); c.setAttribute("cy",L.cy); c.setAttribute("r","10");
+    $("#mapa").appendChild(c);
+    cartao("Casa "+n+" — Quadra "+L.q, (L.ordem)+"ª casa da quadra · siga pela Av. do Lago");
+    if (centraliza){
+      if (zoom < 2){ zoom = 2; aplicaZoom(); }
+      setTimeout(function(){
+        var wrap = $("#mapa-wrap"), svg = $("#mapa");
+        var esc = svg.getBoundingClientRect().width / 400;
+        wrap.scrollTo({left: L.cx*esc - wrap.clientWidth/2, top: L.cy*esc - wrap.clientHeight/2, behavior:"smooth"});
+      }, 280);
+    }
+    return true;
+  }
+  $("#lotes").addEventListener("click", function(e){
+    var r = e.target.closest(".lote"); if (!r) return;
+    $("#busca-erro").textContent = "";
+    marca(+r.getAttribute("data-n"), false);
+  });
+  $$(".lazer-item").forEach(function(g){
+    g.addEventListener("click", function(){
+      limpa();
+      var p = g.getAttribute("data-info").split("|");
+      cartao(p[0], p[1]);
+    });
+  });
+  $("#cl-fechar").addEventListener("click", function(){ limpa(); $("#cartao-lote").classList.remove("mostra"); });
+  $("#q-casa").addEventListener("input", function(e){
+    e.target.value = e.target.value.replace(/\D/g,"");
+  });
+  $("#f-busca").addEventListener("submit", function(e){
+    e.preventDefault();
+    var v = parseInt($("#q-casa").value,10);
+    if (!v || v<1 || v>220){
+      $("#busca-erro").textContent = "Digite um número de 1 a 220.";
+      return;
+    }
+    $("#busca-erro").textContent = "";
+    $("#q-casa").blur();
+    marca(v, true);
+  });
+})();
+</script>
+</body>
+</html>

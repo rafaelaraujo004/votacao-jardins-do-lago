@@ -1,0 +1,232 @@
+rules_version = '2';
+
+// =====================================================================
+// Portal Jardins do Lago — Regras de segurança do Firestore
+//
+// Princípios:
+// 1. Tudo é NEGADO, salvo o que está liberado abaixo.
+// 2. O navegador NUNCA grava direto no banco. Toda gravação passa pelo
+//    servidor (Next.js + Admin SDK), que confere sessão, vínculo,
+//    permissão e registra auditoria. Por isso não existe nenhum
+//    "allow write" neste arquivo.
+// 3. Leituras só para quem tem vínculo ATIVO com o condomínio, e o
+//    morador só enxerga o que é da própria unidade.
+// 4. O condomínio vem do CAMINHO do documento e o perfil vem do vínculo
+//    gravado no banco (members/{uid}) — nada vem do navegador.
+// =====================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- funções de apoio ----------
+
+    function logado() {
+      return request.auth != null;
+    }
+
+    function caminhoMembro(c) {
+      return /databases/$(database)/documents/condominiums/$(c)/members/$(request.auth.uid);
+    }
+
+    function membro(c) {
+      return get(caminhoMembro(c)).data;
+    }
+
+    function condominioAtivo(c) {
+      return get(/databases/$(database)/documents/condominiums/$(c)).data.status == 'ativo';
+    }
+
+    // Vínculo ativo com o condomínio ativo.
+    function ativo(c) {
+      return logado()
+        && exists(caminhoMembro(c))
+        && membro(c).status == 'ativo'
+        && condominioAtivo(c);
+    }
+
+    function papel(c, p) {
+      return ativo(c) && membro(c).papel == p;
+    }
+
+    function gestao(c) {
+      return ativo(c) && membro(c).papel in ['admin', 'conselheiro'];
+    }
+
+    function equipe(c) {
+      // administração ou portaria
+      return ativo(c) && membro(c).papel in ['admin', 'portaria'];
+    }
+
+    // Morador da unidade dona do documento.
+    function daMinhaUnidade(c, dados) {
+      return papel(c, 'morador')
+        && membro(c).unitId != null
+        && dados.unitId == membro(c).unitId;
+    }
+
+    // Permissão extra concedida pelo admin (e não negada).
+    function temExtra(c, permissao) {
+      return ativo(c)
+        && permissao in membro(c).get('permissoesExtras', [])
+        && !(permissao in membro(c).get('permissoesNegadas', []));
+    }
+
+    // ---------- usuários ----------
+
+    match /users/{uid} {
+      allow read: if logado() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // ---------- limite de tentativas (só o servidor) ----------
+
+    match /rateLimits/{chave} {
+      allow read, write: if false;
+    }
+
+    // ---------- condomínio ----------
+
+    match /condominiums/{c} {
+      allow read: if ativo(c);
+      allow write: if false;
+
+      match /members/{uid} {
+        allow read: if (logado() && request.auth.uid == uid) || gestao(c);
+        allow write: if false;
+      }
+
+      match /units/{unidade} {
+        allow read: if equipe(c) || gestao(c)
+          || (papel(c, 'morador') && membro(c).unitId == unidade);
+        allow write: if false;
+      }
+
+      // ----- financeiro: a portaria nunca lê -----
+
+      match /financialCategories/{id} {
+        allow read: if gestao(c) || papel(c, 'morador');
+        allow write: if false;
+      }
+
+      match /financialEntries/{id} {
+        allow read: if gestao(c)
+          || (papel(c, 'morador') && resource.data.publicado == true);
+        allow write: if false;
+      }
+
+      match /monthlySummaries/{mes} {
+        allow read: if gestao(c)
+          || (papel(c, 'morador') && resource.data.publicado == true);
+        allow write: if false;
+      }
+
+      // ----- reservas -----
+
+      match /amenities/{id} {
+        allow read: if ativo(c);
+        allow write: if false;
+      }
+
+      match /reservations/{id} {
+        allow read: if equipe(c) || gestao(c) || daMinhaUnidade(c, resource.data);
+        allow write: if false;
+      }
+
+      match /reservationLocks/{id} {
+        allow read, write: if false;
+      }
+
+      // ----- portaria -----
+
+      match /visitors/{id} {
+        allow read: if equipe(c) || daMinhaUnidade(c, resource.data);
+        allow write: if false;
+      }
+
+      match /accessEvents/{id} {
+        allow read: if equipe(c) || daMinhaUnidade(c, resource.data);
+        allow write: if false;
+      }
+
+      match /packages/{id} {
+        allow read: if equipe(c) || daMinhaUnidade(c, resource.data);
+        allow write: if false;
+      }
+
+      // ----- comunicação e serviços -----
+
+      match /announcements/{id} {
+        allow read: if gestao(c) || (ativo(c) && resource.data.publicado == true);
+        allow write: if false;
+      }
+
+      match /tickets/{id} {
+        allow read: if papel(c, 'admin') || temExtra(c, 'solicitacoes.gerenciar')
+          || daMinhaUnidade(c, resource.data);
+        allow write: if false;
+
+        match /updates/{atualizacao} {
+          allow read: if papel(c, 'admin') || temExtra(c, 'solicitacoes.gerenciar')
+            || daMinhaUnidade(c, get(/databases/$(database)/documents/condominiums/$(c)/tickets/$(id)).data);
+          allow write: if false;
+        }
+      }
+
+      match /documents/{id} {
+        allow read: if gestao(c)
+          || (ativo(c) && membro(c).papel in resource.data.visivelPara);
+        allow write: if false;
+      }
+
+      match /polls/{id} {
+        allow read: if gestao(c) || (ativo(c) && resource.data.status != 'rascunho');
+        allow write: if false;
+
+        // Voto: cada unidade só enxerga o próprio.
+        match /votes/{unidade} {
+          allow read: if papel(c, 'morador') && membro(c).unitId == unidade;
+          allow write: if false;
+        }
+      }
+
+      match /classifieds/{id} {
+        allow read: if gestao(c)
+          || (ativo(c) && resource.data.status == 'aprovado')
+          || (ativo(c) && resource.data.autorUid == request.auth.uid);
+        allow write: if false;
+      }
+
+      match /mapPoints/{id} {
+        allow read: if ativo(c);
+        allow write: if false;
+      }
+
+      match /usefulInfo/{id} {
+        allow read: if ativo(c);
+        allow write: if false;
+      }
+
+      // ----- controle interno (só o servidor) -----
+
+      match /counters/{id} {
+        allow read, write: if false;
+      }
+
+      match /rateLimits/{id} {
+        allow read, write: if false;
+      }
+
+      // ----- auditoria: só leitura, para quem tem permissão; ninguém altera -----
+
+      match /auditLogs/{id} {
+        allow read: if papel(c, 'admin') || temExtra(c, 'auditoria.ver');
+        allow write: if false;
+      }
+    }
+
+    // Qualquer outro caminho: negado.
+    match /{caminho=**} {
+      allow read, write: if false;
+    }
+  }
+}

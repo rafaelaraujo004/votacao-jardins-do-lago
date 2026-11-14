@@ -4,16 +4,48 @@
     {
       "name": "votacao",
       "runtimeExecutable": "votacao/.venv/Scripts/python.exe",
-      "runtimeArgs": ["votacao/manage.py", "runserver", "8000", "--noreload"],
-      "env": {"DJANGO_DEBUG": "1", "PYTHONIOENCODING": "utf-8"},
+      "runtimeArgs": [
+        "votacao/manage.py",
+        "runserver",
+        "8000",
+        "--noreload"
+      ],
+      "env": {
+        "DJANGO_DEBUG": "1",
+        "PYTHONIOENCODING": "utf-8"
+      },
       "port": 8000
     },
     {
       "name": "votacao-auditoria",
       "runtimeExecutable": "votacao/.venv/Scripts/python.exe",
-      "runtimeArgs": ["votacao/manage.py", "runserver", "8017", "--noreload"],
-      "env": {"DJANGO_DEBUG": "1", "PYTHONIOENCODING": "utf-8"},
+      "runtimeArgs": [
+        "votacao/manage.py",
+        "runserver",
+        "8017",
+        "--noreload"
+      ],
+      "env": {
+        "DJANGO_DEBUG": "1",
+        "PYTHONIOENCODING": "utf-8"
+      },
       "port": 8017
+    },
+    {
+      "name": "portal",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/firebase.mjs",
+        "emulators:exec",
+        "--project",
+        "demo-jardins",
+        "--only",
+        "auth,firestore",
+        "--ui",
+        "npm run semear && npx next dev"
+      ],
+      "cwd": "portal",
+      "port": 3000
     }
   ]
 }
