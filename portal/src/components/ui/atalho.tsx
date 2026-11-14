@@ -26,7 +26,7 @@ const tons = {
 export function Atalho({ icone: Icone, titulo, descricao, href, emBreve, tom = "pine" }: Props) {
   const conteudo = (
     <>
-      <span className={cx("grid size-12 shrink-0 place-items-center rounded-2xl", tons[tom])}>
+      <span className={cx("grid size-12 shrink-0 place-items-center rounded-[14px]", tons[tom])}>
         <Icone aria-hidden className="size-6" />
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
@@ -42,20 +42,20 @@ export function Atalho({ icone: Icone, titulo, descricao, href, emBreve, tom = "
     </>
   );
 
-  const classes =
-    "flex min-h-24 items-center gap-3.5 rounded-[var(--radius-card)] border border-line bg-surface p-4 shadow-card";
+  // "saltado": superfície em relevo, da mesma cor do fundo (visual Jardim macio).
+  const classes = "saltado flex min-h-24 items-center gap-3.5 rounded-[var(--radius-card)] p-4";
 
   if (href && !emBreve) {
     return (
-      <Link href={href} className={cx(classes, "transition-[border-color,transform] hover:border-pine active:translate-y-px")}>
+      <Link href={href} className={cx(classes, "transition-[box-shadow,color] hover:text-pine active:shadow-afundado")}>
         {conteudo}
-        <ChevronRight aria-hidden className="size-5 text-muted" />
+        <ChevronRight aria-hidden className="size-5 shrink-0 text-muted" />
       </Link>
     );
   }
 
   return (
-    <div className={cx(classes, "opacity-80")} aria-disabled="true">
+    <div className={cx(classes, "opacity-75")} aria-disabled="true">
       {conteudo}
     </div>
   );

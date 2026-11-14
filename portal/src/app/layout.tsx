@@ -36,8 +36,8 @@ export const viewport: Viewport = {
   ],
 };
 
-// Aplica o tema escolhido antes de pintar a tela (evita "piscar" claro/escuro).
-const scriptTema = `try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
+// Aplica o tema e a letra grande escolhidos antes de pintar a tela (evita "piscar").
+const scriptTema = `try{var h=document.documentElement,t=localStorage.getItem("tema");if(t==="light"||t==="dark")h.dataset.theme=t;if(localStorage.getItem("letra")==="grande")h.dataset.letra="grande"}catch(e){}`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

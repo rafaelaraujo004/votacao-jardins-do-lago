@@ -161,6 +161,48 @@ export function calcularPermissoes(
   return resultado;
 }
 
+/** Nome de cada permissão em linguagem simples (tela de permissões). */
+export const DESCRICAO_PERMISSAO: Record<Permissao, string> = {
+  "area.morador": "Usar a área do morador",
+  "area.portaria": "Usar a tela da portaria",
+  "area.gestao": "Usar o painel da administração",
+  "financeiro.ver_publicado": "Ver a prestação de contas publicada",
+  "financeiro.ver": "Ver todo o financeiro, inclusive o não publicado",
+  "financeiro.lancar": "Lançar receitas, despesas e estornos",
+  "financeiro.publicar": "Publicar a prestação de contas do mês",
+  "relatorios.ver": "Ver e exportar relatórios",
+  "unidades.ver": "Ver as unidades",
+  "unidades.gerenciar": "Cadastrar e alterar unidades",
+  "moradores.ver": "Ver o cadastro de moradores",
+  "moradores.gerenciar": "Cadastrar, alterar e suspender moradores",
+  "equipe.gerenciar": "Cadastrar portaria, conselho e administração",
+  "permissoes.gerenciar": "Alterar permissões de outras pessoas",
+  "visitantes.autorizar": "Autorizar visitantes",
+  "visitantes.ver_todos": "Ver todos os visitantes autorizados",
+  "portaria.operar": "Registrar entradas e saídas",
+  "encomendas.registrar": "Registrar encomendas",
+  "encomendas.ver_proprias": "Ver as próprias encomendas",
+  "reservas.fazer": "Reservar áreas de lazer",
+  "reservas.ver_todas": "Ver todas as reservas",
+  "reservas.gerenciar": "Aprovar e cancelar reservas",
+  "areas.configurar": "Configurar áreas de lazer",
+  "comunicados.ver": "Ver comunicados",
+  "comunicados.publicar": "Publicar comunicados",
+  "solicitacoes.abrir": "Informar problemas e abrir solicitações",
+  "solicitacoes.gerenciar": "Atender solicitações",
+  "documentos.ver": "Ver documentos",
+  "documentos.gerenciar": "Publicar documentos",
+  "enquetes.votar": "Participar de enquetes",
+  "enquetes.gerenciar": "Criar enquetes",
+  "classificados.usar": "Anunciar nos classificados",
+  "classificados.moderar": "Moderar classificados",
+  "mapa.ver": "Ver o mapa",
+  "mapa.configurar": "Configurar o mapa",
+  "informacoes.ver": "Ver contatos e informações úteis",
+  "informacoes.gerenciar": "Alterar contatos e informações úteis",
+  "auditoria.ver": "Ver a auditoria",
+};
+
 export const NOME_DO_PAPEL: Record<Papel, string> = {
   morador: "Morador",
   portaria: "Portaria",

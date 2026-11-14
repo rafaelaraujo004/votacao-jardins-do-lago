@@ -11,7 +11,7 @@ import { cx } from "@/lib/cx";
 export function Cartao({ className, semEspaco = false, ...resto }: ComponentProps<"section"> & { semEspaco?: boolean }) {
   return (
     <section
-      className={cx("rounded-[var(--radius-card)] border border-line bg-surface shadow-card", !semEspaco && "p-5", className)}
+      className={cx("rounded-[var(--radius-card)] border border-borda-luz bg-surface shadow-card", !semEspaco && "p-5", className)}
       {...resto}
     />
   );
@@ -92,7 +92,7 @@ export function EstadoVazio({
 }) {
   return (
     <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-line px-5 py-8 text-center">
-      <span className="grid size-14 place-items-center rounded-2xl bg-surface-2 text-pine">
+      <span className="grid size-14 place-items-center rounded-2xl text-pine shadow-relevo">
         <Icone aria-hidden className="size-7" />
       </span>
       <h3 className="text-lg font-bold">{titulo}</h3>
@@ -105,8 +105,8 @@ export function EstadoVazio({
 // ---------- Campo de formulário ----------
 
 export const classeEntrada =
-  "w-full min-h-12 rounded-xl border-2 border-line-strong bg-canvas px-4 text-ink placeholder:text-muted " +
-  "transition-[border-color,box-shadow] focus:border-pine focus:outline-none focus:shadow-[0_0_0_4px_var(--ok-soft)] " +
+  "w-full min-h-12 rounded-2xl border-2 border-transparent bg-canvas px-4 text-ink shadow-afundado placeholder:text-muted " +
+  "transition-[border-color,box-shadow] focus:border-pine focus:outline-none " +
   "aria-invalid:border-danger";
 
 /** Rótulo + entrada + dica + erro, já ligados para leitores de tela. */

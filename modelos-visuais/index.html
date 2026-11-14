@@ -1,0 +1,140 @@
+<title>Modelos do Portal Jardins do Lago</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: faixa com a logo, seletor de 5 modelos em pílula, celular grande à esquerda e ficha do modelo à direita (empilha no celular). */
+:root {
+  --bg: #eef2ee; --surface: #f7f9f6; --ink: #17241d; --ink-2: #4a5a51; --line: #d3ddd5;
+  --accent: #1d6b4e; --accent-ink: #ffffff; --wine: #7d2552; --sand: #b08d3c;
+  --hi: rgba(255,255,255,.9); --lo: rgba(60,85,70,.18);
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --text: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1613; --surface: #17211c; --ink: #e6eee9; --ink-2: #a9bbb0; --line: #2a3a32;
+  --accent: #5fc79a; --accent-ink: #06150f; --wine: #e38cb7; --sand: #d9b867;
+  --hi: rgba(255,255,255,.05); --lo: rgba(0,0,0,.55); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1613; --surface: #17211c; --ink: #e6eee9; --ink-2: #a9bbb0; --line: #2a3a32;
+  --accent: #5fc79a; --accent-ink: #06150f; --wine: #e38cb7; --sand: #d9b867;
+  --hi: rgba(255,255,255,.05); --lo: rgba(0,0,0,.55); color-scheme: dark }
+
+* { box-sizing: border-box }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 var(--text);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px }
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 22px }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px }
+.selo { background: #fff; border-radius: 18px; padding: 8px 14px; box-shadow: 6px 6px 14px var(--lo), -6px -6px 14px var(--hi); display: grid; place-items: center }
+.selo img { height: 64px; width: auto; display: block }
+h1 { font: 800 clamp(1.5rem, 4vw, 2.1rem)/1.1 var(--display); margin: 0; text-wrap: balance }
+header p { margin: 4px 0 0; color: var(--ink-2); max-width: 60ch }
+
+.seg { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; border-radius: 999px; background: var(--surface);
+  box-shadow: inset 4px 4px 10px var(--lo), inset -4px -4px 10px var(--hi); width: fit-content; max-width: 100% }
+.seg button { font: 700 15px var(--text); color: var(--ink-2); background: transparent; border: 0; border-radius: 999px;
+  min-height: 44px; padding: 0 16px; cursor: pointer; display: flex; align-items: center; gap: 8px }
+.seg button .n { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; border: 1.5px solid currentColor }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); box-shadow: 0 6px 14px -4px var(--lo) }
+.seg button:focus-visible, a:focus-visible { outline: 3px solid var(--wine); outline-offset: 2px }
+
+.palco { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 32px; align-items: start }
+.cel { width: 390px; max-width: 100%; height: 800px; border-radius: 46px; padding: 12px; background: #101613;
+  box-shadow: 0 30px 60px -20px rgba(0,0,0,.45), 0 0 0 1px #2b3530 }
+.cel iframe { width: 100%; height: 100%; border: 0; border-radius: 36px; background: #fff; display: block }
+.ficha { display: grid; gap: 16px; min-width: 0 }
+.ficha .eyebrow { font: 700 12px var(--text); letter-spacing: .12em; text-transform: uppercase; color: var(--sand) }
+.ficha h2 { font: 800 clamp(1.6rem, 4vw, 2.4rem)/1.05 var(--display); margin: 0; color: var(--wine) }
+.ficha .resumo { margin: 0; font-size: 1.05rem; color: var(--ink); max-width: 52ch }
+.cartao { background: var(--surface); border-radius: 22px; padding: 18px 20px; box-shadow: 8px 8px 18px var(--lo), -8px -8px 18px var(--hi) }
+.cartao h3 { margin: 0 0 8px; font: 700 13px var(--text); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2) }
+.cartao ul { margin: 0; padding-left: 20px; display: grid; gap: 4px }
+.acoes { display: flex; flex-wrap: wrap; gap: 10px }
+.btn { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 20px; border-radius: 999px;
+  font: 700 15px var(--text); text-decoration: none; color: var(--ink); background: var(--surface);
+  box-shadow: 5px 5px 12px var(--lo), -5px -5px 12px var(--hi) }
+.btn.prim { background: var(--accent); color: var(--accent-ink) }
+.dica { color: var(--ink-2); font-size: .92rem; margin: 0 }
+
+@media (max-width: 820px) {
+  .palco { grid-template-columns: minmax(0, 1fr) }
+  .cel { margin: 0 auto; height: 760px }
+}
+@media (max-width: 440px) {
+  .cel { padding: 6px; border-radius: 30px; height: 720px }
+  .cel iframe { border-radius: 24px }
+  .seg button { padding: 0 12px }
+  .seg button .t { display: none }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="selo"><img src="logo.png" alt="Residencial Jardins do Lago"></div>
+    <div>
+      <h1>Escolha o visual do novo Portal</h1>
+      <p>Cinco modelos do mesmo painel. Toque nas telas do celular para navegar: Início, Prestação de contas, Mapa das casas e Contatos. Os valores são de exemplo.</p>
+    </div>
+  </header>
+
+  <nav class="seg" id="seg" aria-label="Modelos"></nav>
+
+  <section class="palco">
+    <div class="cel"><iframe id="tela" title="Modelo selecionado" allow="clipboard-write"></iframe></div>
+    <div class="ficha">
+      <div class="eyebrow" id="eyebrow"></div>
+      <h2 id="nome"></h2>
+      <p class="resumo" id="resumo"></p>
+      <div class="cartao"><h3>Bom para</h3><ul id="pontos"></ul></div>
+      <div class="acoes">
+        <a class="btn prim" id="abrir" target="_blank" rel="noopener">Abrir em tela cheia</a>
+      </div>
+      <p class="dica">Gostou de um? Diga o número e, se quiser, o que levar de outro modelo (ex.: "o 3 com o calendário do 5").</p>
+    </div>
+  </section>
+</div>
+
+<script>
+const MODELOS = [
+  { id: 'opcao-1', arq: 'opcao-1-noite-conectada.html', nome: 'Noite Conectada', t: 'Escuro',
+    resumo: 'Fundo escuro e elegante, igual às imagens de referência. Capa ilustrada do condomínio ao entardecer e cartões em vidro fosco com números grandes em verde e salmão.',
+    pontos: ['Quem gostou das referências enviadas', 'Uso à noite, sem ofuscar', 'Visual moderno de aplicativo'] },
+  { id: 'opcao-2', arq: 'opcao-2-claro-essencial.html', nome: 'Claro Essencial', t: 'Claro',
+    resumo: 'Limpo e claro como aplicativo de banco. "Olá, morador", saldo com botão de esconder valores e serviços em bolinhas que deslizam para o lado.',
+    pontos: ['Leitura rápida, com pouca informação por tela', 'Quem já usa app de banco', 'Botões em vidro claro'] },
+  { id: 'opcao-3', arq: 'opcao-3-jardim-institucional.html', nome: 'Jardim Institucional', t: 'Marca',
+    resumo: 'Usa as cores e a logo do condomínio: faixa verde no topo com endereço e CEP, desenho do jardim e do lago e cartões com relevo suave.',
+    pontos: ['Cara de "nosso condomínio"', 'Combina com a votação já usada', 'Equilíbrio entre bonito e simples'] },
+  { id: 'opcao-4', arq: 'opcao-4-toque-facil.html', nome: 'Toque Fácil', t: 'Acessível',
+    resumo: 'Botões enormes e coloridos com frases simples ("Ver as contas do mês"), letra grande e um botão "Voltar ao início" sempre visível.',
+    pontos: ['Moradores idosos ou com pouca prática no celular', 'Uma coisa por tela', 'Botão para aumentar a letra'] },
+  { id: 'opcao-5', arq: 'opcao-5-painel-blocos.html', nome: 'Painel em Blocos', t: 'Painel',
+    resumo: 'Mosaico de blocos com relevo que já mostram tudo sem abrir: saldo com gráfico, calendário, mapa em miniatura e contagem da eleição. Em tela grande vira painel.',
+    pontos: ['Ver tudo de uma vez', 'Síndico mostrar na TV ou no computador', 'Estilo neumórfico das referências'] },
+];
+const seg = document.getElementById('seg');
+MODELOS.forEach((m, i) => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.dataset.id = m.id;
+  b.innerHTML = `<span class="n">${i + 1}</span><span class="t">${m.nome}</span>`;
+  b.setAttribute('aria-label', `Modelo ${i + 1}: ${m.nome}`);
+  b.addEventListener('click', () => { location.hash = m.id; });
+  seg.appendChild(b);
+});
+function mostrar() {
+  const id = location.hash.slice(1);
+  const i = Math.max(0, MODELOS.findIndex(m => m.id === id));
+  const m = MODELOS[i];
+  seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.id === m.id)));
+  const tela = document.getElementById('tela');
+  if (tela.getAttribute('src') !== m.arq) tela.setAttribute('src', m.arq);
+  tela.title = `Modelo ${i + 1}: ${m.nome}`;
+  document.getElementById('eyebrow').textContent = `Modelo ${i + 1} de 5 · ${m.t}`;
+  document.getElementById('nome').textContent = m.nome;
+  document.getElementById('resumo').textContent = m.resumo;
+  document.getElementById('pontos').innerHTML = m.pontos.map(p => `<li>${p}</li>`).join('');
+  document.getElementById('abrir').href = m.arq;
+}
+addEventListener('hashchange', mostrar);
+mostrar();
+</script>

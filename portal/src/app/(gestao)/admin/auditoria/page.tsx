@@ -41,7 +41,7 @@ export default async function PaginaAuditoria() {
               const Icone = d.icone;
               return (
                 <li key={r.id} className="flex items-start gap-3 px-4 py-3.5 sm:items-center">
-                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-surface-2 text-ink-2">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-lake-soft text-lake">
                     <Icone aria-hidden className="size-5" />
                   </span>
                   <div className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-center sm:gap-4">

@@ -9,7 +9,9 @@ import { USUARIOS_DEMO } from "@/lib/demo";
 import { Alerta } from "@/components/ui/basicos";
 import { Logo, Petalas } from "@/components/ui/marca";
 import { BotaoTema } from "@/components/ui/tema";
-import { BotaoSair } from "@/components/layout/faixa-topo";
+import { BotaoSair, classeBotaoFaixa } from "@/components/layout/faixa-topo";
+import { FaixaPetalas } from "@/components/ui/painel";
+import { ENDERECO_LINHA } from "@/lib/condominio";
 import { EntrarDemo } from "./entrar-demo";
 
 export const metadata: Metadata = { title: "Entrar" };
@@ -31,44 +33,51 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
 
   return (
     <div className="flex min-h-dvh flex-col">
+      {/* Faixa verde profunda do topo, como no Modelo 3. */}
       <div className="relative overflow-hidden bg-band pb-28 pt-[env(safe-area-inset-top)] text-band-fg">
-        <Petalas tamanho={260} className="absolute -right-16 -top-20 opacity-25" />
-        <div className="relative mx-auto flex max-w-lg justify-end px-4 pt-3">
-          <BotaoTema className="text-band-fg hover:bg-white/10" />
+        <Petalas tamanho={260} className="absolute -right-16 -top-20 opacity-20" />
+        <div className="relative mx-auto flex max-w-lg items-center gap-3 px-4 pt-3">
+          <p className="min-w-0 flex-1 truncate text-[0.82rem] text-band-muted">{ENDERECO_LINHA}</p>
+          <BotaoTema className={classeBotaoFaixa} />
         </div>
       </div>
 
       <main className="relative mx-auto -mt-24 w-full max-w-lg flex-1 px-3 pb-10">
-        <div className="surgir flex flex-col gap-5 rounded-[26px] bg-surface p-6 shadow-float">
-          <Logo largura={150} className="self-start" />
-          <div className="flex flex-col gap-1.5">
-            <h1 className="text-[1.9rem] font-bold">Portal do condomínio</h1>
-            <p className="text-[1.05rem] text-ink-2">
-              Contas, visitantes, reservas e avisos do Jardins do Lago num só lugar.
-            </p>
+        <div className="surgir overflow-hidden rounded-[26px] border border-borda-luz bg-surface shadow-float">
+          <FaixaPetalas />
+          <div className="flex flex-col gap-5 p-6">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <Logo largura={150} />
+              <div className="flex flex-col gap-1.5">
+                <h1 className="text-[1.9rem] font-bold text-destaque">Portal do condomínio</h1>
+                <p className="text-[1.05rem] text-ink-2">
+                  Contas, visitantes, reservas e avisos do Jardins do Lago num só lugar.
+                </p>
+              </div>
+            </div>
+
+            {saiu ? (
+              <Alerta tipo="sucesso" titulo="Você saiu do portal.">
+                Para voltar, é só entrar de novo.
+              </Alerta>
+            ) : null}
+
+            {cookieSemVinculo && !saiu ? (
+              <Alerta tipo="aviso" titulo="Não encontramos um acesso ativo para esta conta.">
+                <p>Ela pode ter sido suspensa ou ainda não estar ligada a uma casa. Fale com a administração do condomínio.</p>
+                <BotaoSair className="-ml-3 mt-1 text-ink-2 hover:bg-surface-2" />
+              </Alerta>
+            ) : null}
+
+            {demo ? (
+              <EntrarDemo perfis={perfis} />
+            ) : (
+              <Alerta tipo="info" titulo="Acesso em preparação">
+                A administração do condomínio vai enviar as instruções para você entrar. Enquanto isso, qualquer
+                dúvida pode ser tirada diretamente com a portaria.
+              </Alerta>
+            )}
           </div>
-
-          {saiu ? (
-            <Alerta tipo="sucesso" titulo="Você saiu do portal.">
-              Para voltar, é só entrar de novo.
-            </Alerta>
-          ) : null}
-
-          {cookieSemVinculo && !saiu ? (
-            <Alerta tipo="aviso" titulo="Não encontramos um acesso ativo para esta conta.">
-              <p>Ela pode ter sido suspensa ou ainda não estar ligada a uma casa. Fale com a administração do condomínio.</p>
-              <BotaoSair className="-ml-3 mt-1 text-ink-2 hover:bg-surface-2" />
-            </Alerta>
-          ) : null}
-
-          {demo ? (
-            <EntrarDemo perfis={perfis} />
-          ) : (
-            <Alerta tipo="info" titulo="Acesso em preparação">
-              A administração do condomínio vai enviar as instruções para você entrar. Enquanto isso, qualquer
-              dúvida pode ser tirada diretamente com a portaria.
-            </Alerta>
-          )}
         </div>
       </main>
     </div>

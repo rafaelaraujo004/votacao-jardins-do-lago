@@ -1,29 +1,31 @@
 import type { Metadata } from "next";
-import { Building2, Eye, House, Landmark, ShieldCheck, UserX, type LucideIcon } from "lucide-react";
+import { Building2, Eye, Landmark, Megaphone, ScrollText, Settings, Users, Wrench, type LucideIcon } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { resumoDoCondominio } from "@/server/dados/gestao";
-import { Alerta, Cartao, Etiqueta, TituloPagina } from "@/components/ui/basicos";
+import type { Permissao } from "@/lib/permissoes";
+import { Alerta, Etiqueta, TituloPagina } from "@/components/ui/basicos";
+import { AtalhoModulo, BlocoNumero, TituloSecao, type TomModulo } from "@/components/ui/painel";
 
 export const metadata: Metadata = { title: "Painel" };
 
-function Numero({ icone: Icone, rotulo, valor }: { icone: LucideIcon; rotulo: string; valor: number }) {
-  return (
-    <Cartao className="flex items-center gap-4">
-      <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-ok-soft text-pine">
-        <Icone aria-hidden className="size-6" />
-      </span>
-      <div className="flex flex-col">
-        <span className="font-display text-[1.9rem] font-bold leading-none tabular-nums">{valor}</span>
-        <span className="text-[0.92rem] text-muted">{rotulo}</span>
-      </div>
-    </Cartao>
-  );
-}
+/** Atalhos do painel. Sem `href` = módulo ainda não pronto (aparece "Em breve" e não é clicável). */
+const ATALHOS: { titulo: string; icone: LucideIcon; tom: TomModulo; permissao: Permissao; href?: string }[] = [
+  { titulo: "Unidades", icone: Building2, tom: "verde", permissao: "unidades.ver", href: "/admin/unidades" },
+  { titulo: "Moradores e equipe", icone: Users, tom: "lago", permissao: "moradores.ver", href: "/admin/pessoas" },
+  { titulo: "Prestação de contas", icone: Landmark, tom: "areia", permissao: "financeiro.ver", href: "/admin/financeiro" },
+  { titulo: "Auditoria", icone: ScrollText, tom: "vinho", permissao: "auditoria.ver", href: "/admin/auditoria" },
+  { titulo: "Reservas", icone: Wrench, tom: "verde", permissao: "reservas.ver_todas" },
+  { titulo: "Comunicados", icone: Megaphone, tom: "lago", permissao: "comunicados.ver" },
+  { titulo: "Configurações", icone: Settings, tom: "areia", permissao: "areas.configurar" },
+];
 
 export default async function PainelGestao() {
   const ctx = await exigirPermissao("area.gestao");
   const resumo = await resumoDoCondominio(ctx);
   const somenteConsulta = !ctx.permissoes.has("unidades.gerenciar");
+  // Só mostra os atalhos que o perfil pode usar.
+  const atalhos = ATALHOS.filter((a) => ctx.permissoes.has(a.permissao));
+  const gestao = resumo.pessoasPorPapel.admin + resumo.pessoasPorPapel.conselheiro;
 
   return (
     <div className="flex flex-col gap-6">
@@ -34,17 +36,40 @@ export default async function PainelGestao() {
         acoes={somenteConsulta ? <Etiqueta tom="info" icone={Eye}>Somente consulta</Etiqueta> : null}
       />
 
-      <section aria-label="Números do cadastro" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <Numero icone={Building2} rotulo="unidades cadastradas" valor={resumo.unidades} />
-        <Numero icone={House} rotulo="moradores com acesso" valor={resumo.pessoasPorPapel.morador} />
-        <Numero icone={ShieldCheck} rotulo="pessoas da portaria" valor={resumo.pessoasPorPapel.portaria} />
-        <Numero icone={Landmark} rotulo="administração e conselho" valor={resumo.pessoasPorPapel.admin + resumo.pessoasPorPapel.conselheiro} />
-        <Numero icone={UserX} rotulo="acessos suspensos" valor={resumo.suspensos} />
+      {/* Números reais do cadastro (contados no servidor). */}
+      <section aria-labelledby="titulo-numeros" className="flex flex-col gap-3">
+        <h2 id="titulo-numeros" className="sr-only">Números do cadastro</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <BlocoNumero rotulo="Unidades" valor={resumo.unidades} detalhe="cadastradas" cor="pine" />
+          <BlocoNumero rotulo="Moradores" valor={resumo.pessoasPorPapel.morador} detalhe="com acesso" cor="lake" />
+          <BlocoNumero rotulo="Portaria" valor={resumo.pessoasPorPapel.portaria} detalhe="pessoas da equipe" cor="ink" />
+          <BlocoNumero rotulo="Gestão" valor={gestao} detalhe="administração e conselho" cor="plum" />
+          <BlocoNumero
+            rotulo="Suspensos"
+            valor={resumo.suspensos}
+            detalhe="acessos suspensos"
+            cor={resumo.suspensos > 0 ? "laranja" : "ink"}
+            className="col-span-2 sm:col-span-1"
+          />
+        </div>
       </section>
 
-      <Alerta tipo="info" titulo="Fase 1 concluída nesta tela: base segura">
-        Login, perfis, permissões, separação entre condomínios e auditoria já funcionam. Na Fase 2 entram o cadastro das
-        220 unidades, dos moradores e a prestação de contas.
+      {atalhos.length ? (
+        <section aria-labelledby="titulo-atalhos" className="flex flex-col gap-3">
+          <TituloSecao id="titulo-atalhos">Módulos</TituloSecao>
+          <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 xl:grid-cols-7">
+            {atalhos.map((a) => (
+              <li key={a.titulo}>
+                <AtalhoModulo icone={a.icone} titulo={a.titulo} href={a.href} tom={a.tom} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <Alerta tipo="info" titulo="O portal está sendo construído por partes">
+        Login, perfis, permissões, auditoria, cadastro das unidades e dos moradores e a prestação de contas já funcionam.
+        Reservas, comunicados e configurações chegam nas próximas fases.
       </Alerta>
     </div>
   );

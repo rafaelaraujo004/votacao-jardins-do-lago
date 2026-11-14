@@ -7,21 +7,21 @@ type Variante = "primario" | "secundario" | "perigo" | "discreto";
 type Tamanho = "normal" | "grande" | "pequeno";
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-xl border-2 font-bold leading-tight text-center " +
-  "transition-[background-color,border-color,transform] duration-150 active:translate-y-px " +
+  "inline-flex items-center justify-center gap-2 rounded-full border font-bold leading-tight text-center " +
+  "transition-[background-color,border-color,box-shadow,filter] duration-150 active:shadow-afundado " +
   "disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50";
 
 const variantes: Record<Variante, string> = {
-  primario: "border-transparent bg-pine text-on-pine shadow-[0_6px_16px_-8px_var(--pine)] hover:bg-pine-strong",
-  secundario: "border-line-strong bg-surface text-ink hover:border-ink-2",
-  perigo: "border-transparent bg-danger text-on-danger hover:opacity-90",
+  primario: "botao-verde border-transparent hover:brightness-110",
+  secundario: "saltado text-ink hover:text-pine",
+  perigo: "border-transparent bg-danger text-on-danger shadow-relevo hover:opacity-90",
   discreto: "border-transparent bg-transparent text-ink-2 hover:bg-surface-2",
 };
 
 const tamanhos: Record<Tamanho, string> = {
-  pequeno: "min-h-10 px-3 text-[0.9rem] rounded-[10px]",
+  pequeno: "min-h-11 px-4 text-[0.9rem]",
   normal: "min-h-12 px-5",
-  grande: "min-h-16 px-6 text-[1.15rem] rounded-2xl",
+  grande: "min-h-16 px-7 text-[1.15rem]",
 };
 
 export function classesDoBotao(variante: Variante = "primario", tamanho: Tamanho = "normal", largo = false) {

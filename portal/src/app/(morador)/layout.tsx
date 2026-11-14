@@ -8,10 +8,10 @@ export default async function LayoutMorador({ children }: LayoutProps<"/">) {
   const subtitulo = [ctx.nome, ctx.unidadeRotulo].filter(Boolean).join(" · ");
 
   return (
-    <div className="min-h-dvh pb-24 lg:pb-10">
+    <div className="min-h-dvh pb-28 lg:pb-10">
       <FaixaTopo titulo={ctx.condominioNome} subtitulo={subtitulo} demo={ctx.demo} />
       <div className="relative mx-auto -mt-12 grid max-w-5xl gap-6 px-3 sm:px-4 lg:grid-cols-[220px_minmax(0,1fr)]">
-        <aside className="lg:sticky lg:top-4 lg:self-start lg:rounded-[var(--radius-card)] lg:border lg:border-line lg:bg-surface lg:p-2 lg:shadow-card">
+        <aside className="lg:sticky lg:top-4 lg:self-start lg:rounded-[var(--radius-card)] lg:border lg:border-borda-luz lg:bg-surface lg:p-2 lg:shadow-card">
           <NavMorador />
         </aside>
         <main id="conteudo" className="min-w-0">

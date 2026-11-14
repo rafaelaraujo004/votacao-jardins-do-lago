@@ -46,11 +46,11 @@ export function BotaoComConfirmacao({
       <dialog
         ref={janela}
         aria-labelledby="confirmacao-titulo"
-        className="m-auto w-[min(92vw,28rem)] rounded-3xl border border-line bg-surface p-0 text-ink shadow-float backdrop:bg-black/50"
+        className="m-auto w-[min(92vw,28rem)] rounded-[26px] border border-borda-luz bg-surface p-0 text-ink shadow-float backdrop:bg-black/50"
       >
         <div className="flex flex-col gap-4 p-6">
           {perigo ? (
-            <span className="grid size-12 place-items-center rounded-2xl bg-danger-soft text-danger">
+            <span className="grid size-12 place-items-center rounded-[14px] bg-danger-soft text-danger">
               <TriangleAlert aria-hidden className="size-6" />
             </span>
           ) : null}

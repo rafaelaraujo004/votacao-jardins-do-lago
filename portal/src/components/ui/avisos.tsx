@@ -15,7 +15,7 @@ type Aviso = { id: number; tipo: TipoAviso; texto: string };
 const Contexto = createContext<{ avisar: (tipo: TipoAviso, texto: string) => void } | null>(null);
 
 const visual: Record<TipoAviso, { icone: LucideIcon; classe: string }> = {
-  sucesso: { icone: CircleCheck, classe: "border-pine text-pine" },
+  sucesso: { icone: CircleCheck, classe: "border-transparent bg-pine text-on-pine" },
   erro: { icone: CircleAlert, classe: "border-danger text-danger" },
   info: { icone: Info, classe: "border-lake text-lake" },
   aviso: { icone: TriangleAlert, classe: "border-warn text-warn" },
@@ -51,7 +51,7 @@ export function ProvedorDeAvisos({ children }: { children: ReactNode }) {
             <div
               key={a.id}
               role={a.tipo === "erro" ? "alert" : "status"}
-              className="surgir pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3 shadow-float"
+              className="surgir pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-[18px] border border-borda-luz bg-surface px-4 py-3 shadow-float"
             >
               <span className={cx("grid size-9 shrink-0 place-items-center rounded-full border-2", classe)}>
                 <Icone aria-hidden className="size-5" />
@@ -60,7 +60,7 @@ export function ProvedorDeAvisos({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={() => fechar(a.id)}
-                className="grid size-10 place-items-center rounded-full text-muted hover:bg-surface-2"
+                className="grid size-11 place-items-center rounded-full text-muted hover:shadow-afundado"
                 aria-label="Fechar aviso"
               >
                 <X aria-hidden className="size-5" />

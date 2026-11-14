@@ -16,7 +16,7 @@ export default async function PaginaPortaria() {
         <p className="text-[0.78rem] font-bold uppercase tracking-[0.1em] text-plum">
           Hoje · {formatarData(new Date(), ctx.fuso)}
         </p>
-        <h1 className="text-[1.8rem] font-bold">Tela de trabalho da portaria</h1>
+        <h1 className="text-[1.8rem] font-bold text-destaque">Tela de trabalho da portaria</h1>
         <p className="text-ink-2">Tudo o que a portaria precisa, sem trocar de tela.</p>
       </Cartao>
 

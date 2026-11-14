@@ -4,7 +4,7 @@ import { cx } from "@/lib/cx";
 
 export function Logo({ largura = 112, className }: { largura?: number; className?: string }) {
   return (
-    <span className={cx("inline-flex rounded-xl bg-white px-2 py-1 shadow-[0_0_0_1px_rgb(0_0_0/0.06)]", className)}>
+    <span className={cx("inline-flex rounded-[14px] bg-surface-clara px-2 py-1 shadow-[0_0_0_1px_rgb(0_0_0/0.06)]", className)}>
       <Image
         src="/logo-jardins-do-lago.png"
         alt="Residencial Jardins do Lago"

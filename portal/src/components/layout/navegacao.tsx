@@ -8,6 +8,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   CalendarDays,
+  LayoutGrid,
+  Map as IconeMapa,
+  Phone,
+  Wallet,
   Ellipsis,
   House,
   UserCheck,
@@ -55,9 +59,10 @@ function ativo(caminho: string, href?: string) {
 
 const ITENS_MORADOR: ItemMenu[] = [
   { rotulo: "Início", icone: House, href: "/inicio" },
-  { rotulo: "Visitantes", icone: UserCheck, fase: "Fase 3" },
-  { rotulo: "Reservas", icone: CalendarDays, fase: "Fase 4" },
-  { rotulo: "Mais", icone: Ellipsis, fase: "Fase 2" },
+  { rotulo: "Contas", icone: Wallet, href: "/financeiro" },
+  { rotulo: "Mapa", icone: IconeMapa, href: "/mapa" },
+  { rotulo: "Contatos", icone: Phone, href: "/contatos" },
+  { rotulo: "Mais", icone: LayoutGrid, href: "/mais" },
 ];
 
 export function NavMorador() {
@@ -65,20 +70,26 @@ export function NavMorador() {
   return (
     <nav
       aria-label="Menu principal"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:static lg:border-0 lg:bg-transparent lg:pb-0 lg:backdrop-blur-none"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-borda-luz bg-canvas px-1.5 pb-[calc(6px+env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-8px_22px_var(--sombra)] lg:static lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none"
     >
-      <ul className="mx-auto grid max-w-xl grid-cols-4 lg:max-w-none lg:grid-cols-1 lg:gap-1">
+      <ul className="mx-auto grid max-w-xl grid-cols-5 lg:max-w-none lg:grid-cols-1 lg:gap-1.5">
         {ITENS_MORADOR.map(({ rotulo, icone: Icone, href, fase }) => {
           const atual = ativo(caminho, href);
           const classes = cx(
-            "flex min-h-16 flex-col items-center justify-center gap-0.5 text-[0.8rem] font-bold lg:min-h-12 lg:flex-row lg:justify-start lg:gap-3 lg:rounded-xl lg:px-4 lg:text-base",
-            atual ? "text-pine lg:bg-ok-soft" : "text-muted",
+            "group flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-2xl text-[0.76rem] font-bold lg:min-h-12 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-base",
+            atual ? "text-destaque lg:shadow-afundado" : "text-muted hover:text-ink",
+          );
+          const pilula = cx(
+            "grid h-[30px] w-[52px] place-items-center rounded-full transition-shadow lg:h-auto lg:w-auto",
+            atual && "text-pine shadow-afundado lg:shadow-none",
           );
           return (
             <li key={rotulo}>
               {href ? (
                 <Link href={href} className={classes} aria-current={atual ? "page" : undefined}>
-                  <Icone aria-hidden className="size-6" />
+                  <span className={pilula}>
+                    <Icone aria-hidden className="size-[22px]" />
+                  </span>
                   {rotulo}
                 </Link>
               ) : (
@@ -112,8 +123,10 @@ export function NavGestao({ grupos }: { grupos: GrupoMenu[] }) {
               const Icone = ICONES[icone];
               const atual = ativo(caminho, href);
               const classes = cx(
-                "flex min-h-11 items-center gap-3 rounded-xl px-3 font-bold",
-                atual ? "bg-white/12 text-band-fg" : "text-band-fg/85 hover:bg-white/8",
+                "flex min-h-11 items-center gap-3 rounded-full px-3 font-bold",
+                atual
+                  ? "bg-white/15 text-band-fg shadow-[inset_0_0_0_1px_rgb(255_255_255/0.18)]"
+                  : "text-band-fg/85 hover:bg-white/8",
               );
               return (
                 <li key={rotulo}>

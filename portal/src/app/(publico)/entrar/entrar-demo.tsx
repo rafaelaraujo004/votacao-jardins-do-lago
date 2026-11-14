@@ -76,7 +76,7 @@ export function EntrarDemo({ perfis }: { perfis: Perfil[] }) {
 
   return (
     <section aria-labelledby="titulo-demo" className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1 rounded-2xl bg-sand px-4 py-3">
+      <div className="flex flex-col gap-1 rounded-2xl bg-sand px-4 py-3 text-ink">
         <h2 id="titulo-demo" className="text-[1.05rem] font-bold">
           Demonstração no seu computador
         </h2>
@@ -103,9 +103,9 @@ export function EntrarDemo({ perfis }: { perfis: Perfil[] }) {
                 onClick={() => entrar(papel)}
                 disabled={entrando !== null}
                 aria-busy={carregando || undefined}
-                className="flex min-h-20 w-full items-center gap-3.5 rounded-2xl border-2 border-line bg-surface p-3.5 text-left transition-[border-color,transform] hover:border-pine active:translate-y-px disabled:cursor-wait disabled:opacity-60"
+                className="saltado flex min-h-20 w-full items-center gap-3.5 rounded-[28px] py-3 pl-3 pr-4 text-left transition-[box-shadow,color] hover:text-pine active:shadow-afundado disabled:cursor-wait disabled:opacity-60"
               >
-                <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-ok-soft text-pine">
+                <span className="grid size-12 shrink-0 place-items-center rounded-full bg-ok-soft text-pine">
                   <Icone aria-hidden className="size-6" />
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col">
@@ -115,9 +115,9 @@ export function EntrarDemo({ perfis }: { perfis: Perfil[] }) {
                   </span>
                 </span>
                 {carregando ? (
-                  <LoaderCircle aria-hidden className="size-5 animate-spin text-pine" />
+                  <LoaderCircle aria-hidden className="size-5 shrink-0 animate-spin text-pine" />
                 ) : (
-                  <ChevronRight aria-hidden className="size-5 text-muted" />
+                  <ChevronRight aria-hidden className="size-5 shrink-0 text-muted" />
                 )}
               </button>
             </li>

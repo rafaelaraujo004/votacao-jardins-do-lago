@@ -6,61 +6,89 @@
    Os nomes abaixo viram classes do Tailwind: bg-pine, text-ink, border-line...
    ===================================================================== */
 
+/* Visual "Jardim macio" (Modelo 3 escolhido em 14/11/2026): fundo areia-esverdeado,
+   cartões da mesma cor do fundo destacados por relevo (neumorfismo suave),
+   faixa verde profunda e acentos nas cores das pétalas da logo. */
 :root {
-  --canvas: #f1f4ef;        /* fundo da página */
-  --surface: #ffffff;       /* cartões */
-  --surface-2: #eaf0ea;     /* áreas de apoio dentro dos cartões */
-  --line: #d5ded7;
-  --line-strong: #a9b8ad;
-  --ink: #14211b;           /* texto principal */
-  --ink-2: #3d4e45;         /* texto secundário */
-  --muted: #5e6e65;         /* legendas */
+  --canvas: #e8ebdc;        /* fundo da página */
+  --surface: #e8ebdc;       /* cartões: mesma cor do fundo, o relevo é que destaca */
+  --surface-2: #dfe3d0;     /* áreas de apoio dentro dos cartões */
+  --surface-clara: #fbfaf3; /* selo claro (logo, endereço) */
+  --line: #cfd4bf;
+  --line-strong: #a3a990;
+  --ink: #1d2a24;           /* texto principal */
+  --ink-2: #3f4b45;         /* texto secundário */
+  --muted: #4b5851;         /* legendas (contraste AA sobre o fundo) */
   --pine: #1d6b4e;          /* verde institucional */
-  --pine-strong: #14543c;
+  --pine-strong: #185b42;
   --pine-deep: #12382a;
   --on-pine: #ffffff;
-  --lake: #1c5c78;          /* informação, links */
-  --lake-soft: #dceaf0;
+  --lake: #185570;          /* informação, links */
+  --lake-soft: #d8e8ee;
   --plum: #8b2a5c;          /* destaque (cor do nome na logo) */
-  --plum-soft: #f6e6ee;
-  --sand: #e9dfc4;          /* etiquetas (dourado da logo) */
+  --plum-soft: #f1dde7;
+  --sand: #efe6c8;          /* etiquetas (dourado da logo) */
   --warn: #8a5200;
-  --warn-soft: #fbefd8;
+  --warn-soft: #f6e8c8;
   --danger: #b42318;
-  --danger-soft: #fbe4e1;
+  --danger-soft: #f7dcd7;
   --on-danger: #ffffff;
-  --ok-soft: #ddefe4;
+  --ok-soft: #d9e8dc;
   --band: #12382a;          /* faixa do topo */
   --band-fg: #f2f6f1;
-  --band-muted: #b7cabd;
-  --shadow-card: 0 1px 2px rgb(16 32 24 / 0.05), 0 10px 30px -8px rgb(16 32 24 / 0.16);
-  --shadow-float: 0 2px 6px rgb(16 32 24 / 0.06), 0 28px 60px -12px rgb(16 32 24 / 0.28);
+  --band-muted: #cfe3d8;
+  --destaque: #12382a;      /* títulos e números em destaque */
+  --texto-laranja: #9a4a0e;
+  --texto-areia: #7a5f1c;
+  /* Pétalas da logo (versões escurecidas para dar contraste) */
+  --petala-laranja: #d9701c;
+  --petala-amarelo: #e3ad17;
+  --petala-rosa: #d13f78;
+  --petala-verde: #4f9a3c;
+  --petala-azul: #2678bd;
+  --petala-roxo: #7446a3;
+  /* Relevo: luz vinda de cima/esquerda */
+  --luz: rgb(255 255 255 / 0.9);
+  --sombra: rgb(160 168 136 / 0.55);
+  --borda-luz: rgb(255 255 255 / 0.55);
+  --shadow-card: 7px 7px 16px var(--sombra), -7px -7px 16px var(--luz);
+  --relevo-p: 4px 4px 9px var(--sombra), -4px -4px 9px var(--luz);
+  --afundado: inset 4px 4px 9px var(--sombra), inset -4px -4px 9px var(--luz);
+  --shadow-float: 8px 8px 20px rgb(120 128 100 / 0.45), -6px -6px 16px var(--luz);
+  /* Iguais nos dois temas: cartão vinho (votações) e setinhas sobre fundo verde-profundo. */
+  --vinho-de: #8b2a5c;
+  --vinho-ate: #6a1f46;
+  --vinho-fg-suave: #f6dce9;
+  --band-ok: #9fe0bd;
+  --band-alerta: #f6bcd8;
   color-scheme: light;
 }
 
 /* Tema escuro: segue o aparelho, salvo quando a pessoa escolhe no botão. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --canvas: #0c1411; --surface: #141f1a; --surface-2: #1b2922; --line: #283a31; --line-strong: #46604f;
-    --ink: #e6eee9; --ink-2: #bccbc1; --muted: #93a59a;
-    --pine: #56c694; --pine-strong: #82d8b1; --pine-deep: #0a1c15; --on-pine: #05130d;
-    --lake: #74bcd8; --lake-soft: #16303b; --plum: #e58bb8; --plum-soft: #35182a; --sand: #3a3424;
-    --warn: #f0b652; --warn-soft: #33270f; --danger: #ff8d7e; --danger-soft: #3b1a16; --on-danger: #1f0a07; --ok-soft: #13301f;
-    --band: #0a1c15; --band-fg: #e6eee9; --band-muted: #8fa699;
-    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 30px -8px rgb(0 0 0 / 0.5);
-    --shadow-float: 0 2px 6px rgb(0 0 0 / 0.4), 0 28px 60px -12px rgb(0 0 0 / 0.6);
+    --canvas: #1a221e; --surface: #1a221e; --surface-2: #151c18; --surface-clara: #f4f3ea; --line: #2e3a33; --line-strong: #4a5a50;
+    --ink: #e6eee9; --ink-2: #bccbc1; --muted: #a2b2a8;
+    --pine: #5fc79a; --pine-strong: #3fa77c; --pine-deep: #0d1f17; --on-pine: #06150f;
+    --lake: #7cc0da; --lake-soft: #1c323b; --plum: #e58bb8; --plum-soft: #3a1d2d; --sand: #3b3524;
+    --warn: #f0b652; --warn-soft: #352a12; --danger: #ff8d7e; --danger-soft: #3d1c18; --on-danger: #1f0a07; --ok-soft: #1d3528;
+    --band: #0d1f17; --band-fg: #e6eee9; --band-muted: #9fb8aa; --destaque: #86d8b3; --texto-laranja: #f39a4d; --texto-areia: #f2c94c;
+    --petala-laranja: #f39a4d; --petala-amarelo: #f2c94c; --petala-rosa: #f07aa8; --petala-verde: #8cc976; --petala-azul: #6fb0ea; --petala-roxo: #b28ade;
+    --luz: rgb(255 255 255 / 0.045); --sombra: rgb(0 0 0 / 0.5); --borda-luz: rgb(255 255 255 / 0.06);
+    --shadow-float: 8px 8px 22px rgb(0 0 0 / 0.55), -4px -4px 12px var(--luz);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --canvas: #0c1411; --surface: #141f1a; --surface-2: #1b2922; --line: #283a31; --line-strong: #46604f;
-  --ink: #e6eee9; --ink-2: #bccbc1; --muted: #93a59a;
-  --pine: #56c694; --pine-strong: #82d8b1; --pine-deep: #0a1c15; --on-pine: #05130d;
-  --lake: #74bcd8; --lake-soft: #16303b; --plum: #e58bb8; --plum-soft: #35182a; --sand: #3a3424;
-  --warn: #f0b652; --warn-soft: #33270f; --danger: #ff8d7e; --danger-soft: #3b1a16; --on-danger: #1f0a07; --ok-soft: #13301f;
-  --band: #0a1c15; --band-fg: #e6eee9; --band-muted: #8fa699;
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 30px -8px rgb(0 0 0 / 0.5);
-  --shadow-float: 0 2px 6px rgb(0 0 0 / 0.4), 0 28px 60px -12px rgb(0 0 0 / 0.6);
+  --canvas: #1a221e; --surface: #1a221e; --surface-2: #151c18; --surface-clara: #f4f3ea; --line: #2e3a33; --line-strong: #4a5a50;
+  --ink: #e6eee9; --ink-2: #bccbc1; --muted: #a2b2a8;
+  --pine: #5fc79a; --pine-strong: #3fa77c; --pine-deep: #0d1f17; --on-pine: #06150f;
+  --lake: #7cc0da; --lake-soft: #1c323b; --plum: #e58bb8; --plum-soft: #3a1d2d; --sand: #3b3524;
+  --warn: #f0b652; --warn-soft: #352a12; --danger: #ff8d7e; --danger-soft: #3d1c18; --on-danger: #1f0a07; --ok-soft: #1d3528;
+  --band: #0d1f17; --band-fg: #e6eee9; --band-muted: #9fb8aa; --destaque: #86d8b3; --texto-laranja: #f39a4d; --texto-areia: #f2c94c;
+  --petala-laranja: #f39a4d; --petala-amarelo: #f2c94c; --petala-rosa: #f07aa8; --petala-verde: #8cc976; --petala-azul: #6fb0ea; --petala-roxo: #b28ade;
+  --luz: rgb(255 255 255 / 0.045); --sombra: rgb(0 0 0 / 0.5); --borda-luz: rgb(255 255 255 / 0.06);
+  --shadow-float: 8px 8px 22px rgb(0 0 0 / 0.55), -4px -4px 12px var(--luz);
   color-scheme: dark;
 }
 
@@ -91,19 +119,41 @@
   --color-band: var(--band);
   --color-band-fg: var(--band-fg);
   --color-band-muted: var(--band-muted);
+  --color-surface-clara: var(--surface-clara);
+  --color-destaque: var(--destaque);
+  --color-texto-laranja: var(--texto-laranja);
+  --color-texto-areia: var(--texto-areia);
+  --color-borda-luz: var(--borda-luz);
+  --color-vinho-de: var(--vinho-de);
+  --color-vinho-ate: var(--vinho-ate);
+  --color-vinho-fg-suave: var(--vinho-fg-suave);
+  --color-band-ok: var(--band-ok);
+  --color-band-alerta: var(--band-alerta);
+  --color-petala-laranja: var(--petala-laranja);
+  --color-petala-amarelo: var(--petala-amarelo);
+  --color-petala-rosa: var(--petala-rosa);
+  --color-petala-verde: var(--petala-verde);
+  --color-petala-azul: var(--petala-azul);
+  --color-petala-roxo: var(--petala-roxo);
 
   --font-sans: var(--fonte-texto), "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
   --font-display: var(--fonte-titulo), "Segoe UI", system-ui, sans-serif;
 
   --shadow-card: var(--shadow-card);
   --shadow-float: var(--shadow-float);
-  --radius-card: 16px;
+  --shadow-relevo: var(--relevo-p);
+  --shadow-afundado: var(--afundado);
+  --radius-card: 18px;
 }
 
 /* Texto base de 17px: mais confortável para leitura no celular. */
 html {
   font-size: 106.25%;
   -webkit-text-size-adjust: 100%;
+}
+/* Preferência "Letra grande" (tela Mais): 19px. */
+html[data-letra="grande"] {
+  font-size: 118.75%;
 }
 
 body {
@@ -127,6 +177,33 @@ h1, h2, h3 {
   border-radius: 6px;
 }
 
+/* ---------- Peças do relevo (use como classes) ---------- */
+/* Botão principal: verde com leve degradê e relevo; afunda ao tocar. */
+@utility botao-verde {
+  background-image: linear-gradient(145deg, var(--pine), var(--pine-strong));
+  color: var(--on-pine);
+  box-shadow: var(--relevo-p);
+}
+/* Superfície "saltada" pequena (botões claros, blocos de número). */
+@utility saltado {
+  background-color: var(--surface);
+  border: 1px solid var(--borda-luz);
+  box-shadow: var(--relevo-p);
+}
+/* Superfície "afundada" (campos, trilhos, gráfico). */
+@utility afundado {
+  background-color: var(--canvas);
+  box-shadow: var(--afundado);
+}
+/* Rótulo pequeno em caixa alta (blocos de número, agenda). */
+@utility rotulo-caixa {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 /* Entrada suave dos blocos (desligada para quem pede menos movimento). */
 @keyframes surgir {
   from { opacity: 0; transform: translateY(6px); }
@@ -141,4 +218,9 @@ h1, h2, h3 {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Relatórios impressos sempre em fundo branco. */
+@media print {
+  body { background: #fff !important; color: #000; }
 }
