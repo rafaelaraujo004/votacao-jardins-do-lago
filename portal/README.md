@@ -4,7 +4,7 @@ Portal do condomínio (moradores, portaria, síndico e conselho): contas, visita
 
 **Tecnologia:** Next.js 16 + TypeScript + Tailwind CSS 4 · Firebase (Authentication, Firestore, App Check) · hospedagem na Vercel.
 
-**Fase atual:** 3 (Portaria) e 4 (Reservas) entregues; informações gerais abertas pelo link e **login dos moradores** (usuário + senha enviados pelo WhatsApp) prontos no código (veja [docs/FASES.md](docs/FASES.md)).
+**Fase atual:** Fases 1 a 5 entregues — portaria, reservas com as regras reais, solicitações com protocolo, comunicados, documentos por link, enquetes (1 voto por casa), classificados com aprovação, relatórios e informações reais (PIX, ronda, responsável pelas reservas). Falta só o **mapa real** (depende da planta). A Fase 6 não será feita por enquanto (veja [docs/FASES.md](docs/FASES.md)). **Tudo exige login.**
 
 | Documento | Conteúdo |
 |---|---|
@@ -50,8 +50,8 @@ Isso liga o simulador do Firebase (login + banco), cria os dados de **demonstra�
 
 | Comando | O que testa |
 |---|---|
-| `npm test` | Permissões, formatos (R$, datas, fuso), login demo desligado em produção, senhas, códigos e horários da portaria, regras das reservas |
-| `npm run test:emu` | Regras do Firestore (isolamento entre casas e condomínios, ninguém grava direto, auditoria imutável), o contexto do usuário, portaria e reservas (inclusive dois pedidos no mesmo horário) |
+| `npm test` | Permissões, formatos (R$, datas, fuso), login demo desligado em produção, senhas, códigos e horários da portaria, regras das reservas e das áreas reais, comunicados, solicitações, documentos, enquetes, classificados, relatórios, PIX e telefones |
+| `npm run test:emu` | Regras do Firestore (isolamento entre casas e condomínios, ninguém grava direto, auditoria imutável, notas internas, votos, classificados), o contexto do usuário, portaria, reservas (inclusive dois pedidos no mesmo horário), enquetes (1 voto por casa) e os dados de demonstração |
 | `npm run lint` / `npm run typecheck` | Qualidade e tipos do código |
 | `npm run test:tudo` | Tudo acima |
 
@@ -84,6 +84,8 @@ Veja os comentários em [.env.example](.env.example). Resumo:
 8. Crie o condomínio e o primeiro administrador (passo a passo em [docs/PRIMEIRO-ACESSO.md](docs/PRIMEIRO-ACESSO.md)):
    `npm run criar-condominio -- --id jardins-do-lago --nome "Residencial Jardins do Lago" --admin-email "<email>" --admin-nome "<nome>"`
    A senha provisória fica em `portal/.acesso-inicial.txt`. Apague o arquivo depois da troca. A alternativa `--admin-uid <UID>` continua valendo.
+9. Grave a configuração real (PIX, ronda, responsável pelas reservas e as áreas com as regras reais):
+   `npm run configurar-jardins -- --conferir` (só mostra) e depois `npm run configurar-jardins` (grava). Veja [docs/PRIMEIRO-ACESSO.md](docs/PRIMEIRO-ACESSO.md), item 8.
 
 ## 6. Deploy na Vercel
 

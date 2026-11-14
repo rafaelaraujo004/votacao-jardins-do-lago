@@ -1,29 +1,97 @@
 import type { Metadata } from "next";
-import { Building2, CalendarDays, DoorOpen, Eye, Landmark, Megaphone, ScrollText, Settings, ShieldCheck, Users, type LucideIcon } from "lucide-react";
-import { exigirPermissao } from "@/server/contexto";
+import Link from "next/link";
+import {
+  Building2,
+  CalendarDays,
+  ChartColumn,
+  ClipboardList,
+  DoorOpen,
+  Eye,
+  FolderOpen,
+  Landmark,
+  Megaphone,
+  ScrollText,
+  Settings,
+  ShieldCheck,
+  Store,
+  Users,
+  Vote,
+  type LucideIcon,
+} from "lucide-react";
+import { exigirPermissao, type Contexto } from "@/server/contexto";
 import { resumoDoCondominio } from "@/server/dados/gestao";
+import { numerosDasSolicitacoes } from "@/server/dados/solicitacoes";
+import { numerosClassificados } from "@/server/dados/classificados";
+import { numerosDaAgenda } from "@/server/dados/reservas";
 import type { Permissao } from "@/lib/permissoes";
-import { Alerta, Etiqueta, TituloPagina } from "@/components/ui/basicos";
+import { Etiqueta, TituloPagina } from "@/components/ui/basicos";
 import { AtalhoModulo, BlocoNumero, TituloSecao, type TomModulo } from "@/components/ui/painel";
 
 export const metadata: Metadata = { title: "Painel" };
 
-/** Atalhos do painel. Sem `href` = módulo ainda não pronto (aparece "Em breve" e não é clicável). */
-const ATALHOS: { titulo: string; icone: LucideIcon; tom: TomModulo; permissao: Permissao; href?: string }[] = [
+/** Atalhos do painel (só aparecem os que o perfil pode usar). */
+const ATALHOS: { titulo: string; icone: LucideIcon; tom: TomModulo; permissao: Permissao; href: string }[] = [
   { titulo: "Unidades", icone: Building2, tom: "verde", permissao: "unidades.ver", href: "/admin/unidades" },
   { titulo: "Moradores e equipe", icone: Users, tom: "lago", permissao: "moradores.ver", href: "/admin/pessoas" },
   { titulo: "Prestação de contas", icone: Landmark, tom: "areia", permissao: "financeiro.ver", href: "/admin/financeiro" },
-  { titulo: "Auditoria", icone: ScrollText, tom: "vinho", permissao: "auditoria.ver", href: "/admin/auditoria" },
+  { titulo: "Relatórios", icone: ChartColumn, tom: "lago", permissao: "relatorios.ver", href: "/admin/relatorios" },
   { titulo: "Reservas e áreas", icone: CalendarDays, tom: "verde", permissao: "reservas.ver_todas", href: "/admin/reservas" },
+  { titulo: "Solicitações", icone: ClipboardList, tom: "vinho", permissao: "solicitacoes.gerenciar", href: "/admin/solicitacoes" },
+  { titulo: "Comunicados", icone: Megaphone, tom: "areia", permissao: "comunicados.ver", href: "/admin/comunicados" },
+  { titulo: "Documentos", icone: FolderOpen, tom: "lago", permissao: "documentos.ver", href: "/admin/documentos" },
+  { titulo: "Enquetes", icone: Vote, tom: "vinho", permissao: "enquetes.gerenciar", href: "/admin/enquetes" },
+  { titulo: "Classificados", icone: Store, tom: "areia", permissao: "classificados.moderar", href: "/admin/classificados" },
   { titulo: "Portaria (operar)", icone: ShieldCheck, tom: "vinho", permissao: "portaria.operar", href: "/portaria" },
   { titulo: "Histórico da portaria", icone: DoorOpen, tom: "lago", permissao: "visitantes.ver_todos", href: "/admin/portaria" },
-  { titulo: "Comunicados", icone: Megaphone, tom: "lago", permissao: "comunicados.ver" },
   { titulo: "Informações do condomínio", icone: Settings, tom: "areia", permissao: "informacoes.gerenciar", href: "/admin/informacoes" },
+  { titulo: "Auditoria", icone: ScrollText, tom: "vinho", permissao: "auditoria.ver", href: "/admin/auditoria" },
 ];
+
+type Pendencia = { rotulo: string; valor: number; detalhe: string; href: string };
+
+/** Lê um número sem derrubar o painel se a consulta falhar. */
+async function semFalhar<T>(nome: string, ler: () => Promise<T>): Promise<T | null> {
+  try {
+    return await ler();
+  } catch (erro) {
+    console.error(`Painel: não foi possível carregar ${nome}`, erro);
+    return null;
+  }
+}
+
+/** O que está esperando uma decisão da administração (só o que o perfil pode ver). */
+async function pendenciasDo(ctx: Contexto): Promise<Pendencia[]> {
+  const [solicitacoes, classificados, agenda] = await Promise.all([
+    ctx.permissoes.has("solicitacoes.gerenciar") ? semFalhar("as solicitações", () => numerosDasSolicitacoes(ctx)) : null,
+    ctx.permissoes.has("classificados.moderar") ? semFalhar("os classificados", () => numerosClassificados(ctx)) : null,
+    ctx.permissoes.has("reservas.ver_todas") ? semFalhar("as reservas", () => numerosDaAgenda(ctx)) : null,
+  ]);
+  const lista: Pendencia[] = [];
+  if (solicitacoes) {
+    lista.push({
+      rotulo: "Solicitações abertas",
+      valor: solicitacoes.abertas,
+      detalhe: `${solicitacoes.emAndamento} em andamento`,
+      href: "/admin/solicitacoes",
+    });
+  }
+  if (agenda) {
+    lista.push({ rotulo: "Reservas pendentes", valor: agenda.pendentes, detalhe: `${agenda.hoje} reserva(s) hoje`, href: "/admin/reservas" });
+  }
+  if (classificados) {
+    lista.push({
+      rotulo: "Anúncios para aprovar",
+      valor: classificados.pendentes,
+      detalhe: `${classificados.publicados} no ar`,
+      href: "/admin/classificados",
+    });
+  }
+  return lista;
+}
 
 export default async function PainelGestao() {
   const ctx = await exigirPermissao("area.gestao");
-  const resumo = await resumoDoCondominio(ctx);
+  const [resumo, pendencias] = await Promise.all([resumoDoCondominio(ctx), pendenciasDo(ctx)]);
   const somenteConsulta = !ctx.permissoes.has("unidades.gerenciar");
   // Só mostra os atalhos que o perfil pode usar.
   const atalhos = ATALHOS.filter((a) => ctx.permissoes.has(a.permissao));
@@ -34,9 +102,25 @@ export default async function PainelGestao() {
       <TituloPagina
         sobretitulo="Visão geral"
         titulo="Painel do condomínio"
-        descricao="Resumo do cadastro. Os módulos de gestão serão ligados fase a fase."
+        descricao="Resumo do cadastro e o que está esperando a administração."
         acoes={somenteConsulta ? <Etiqueta tom="info" icone={Eye}>Somente consulta</Etiqueta> : null}
       />
+
+      {/* Pendências: cada número leva à tela onde se resolve. */}
+      {pendencias.length ? (
+        <section aria-labelledby="titulo-pendencias" className="flex flex-col gap-3">
+          <TituloSecao id="titulo-pendencias">Esperando a administração</TituloSecao>
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {pendencias.map((p) => (
+              <li key={p.rotulo}>
+                <Link href={p.href} className="block rounded-[18px] transition-shadow active:shadow-afundado">
+                  <BlocoNumero rotulo={p.rotulo} valor={p.valor} detalhe={p.detalhe} cor={p.valor > 0 ? "laranja" : "ink"} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {/* Números reais do cadastro (contados no servidor). */}
       <section aria-labelledby="titulo-numeros" className="flex flex-col gap-3">
@@ -68,11 +152,6 @@ export default async function PainelGestao() {
           </ul>
         </section>
       ) : null}
-
-      <Alerta tipo="info" titulo="O portal está sendo construído por partes">
-        Já funcionam: login da equipe, perfis e permissões, auditoria, unidades e moradores, prestação de contas,
-        portaria (visitantes e encomendas) e reservas das áreas de lazer. Comunicados e configurações chegam nas próximas fases.
-      </Alerta>
     </div>
   );
 }

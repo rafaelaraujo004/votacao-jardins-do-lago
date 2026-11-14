@@ -157,45 +157,52 @@ service cloud.firestore {
 
       // ----- comunicação e serviços -----
 
+      // Comunicados: o morador só lê os PUBLICADOS (rascunho e arquivado, não).
       match /announcements/{id} {
-        allow read: if gestao(c) || (ativo(c) && resource.data.publicado == true);
+        allow read: if gestao(c) || (ativo(c) && resource.data.status == 'publicado');
         allow write: if false;
       }
 
+      // Solicitações: cada casa só as próprias.
       match /tickets/{id} {
         allow read: if papel(c, 'admin') || temExtra(c, 'solicitacoes.gerenciar')
           || daMinhaUnidade(c, resource.data);
         allow write: if false;
 
+        // Atualizações: a casa NÃO lê as notas internas (publico != true).
         match /updates/{atualizacao} {
           allow read: if papel(c, 'admin') || temExtra(c, 'solicitacoes.gerenciar')
-            || daMinhaUnidade(c, get(/databases/$(database)/documents/condominiums/$(c)/tickets/$(id)).data);
+            || (resource.data.publico == true
+                && daMinhaUnidade(c, get(/databases/$(database)/documents/condominiums/$(c)/tickets/$(id)).data));
           allow write: if false;
         }
       }
 
+      // Documentos (links): só os ativos e só para os papéis da lista.
       match /documents/{id} {
-        allow read: if gestao(c)
-          || (ativo(c) && membro(c).papel in resource.data.visivelPara);
+        // O conselho segue a lista como todo mundo (só o síndico e quem gerencia veem tudo).
+        allow read: if papel(c, 'admin') || temExtra(c, 'documentos.gerenciar')
+          || (ativo(c) && membro(c).papel in resource.data.visivelPara && resource.data.ativo == true);
         allow write: if false;
       }
 
+      // Enquetes: o app lê tudo pelo servidor. Pelo navegador, só a gestão de
+      // enquetes (assim os totais parciais não vazam quando o resultado é "após encerrar").
       match /polls/{id} {
-        allow read: if gestao(c) || (ativo(c) && resource.data.status != 'rascunho');
+        allow read: if papel(c, 'admin') || temExtra(c, 'enquetes.gerenciar');
         allow write: if false;
 
-        // Voto: cada unidade só enxerga o próprio.
+        // Voto: cada casa só enxerga o próprio; a gestão não lê votos.
         match /votes/{unidade} {
           allow read: if papel(c, 'morador') && membro(c).unitId == unidade;
           allow write: if false;
         }
       }
 
+      // Classificados: só pelo servidor (o documento tem autorUid e unitId,
+      // que os outros moradores não podem ver).
       match /classifieds/{id} {
-        allow read: if gestao(c)
-          || (ativo(c) && resource.data.status == 'aprovado')
-          || (ativo(c) && resource.data.autorUid == request.auth.uid);
-        allow write: if false;
+        allow read, write: if false;
       }
 
       match /mapPoints/{id} {

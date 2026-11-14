@@ -8,8 +8,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   CalendarDays,
+  ChartColumn,
+  ClipboardList,
+  FolderOpen,
   LayoutGrid,
-  Map as IconeMapa,
+  Store,
+  Vote,
   Wallet,
   Ellipsis,
   House,
@@ -47,6 +51,11 @@ const ICONES = {
   Settings,
   ScrollText,
   DoorOpen,
+  ClipboardList,
+  FolderOpen,
+  Vote,
+  Store,
+  ChartColumn,
 } satisfies Record<string, LucideIcon>;
 export type NomeIcone = keyof typeof ICONES;
 export type ItemMenuSerializavel = Omit<ItemMenu, "icone"> & { icone: NomeIcone };
@@ -59,11 +68,12 @@ function ativo(caminho: string, href?: string) {
 
 // ---------- Morador (sempre com login): barra inferior no celular, coluna no computador ----------
 
+// Barra de baixo: sempre 5 itens. O resto (mapa, contatos, comunicados...) fica em "Mais" e nos atalhos do Início.
 const ITENS_MORADOR: ItemMenu[] = [
   { rotulo: "Início", icone: House, href: "/inicio" },
   { rotulo: "Contas", icone: Wallet, href: "/financeiro" },
-  { rotulo: "Mapa", icone: IconeMapa, href: "/mapa" },
   { rotulo: "Agenda", icone: CalendarDays, href: "/reservas" },
+  { rotulo: "Solicitações", icone: ClipboardList, href: "/solicitacoes" },
   { rotulo: "Mais", icone: LayoutGrid, href: "/mais" },
 ];
 

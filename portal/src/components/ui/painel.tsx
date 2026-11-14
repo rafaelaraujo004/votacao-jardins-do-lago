@@ -91,7 +91,8 @@ export function AtalhoModulo({
       <span className={cx("grid size-[46px] place-items-center rounded-[14px]", tonsModulo[tom])}>
         <Icone aria-hidden className="size-6" />
       </span>
-      <span className="text-[0.82rem] font-bold leading-tight text-ink">{titulo}</span>
+      {/* Palavra longa (ex.: "Classificados") quebra com hífen em vez de vazar do quadradinho no celular. */}
+      <span className="max-w-full break-words text-[0.82rem] font-bold leading-tight text-ink hyphens-auto">{titulo}</span>
       {!href ? (
         <span className="rounded-full bg-sand px-2 py-px text-[0.66rem] font-bold uppercase tracking-wide text-ink-2">
           Em breve

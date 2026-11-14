@@ -93,6 +93,28 @@ O portal **não abre nada sem login**. Em **Configurações → Informações do
 
 > O antigo campo `portalPublico` do condomínio (e o script que o ligava) foi retirado. Se ele ainda existir no banco, não tem efeito nenhum.
 
+## 8. Gravar a configuração real do Jardins do Lago (PIX, ronda, reservas e áreas)
+
+Um script grava de uma vez as informações reais passadas pela administração:
+
+- **PIX da taxa**: CNPJ 29.711.278/0001-59, favorecido "Condomínio Jardins do Lago";
+- **Ronda noturna** e **responsável pelas reservas** (Shirley, 8h às 20h), com Ligar e WhatsApp em `/contatos`;
+- **Áreas e equipamentos com as regras reais**: área de lazer (salão, quiosques e churrasqueira), quadra, roçadeira e carrinho de mão;
+- desativa (sem apagar) áreas antigas que não estejam nessa lista, como as "sugeridas".
+
+Ele **não apaga** os telefones da portaria e da administração, o horário e o aviso que o síndico já tenha posto. Pode rodar de novo sem duplicar nada. Recusa rodar com o simulador ligado e no condomínio de demonstração. Tudo vai para a auditoria (sem a chave PIX nem telefones).
+
+Na pasta `portal`, com as credenciais do Firebase real em `portal/.env.production.local` (o script lê esse arquivo sozinho):
+
+```bash
+npm run configurar-jardins -- --conferir   # só mostra o que vai mudar (não grava nada)
+npm run configurar-jardins                 # grava
+```
+
+Depois, entre com a conta do síndico e confira `/admin/informacoes` e `/admin/reservas/areas`. O **link da votação oficial** fica vazio: cole em `/admin/informacoes` quando houver. A **capacidade** das áreas fica "não informada" (0); se quiser mostrar "até N pessoas", edite a área.
+
+> Só o papel **admin** consegue trocar a chave PIX pelo portal (proteção contra golpe).
+
 ## Perguntas rápidas
 
 | Situação | O que fazer |

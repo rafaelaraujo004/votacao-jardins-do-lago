@@ -9,7 +9,9 @@
  *   não pode ter O nem 1 — veja src/lib/usuario-morador.ts.)
  * - Informações fictícias (telefones de mentira). Como todo o portal, só abrem com login:
  *   o morador demo entra por "/entrar?c=jardins-do-lago-demo" (o ?c= só monta o login).
- * - Casas, visitantes, encomendas, áreas de lazer e reservas fictícias.
+ * - Casas, visitantes, encomendas e reservas fictícias; áreas com as MESMAS regras do condomínio real.
+ * - Comunicados, solicitações, documentos (links de exemplo), enquetes e classificados fictícios.
+ * - Áreas antigas da demonstração (salão, churrasqueira...) ficam desativadas (nada é apagado).
  *
  * Uso (na pasta portal), com a senha numa variável de ambiente (não fica no histórico do git):
  *   DEMO_SENHA="..." npx tsx --env-file=.env.production.local scripts/criar-demo-real.ts --email demo@exemplo.test
@@ -22,7 +24,9 @@ import { hojeISO } from "../src/lib/formato";
 import { INFORMACOES_DEMO, USUARIO_MORADOR_DEMO } from "../src/lib/demo";
 import { emailDoMorador } from "../src/lib/usuario-morador";
 import { hashDoCodigo } from "../src/lib/portaria";
-import { AREAS_SUGERIDAS, idDaTrava, proximoMes, somarDias } from "../src/lib/reservas";
+import { somarDias } from "../src/lib/reservas";
+import { AREAS_JARDINS_DO_LAGO } from "../src/lib/areas-jardins";
+import { semearAreasDemo, semearModulosDemo } from "./demo-modulos";
 
 const ID = "jardins-do-lago-demo";
 const NOME = "Jardins do Lago — DEMONSTRAÇÃO";
@@ -200,52 +204,18 @@ async function main() {
     });
   }
 
-  // Áreas de lazer e reservas.
-  for (const { id, ...area } of AREAS_SUGERIDAS) {
-    lote.set(db.doc(`${c}/amenities/${id}`), { ...area, demo: true, criadoEm: agora });
-  }
-  const mesQueVem = proximoMes(hoje.slice(0, 7));
-  const reservas = [
-    { id: "demo-res-1", area: "salao-de-festas", data: somarDias(hoje, 6), faixa: 0, unitId: "casa-012", rotulo: "Casa 12", status: "confirmada" },
-    { id: "demo-res-2", area: "churrasqueira", data: somarDias(hoje, 3), faixa: 1, unitId: "casa-045", rotulo: "Casa 45", status: "confirmada" },
-    { id: "demo-res-3", area: "churrasqueira", data: somarDias(hoje, 10), faixa: 0, unitId: "casa-001", rotulo: "Casa 1", status: "pendente" },
-    { id: "demo-res-4", area: "quadra-poliesportiva", data: somarDias(hoje, 1), faixa: 11, unitId: "casa-002", rotulo: "Casa 2", status: "confirmada" },
-    { id: "demo-res-5", area: "salao-de-festas", data: `${mesQueVem}-12`, faixa: 0, unitId: "casa-120", rotulo: "Casa 120", status: "confirmada" },
-  ] as const;
-  for (const r of reservas) {
-    const area = AREAS_SUGERIDAS.find((a) => a.id === r.area)!;
-    const faixa = area.faixas[r.faixa];
-    const pendente = r.status === "pendente";
-    lote.set(db.doc(`${c}/reservations/${r.id}`), {
-      amenityId: area.id,
-      areaNome: area.nome,
-      unitId: r.unitId,
-      unidadeRotulo: r.rotulo,
-      data: r.data,
-      mes: r.data.slice(0, 7),
-      faixaId: faixa.id,
-      faixaRotulo: faixa.rotulo,
-      inicio: faixa.inicio,
-      fim: faixa.fim,
-      status: r.status,
-      observacao: "",
-      motivo: "",
-      origem: "morador",
-      criadoPor: uid,
-      criadoPorNome: "Morador (demonstração)",
-      criadoEm: agora,
-      decididoPor: pendente ? null : uid,
-      decididoPorNome: pendente ? "" : nomeConta,
-      decididoEm: pendente ? null : agora,
-      demo: true,
-    });
-    lote.set(db.doc(`${c}/reservationLocks/${idDaTrava(area.id, r.data, faixa.id)}`), {
-      reservaId: r.id,
-      amenityId: area.id,
-      data: r.data,
-      faixaId: faixa.id,
-      criadoEm: agora,
-    });
+  // Áreas (as regras reais), reservas e módulos novos, com dados fictícios.
+  const pessoas = { hoje, adminUid: uid, adminNome: nomeConta, moradorUid: UID_MORADOR, moradorNome: NOME_MORADOR };
+  semearAreasDemo(db, lote, c, pessoas);
+  semearModulosDemo(db, lote, c, pessoas);
+
+  // Áreas antigas da demonstração: desativa e libera as travas de horário delas.
+  const idsReais = new Set(AREAS_JARDINS_DO_LAGO.map((a) => a.id));
+  const antigas = (await db.collection(`${c}/amenities`).get()).docs.filter((d) => !idsReais.has(d.id));
+  for (const d of antigas) {
+    lote.update(d.ref, { ativa: false });
+    const travas = await db.collection(`${c}/reservationLocks`).where("amenityId", "==", d.id).get();
+    for (const t of travas.docs) lote.delete(t.ref);
   }
 
   await lote.commit();

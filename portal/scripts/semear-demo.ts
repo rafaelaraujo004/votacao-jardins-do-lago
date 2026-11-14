@@ -21,7 +21,8 @@ import { gerarSenhaProvisoria } from "../src/lib/senha";
 import { emailDoMorador } from "../src/lib/usuario-morador";
 import { hojeISO } from "../src/lib/formato";
 import { hashDoCodigo, SEGREDO_CODIGO_DESENVOLVIMENTO } from "../src/lib/portaria";
-import { AREAS_SUGERIDAS, idDaTrava, proximoMes, somarDias } from "../src/lib/reservas";
+import { somarDias } from "../src/lib/reservas";
+import { semearAreasDemo, semearModulosDemo } from "./demo-modulos";
 
 if (!process.env.FIRESTORE_EMULATOR_HOST || !process.env.FIREBASE_AUTH_EMULATOR_HOST) {
   console.error("Este script só roda com o simulador ligado (FIRESTORE_EMULATOR_HOST e FIREBASE_AUTH_EMULATOR_HOST).");
@@ -183,66 +184,11 @@ async function main() {
     });
   }
 
-  // ---------- Áreas de lazer e reservas de demonstração ----------
-  for (const { id, ...area } of AREAS_SUGERIDAS) {
-    lote.set(db.doc(`${c}/amenities/${id}`), { ...area, demo: true, criadoEm: agora });
-  }
-  const mesQueVem = proximoMes(hoje.slice(0, 7));
+  // ---------- Áreas (as regras reais), reservas e módulos novos (dados fictícios) ----------
   const sindico = USUARIOS_DEMO.admin;
-  const reservasDemo: {
-    id: string;
-    area: string;
-    data: string;
-    faixa: number;
-    unitId: string | null;
-    rotulo: string | null;
-    status: "pendente" | "confirmada" | "bloqueada";
-    origem: "morador" | "administracao";
-    motivo?: string;
-    observacao?: string;
-  }[] = [
-    { id: "demo-res-1", area: "salao-de-festas", data: somarDias(hoje, 6), faixa: 0, unitId: "casa-012", rotulo: "Casa 12", status: "confirmada", origem: "morador", observacao: "Aniversário" },
-    { id: "demo-res-2", area: "churrasqueira", data: somarDias(hoje, 3), faixa: 1, unitId: "casa-045", rotulo: "Casa 45", status: "confirmada", origem: "administracao" },
-    { id: "demo-res-3", area: "churrasqueira", data: somarDias(hoje, 10), faixa: 0, unitId: "casa-001", rotulo: "Casa 1", status: "pendente", origem: "morador", observacao: "Almoço de família" },
-    { id: "demo-res-4", area: "quadra-poliesportiva", data: somarDias(hoje, 1), faixa: 11, unitId: "casa-002", rotulo: "Casa 2", status: "confirmada", origem: "morador" },
-    { id: "demo-res-5", area: "quadra-poliesportiva", data: somarDias(hoje, 2), faixa: 0, unitId: null, rotulo: null, status: "bloqueada", origem: "administracao", motivo: "Pintura da quadra" },
-    { id: "demo-res-6", area: "salao-de-festas", data: `${mesQueVem}-12`, faixa: 0, unitId: "casa-120", rotulo: "Casa 120", status: "confirmada", origem: "morador" },
-    { id: "demo-res-7", area: "churrasqueira", data: `${mesQueVem}-19`, faixa: 1, unitId: "casa-012", rotulo: "Casa 12", status: "confirmada", origem: "morador" },
-  ];
-  for (const r of reservasDemo) {
-    const area = AREAS_SUGERIDAS.find((a) => a.id === r.area)!;
-    const faixa = area.faixas[r.faixa];
-    lote.set(db.doc(`${c}/reservations/${r.id}`), {
-      amenityId: area.id,
-      areaNome: area.nome,
-      unitId: r.unitId,
-      unidadeRotulo: r.rotulo,
-      data: r.data,
-      mes: r.data.slice(0, 7),
-      faixaId: faixa.id,
-      faixaRotulo: faixa.rotulo,
-      inicio: faixa.inicio,
-      fim: faixa.fim,
-      status: r.status,
-      observacao: r.observacao ?? "",
-      motivo: r.motivo ?? "",
-      origem: r.origem,
-      criadoPor: r.origem === "morador" ? morador.uid : sindico.uid,
-      criadoPorNome: r.origem === "morador" ? "Morador (demonstração)" : sindico.nome,
-      criadoEm: agora,
-      decididoPor: r.status === "pendente" ? null : sindico.uid,
-      decididoPorNome: r.status === "pendente" ? "" : sindico.nome,
-      decididoEm: r.status === "pendente" ? null : agora,
-      demo: true,
-    });
-    lote.set(db.doc(`${c}/reservationLocks/${idDaTrava(area.id, r.data, faixa.id)}`), {
-      reservaId: r.id,
-      amenityId: area.id,
-      data: r.data,
-      faixaId: faixa.id,
-      criadoEm: agora,
-    });
-  }
+  const pessoas = { hoje, adminUid: sindico.uid, adminNome: sindico.nome, moradorUid: morador.uid, moradorNome: morador.nome };
+  semearAreasDemo(db, lote, c, pessoas);
+  semearModulosDemo(db, lote, c, pessoas);
 
   await lote.commit();
 
@@ -263,7 +209,7 @@ async function main() {
     { encoding: "utf8", mode: 0o600 },
   );
 
-  console.log(`Dados de demonstração prontos: ${CONDOMINIO_DEMO.nome}, 5 casas, 4 perfis, portaria e reservas.`);
+  console.log(`Dados de demonstração prontos: ${CONDOMINIO_DEMO.nome}, 5 casas, 4 perfis, portaria, reservas, comunicados, solicitações, documentos, enquetes e classificados.`);
   console.log(`Contas da equipe e do morador demo (usuário ${USUARIO_MORADOR_DEMO}): veja ${ARQUIVO_DEMO}`);
   console.log(`Entrada do morador demo: /entrar?c=${CONDOMINIO_DEMO.id}`);
   console.log("Códigos de visitante da demonstração: K7M-4PX (hoje, uso único), PRT-3ZB (prestador, 7 dias), HGX-7QW (amanhã).");

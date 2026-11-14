@@ -49,6 +49,31 @@ export const ACOES_AUDITADAS = [
   "reserva.bloquear",
   "area.criar",
   "area.editar",
+  // Comunicados
+  "comunicado.criar",
+  "comunicado.editar",
+  "comunicado.publicar",
+  "comunicado.arquivar",
+  // Solicitações
+  "solicitacao.abrir",
+  "solicitacao.comentar",
+  "solicitacao.status",
+  "solicitacao.cancelar",
+  // Documentos (links)
+  "documento.criar",
+  "documento.editar",
+  "documento.desativar",
+  // Enquetes
+  "enquete.criar",
+  "enquete.editar",
+  "enquete.publicar",
+  "enquete.encerrar",
+  "enquete.votar",
+  // Classificados
+  "classificado.criar",
+  "classificado.aprovar",
+  "classificado.rejeitar",
+  "classificado.remover",
   "admin.alterar",
 ] as const;
 export type AcaoAuditada = (typeof ACOES_AUDITADAS)[number];

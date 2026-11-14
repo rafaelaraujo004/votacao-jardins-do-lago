@@ -7,9 +7,9 @@ Uma fase só é "concluída" com: tela funcionando, validação, integração re
 | **1 — Fundação** | Projeto, identidade visual, Firebase, sessão, multi-condomínio, permissões, regras + testes, auditoria, documentação | **Concluída** |
 | **2 — Portal** | Login da equipe e dos moradores (nada abre sem login), início do morador, painel admin, unidades e moradores, financeiro (lançar, estornar, resumo mensal, PDF/Excel), contatos e informações do condomínio | **Entregue** (login dos moradores: aguardando teste no Firebase real) |
 | **3 — Portaria** | Visitantes com código de validade e uso único, entradas e saídas, encomendas, retenção LGPD | **Entregue** (aguardando sua validação no navegador) |
-| 4 — Serviços | Reservas (sem conflito, via transação), solicitações com protocolo, comunicados, documentos | **Parcial**: reservas entregues; faltam solicitações, comunicados e documentos (documentos dependem do plano Blaze) |
-| 5 — Experiência | Mapa interativo (com a planta real), enquetes, classificados, relatórios | Precisa da planta |
-| 6 — Produção | Testes de segurança e concorrência, CSP com nonce, importação da planilha, treinamento, deploy definitivo | |
+| **4 — Serviços** | Reservas com as regras reais, solicitações com protocolo, comunicados, documentos por link, informações reais (PIX, ronda, responsável pelas reservas) | **Entregue** (aguardando sua validação no navegador) |
+| **5 — Experiência** | Enquetes (1 voto por casa), classificados com aprovação, relatórios do síndico | **Entregue**, exceto o **mapa real**, que depende da planta do condomínio |
+| 6 — Produção | Testes de segurança e concorrência, CSP com nonce, importação da planilha, treinamento, deploy definitivo | **Não implementada** (decisão do dono: parar na Fase 5) |
 
 ## Fase 1 — o que foi entregue
 
@@ -55,17 +55,40 @@ Uma fase só é "concluída" com: tela funcionando, validação, integração re
 - **Agenda do Início**: mostra as reservas reais (sem a casa dos outros) e os bloqueios.
 - Conflito impossível: trava por horário + conferência de sobreposição dentro da mesma transação.
 
+## Fase 4 — Regras reais das reservas e informações do condomínio (entregue)
+
+- **Áreas reais** (gravadas pelo script `configurar-jardins-do-lago`, veja [PRIMEIRO-ACESSO.md](PRIMEIRO-ACESSO.md)):
+  - **Área de lazer** (salão de festas, quiosques e churrasqueira): faixa única 8h–20h, aprovação, **48 h** de antecedência, desistência até **24 h** antes (depois, "fora do prazo", sujeita a multa), 1 reserva por casa por dia, regras com **"Li e concordo"** obrigatório e avisos em destaque.
+  - **Quadra**: faixas de 1 h (19h–22h), sem aprovação, **uso livre 17h–19h** (aparece na agenda, não se reserva), 1 h por casa por dia — ou mais, se ninguém mais reservou no dia.
+  - **Roçadeira** e **carrinho de mão** (equipamentos): dia inteiro 8h–20h, aprovação, 24 h de antecedência.
+- Antecedência em **horas**, prazo de desistência, limite por casa por dia, uso livre, exigências e avisos — tudo editável em `/admin/reservas/areas`. O síndico vê as **canceladas fora do prazo** em `/admin/reservas?ver=fora-do-prazo`.
+- **Informações** (`/admin/informacoes` → `/contatos` e Início): **PIX da taxa** (chave CNPJ com botão "Copiar"; só o papel admin altera, contra golpe), **ronda noturna** e **responsável pelas reservas** (Ligar e WhatsApp), **link da votação oficial** (opcional).
+
+## Fase 4 — Solicitações, comunicados e documentos (entregue)
+
+- **Solicitações** (`/solicitacoes` e `/admin/solicitacoes`): protocolo `AAAA-NNNN` por ano (transação), situação aberta → em andamento → resolvida/cancelada, linha do tempo com **notas internas** que o morador não vê. "Pedidos" no menu de baixo do morador.
+- **Comunicados** (`/comunicados` e `/admin/comunicados`): rascunho, publicar, fixar, urgente, arquivar (nada é apagado); pré-visualização e texto pronto para o WhatsApp. Os mais recentes aparecem no topo do Início.
+- **Documentos por link** (`/documentos` e `/admin/documentos`): regimento, convenção, atas, prestações — o arquivo fica no Google Drive (link "qualquer pessoa com o link"); o portal guarda só o link https e quem pode ver. Não depende do plano Blaze.
+
+## Fase 5 — Enquetes, classificados e relatórios (entregue)
+
+- **Enquetes** (`/enquetes` e `/admin/enquetes`): **1 voto por casa**, sem troca; resultado "sempre" ou "só depois de encerrar"; o síndico vê só totais (nunca o voto de cada casa).
+- **Classificados** (`/classificados` e `/admin/classificados`): anúncio nasce "aguardando aprovação"; aprovado fica 30 dias no ar; mostra só o **primeiro nome** e o WhatsApp que o próprio autor quis mostrar (nunca a casa). Morador com a permissão extra `classificados.moderar` modera em `/classificados/moderar`.
+- **Relatórios** (`/admin/relatorios`): financeiro, reservas, portaria e solicitações por ano, com gráfico e **CSV para o Excel**. Só totais, sem dados pessoais.
+- **Mapa real**: continua o mapa provisório; o interativo depende da planta do condomínio.
+
 ## O que falta
 
 - **Login dos moradores**: pronto no código; falta testar no Firebase real com um morador de teste (o simulador já aceitou o e-mail sintético `.invalid`).
 - **"Esqueci minha senha" sozinho**: hoje o morador pede uma senha nova ao síndico (o portal mostra o WhatsApp da administração).
-- **Fase 4**: solicitações com protocolo, comunicados, documentos (estes precisam de arquivos → plano Blaze).
+- **Mapa real** (Fase 5): depende da planta do condomínio.
+- **Link da votação oficial**: o síndico cola em `/admin/informacoes` quando houver.
 - **Limpeza LGPD automática**: hoje é pelo botão em `/admin/portaria`; falta a tarefa agendada (Vercel Cron) chamar `limparVisitantesAntigos`.
-- **Fases 5 e 6** como na tabela.
+- **Fase 6** não foi implementada (decisão do dono).
 
 ## Decisões em aberto
 
 1. **Método de login**: **decidido (14/11/2026).** Equipe: e-mail e senha. Moradores: usuário (código gerado pelo portal) + senha provisória enviada pelo WhatsApp; o morador escolhe a própria senha no primeiro acesso. Informações gerais continuam abertas pelo link.
-2. **Plano Blaze** (arquivos, backup automático, SMS).
+2. **Plano Blaze** (arquivos, backup automático, SMS). Hoje o projeto está no **Spark** (gratuito): documentos são links do Google Drive e não há política de expiração automática (TTL) no banco.
 3. **Retenção LGPD** de visitantes: implementada com 90 dias — confirmar o prazo com o síndico.
 4. **Planta** do condomínio para o mapa.

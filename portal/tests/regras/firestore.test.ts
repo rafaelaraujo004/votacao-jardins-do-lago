@@ -58,7 +58,8 @@ beforeEach(async () => {
     await setDoc(doc(db, `condominiums/${C}/units/casa-2`), { rotulo: "Casa 2" });
     await setDoc(doc(db, `condominiums/${C}/tickets/t1`), { unitId: "casa-1", descricao: "Lâmpada queimada" });
     await setDoc(doc(db, `condominiums/${C}/tickets/t2`), { unitId: "casa-2", descricao: "Vazamento" });
-    await setDoc(doc(db, `condominiums/${C}/tickets/t1/updates/u1`), { texto: "Recebida" });
+    await setDoc(doc(db, `condominiums/${C}/tickets/t1/updates/u1`), { texto: "Recebida", publico: true });
+    await setDoc(doc(db, `condominiums/${C}/tickets/t1/updates/u2`), { texto: "Nota interna", publico: false });
     await setDoc(doc(db, `condominiums/${C}/packages/p1`), { unitId: "casa-1" });
     await setDoc(doc(db, `condominiums/${C}/packages/p2`), { unitId: "casa-2" });
     await setDoc(doc(db, `condominiums/${C}/visitors/v1`), { unitId: "casa-1", nome: "Visitante" });
@@ -66,10 +67,17 @@ beforeEach(async () => {
     await setDoc(doc(db, `condominiums/${C}/financialEntries/f2`), { valorCentavos: 500, publicado: false });
     await setDoc(doc(db, `condominiums/${C}/monthlySummaries/2026-11`), { publicado: true });
     await setDoc(doc(db, `condominiums/${C}/auditLogs/a1`), { acao: "sessao.entrar", uid: "sindico" });
-    await setDoc(doc(db, `condominiums/${C}/announcements/an1`), { publicado: true });
-    await setDoc(doc(db, `condominiums/${C}/announcements/an2`), { publicado: false });
-    await setDoc(doc(db, `condominiums/${C}/documents/d1`), { visivelPara: ["admin", "conselheiro"] });
-    await setDoc(doc(db, `condominiums/${C}/documents/d2`), { visivelPara: ["morador", "portaria"] });
+    await setDoc(doc(db, `condominiums/${C}/announcements/an1`), { status: "publicado" });
+    await setDoc(doc(db, `condominiums/${C}/announcements/an2`), { status: "rascunho" });
+    await setDoc(doc(db, `condominiums/${C}/announcements/an3`), { status: "arquivado" });
+    await setDoc(doc(db, `condominiums/${C}/documents/d1`), { visivelPara: ["admin", "conselheiro"], ativo: true });
+    await setDoc(doc(db, `condominiums/${C}/documents/d2`), { visivelPara: ["admin", "morador", "portaria"], ativo: true });
+    await setDoc(doc(db, `condominiums/${C}/documents/d3`), { visivelPara: ["admin", "morador"], ativo: false });
+    await setDoc(doc(db, `condominiums/${C}/polls/p1`), { status: "aberta", resultado: "apos_encerrar", totais: { o1: 3 } });
+    await setDoc(doc(db, `condominiums/${C}/polls/p1/votes/casa-1`), { opcaoId: "o1", uid: "morador1" });
+    await setDoc(doc(db, `condominiums/${C}/polls/p1/votes/casa-2`), { opcaoId: "o1", uid: "morador2" });
+    await setDoc(doc(db, `condominiums/${C}/classifieds/c1`), { status: "aprovado", autorUid: "morador1", unitId: "casa-1" });
+    await setDoc(doc(db, `condominiums/${C}/counters/solicitacoes-2026`), { ultimo: 2, ano: 2026 });
     await setDoc(doc(db, `condominiums/${OUTRO}/tickets/tb`), { unitId: "casa-1" });
     await setDoc(doc(db, `condominiums/${C}/usernames/K7M4PX`), { uid: "morador1" });
   });
@@ -175,10 +183,68 @@ describe("comunicados e documentos", () => {
     await assertFails(getDoc(doc(como("morador1"), `condominiums/${C}/announcements/an2`)));
   });
 
+  it("comunicado arquivado some para o morador; a gestão continua lendo", async () => {
+    await assertFails(getDoc(doc(como("morador1"), `condominiums/${C}/announcements/an3`)));
+    await assertSucceeds(getDoc(doc(como("conselheiro"), `condominiums/${C}/announcements/an2`)));
+    await assertSucceeds(getDoc(doc(como("sindico"), `condominiums/${C}/announcements/an3`)));
+  });
+
   it("documento respeita a lista de quem pode ver", async () => {
     await assertFails(getDoc(doc(como("morador1"), `condominiums/${C}/documents/d1`)));
     await assertSucceeds(getDoc(doc(como("morador1"), `condominiums/${C}/documents/d2`)));
+    await assertSucceeds(getDoc(doc(como("porteiro"), `condominiums/${C}/documents/d2`)));
     await assertSucceeds(getDoc(doc(como("conselheiro"), `condominiums/${C}/documents/d1`)));
+    // O conselho não lê documento que não é para ele, nem desativado.
+    await assertFails(getDoc(doc(como("conselheiro"), `condominiums/${C}/documents/d2`)));
+    await assertFails(getDoc(doc(como("conselheiro"), `condominiums/${C}/documents/d3`)));
+  });
+});
+
+describe("solicitações", () => {
+  it("a casa não lê as notas internas da própria solicitação; a gestão lê", async () => {
+    await assertSucceeds(getDoc(doc(como("morador1"), `condominiums/${C}/tickets/t1/updates/u1`)));
+    await assertFails(getDoc(doc(como("morador1"), `condominiums/${C}/tickets/t1/updates/u2`)));
+    await assertSucceeds(getDoc(doc(como("sindico"), `condominiums/${C}/tickets/t1/updates/u2`)));
+  });
+
+  it("a portaria e o conselho (sem permissão extra) não leem solicitações", async () => {
+    await assertFails(getDoc(doc(como("porteiro"), `condominiums/${C}/tickets/t1`)));
+    await assertFails(getDoc(doc(como("conselheiro"), `condominiums/${C}/tickets/t1`)));
+  });
+
+  it("ninguém lê o contador de protocolos pelo navegador", async () => {
+    await assertFails(getDoc(doc(como("sindico"), `condominiums/${C}/counters/solicitacoes-2026`)));
+    await assertFails(getDoc(doc(como("morador1"), `condominiums/${C}/counters/solicitacoes-2026`)));
+  });
+});
+
+describe("documentos desativados", () => {
+  it("somem para o morador; a gestão continua vendo", async () => {
+    await assertFails(getDoc(doc(como("morador1"), `condominiums/${C}/documents/d3`)));
+    await assertSucceeds(getDoc(doc(como("sindico"), `condominiums/${C}/documents/d3`)));
+  });
+});
+
+describe("enquetes", () => {
+  it("morador não lê a enquete direto (os totais parciais não vazam); o síndico lê", async () => {
+    await assertFails(getDoc(doc(como("morador1"), `condominiums/${C}/polls/p1`)));
+    await assertFails(getDoc(doc(como("conselheiro"), `condominiums/${C}/polls/p1`)));
+    await assertSucceeds(getDoc(doc(como("sindico"), `condominiums/${C}/polls/p1`)));
+  });
+
+  it("cada casa lê só o próprio voto; ninguém da gestão lê votos", async () => {
+    await assertSucceeds(getDoc(doc(como("morador1"), `condominiums/${C}/polls/p1/votes/casa-1`)));
+    await assertFails(getDoc(doc(como("morador1"), `condominiums/${C}/polls/p1/votes/casa-2`)));
+    await assertFails(getDoc(doc(como("sindico"), `condominiums/${C}/polls/p1/votes/casa-1`)));
+    await assertFails(getDocs(collection(como("sindico"), `condominiums/${C}/polls/p1/votes`)));
+  });
+});
+
+describe("classificados", () => {
+  it("ninguém lê pelo navegador (autor e casa só saem pelo servidor), nem o próprio autor", async () => {
+    for (const uid of ["morador1", "morador2", "sindico", "conselheiro", "porteiro"]) {
+      await assertFails(getDoc(doc(como(uid), `condominiums/${C}/classifieds/c1`)));
+    }
   });
 });
 
@@ -221,6 +287,13 @@ describe("gravação direta pelo navegador", () => {
       ["morador1", "users/morador1"],
       ["porteiro", `condominiums/${C}/packages/x`],
       ["porteiro", `condominiums/${C}/accessEvents/x`],
+      ["sindico", `condominiums/${C}/announcements/x`],
+      ["sindico", `condominiums/${C}/documents/x`],
+      ["sindico", `condominiums/${C}/polls/x`],
+      ["morador1", `condominiums/${C}/polls/p1/votes/casa-1`],
+      ["morador1", `condominiums/${C}/tickets/t1/updates/x`],
+      ["morador1", `condominiums/${C}/classifieds/x`],
+      ["sindico", `condominiums/${C}/counters/solicitacoes-2026`],
     ];
     for (const [uid, caminho] of tentativas) {
       await assertFails(setDoc(doc(como(uid), caminho), { unitId: "casa-1", papel: "admin", status: "ativo" }));

@@ -9,7 +9,7 @@ Fonte única: `src/lib/permissoes.ts`.
 | Morador | `/inicio` | Entra com **usuário** (código de 6 caracteres) + senha. Serviços da própria casa; financeiro só o que foi publicado |
 | Portaria | `/portaria` | Visitantes, entradas/saídas, encomendas, reservas do dia. **Nunca** financeiro |
 | Síndico / Administração (`admin`) | `/admin` | Tudo |
-| Conselho (`conselheiro`) | `/admin` | Consulta: financeiro, relatórios, unidades. Sem edição por padrão |
+| Conselho (`conselheiro`) | `/admin` | Consulta: financeiro, relatórios, unidades, comunicados, documentos. Sem edição por padrão |
 
 ## Como a permissão final é calculada
 
@@ -50,6 +50,19 @@ Não existe área pública. Todas as páginas, ações e exportações exigem se
 | `/admin/reservas/areas` | `areas.configurar` |
 | Acesso com senha da equipe (página da pessoa) | `equipe.gerenciar` |
 | Usuário e senha do morador (página da pessoa e da unidade) | `moradores.gerenciar` (só o admin) |
+| `/comunicados`, `/comunicados/[id]` (morador) | `comunicados.ver` (só publicados) |
+| `/admin/comunicados` | `comunicados.ver` = consulta; `comunicados.publicar` = criar, editar, publicar, fixar e arquivar |
+| `/solicitacoes`, `/solicitacoes/[id]` (morador) | `solicitacoes.abrir` (só a própria casa; notas internas nunca aparecem) |
+| `/admin/solicitacoes` | `solicitacoes.gerenciar` (admin; o conselho pode receber como extra) |
+| `/documentos` (morador) | `documentos.ver` (só os ativos e visíveis para o papel) |
+| `/admin/documentos` | `documentos.ver` = consulta; `documentos.gerenciar` = cadastrar, editar, desativar |
+| `/enquetes`, `/enquetes/[id]` (morador) | `enquetes.votar` (1 voto por casa, sem troca) |
+| `/admin/enquetes` | `enquetes.gerenciar` (vê só totais, nunca o voto de cada casa) |
+| `/classificados` (morador) | `classificados.usar` (anúncios aprovados: só primeiro nome e o WhatsApp escolhido pelo autor) |
+| `/classificados/moderar` (morador com extra) | `classificados.moderar` |
+| `/admin/classificados` | `classificados.moderar` (vê a casa do autor) |
+| `/admin/relatorios`, `/admin/relatorios/csv` | `relatorios.ver` (o financeiro exige também `financeiro.ver` ou `financeiro.ver_publicado`) |
+| PIX da taxa em `/admin/informacoes` | só o papel **admin**, mesmo que outra pessoa tenha `informacoes.gerenciar` (contra golpe) |
 | `/conta/senha` | só estar logado (fica fora das áreas, para não entrar em laço) |
 
 ## Testes
@@ -59,3 +72,5 @@ Não existe área pública. Todas as páginas, ações e exportações exigem se
 - `tests/integracao/contexto.test.ts` — vínculo suspenso, condomínio suspenso, condomínio que não é da pessoa.
 - `tests/integracao/usuario-morador.test.ts` — login do morador no simulador (e-mail sintético, usuário em minúsculas, senha errada, suspenso).
 - `tests/unit/destino-seguro.test.ts` — o `?volta=` só aceita caminhos internos e que combinam com o perfil.
+- `tests/integracao/enquetes.test.ts` — 1 voto por casa (inclusive dois ao mesmo tempo), casa inativa, auditoria sem a opção.
+- `tests/integracao/demo-modulos.test.ts` — os dados de demonstração são lidos certo e o morador só vê o que pode.

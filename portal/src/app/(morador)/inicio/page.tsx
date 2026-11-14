@@ -5,15 +5,25 @@ import {
   CalendarDays,
   CalendarX2,
   ChevronRight,
+  ClipboardPlus,
   FlaskConical,
+  FolderOpen,
   MapPinned,
   Megaphone,
   Package,
   ReceiptText,
+  Store,
   UserCheck,
   Vote,
 } from "lucide-react";
 import { exigirPermissao, type Contexto } from "@/server/contexto";
+import type { Permissao } from "@/lib/permissoes";
+import { WidgetComunicados } from "@/components/comunicados/widget-inicio";
+import { WidgetEnquetes } from "@/components/enquetes/widget-inicio";
+import { WidgetSolicitacoes } from "@/components/solicitacoes/widget-inicio";
+import { WidgetInformacoesInicio } from "@/components/informacoes/widget-inicio";
+import { WidgetDocumentos } from "@/components/documentos/widget-inicio";
+import { WidgetClassificados } from "@/components/classificados/widget-inicio";
 import { mesesPublicados } from "@/server/dados/morador";
 import { eventosDoMes } from "@/server/dados/agenda";
 import { formatarMoeda, hojeISO, saudacao } from "@/lib/formato";
@@ -29,16 +39,19 @@ import type { LucideIcon } from "lucide-react";
 
 export const metadata: Metadata = { title: "Início" };
 
-// Atalhos dos módulos. Sem "href" = ainda não pronto (aparece "Em breve" e não é clicável).
-const ATALHOS: { icone: LucideIcon; titulo: string; href?: string; tom: TomModulo }[] = [
-  { icone: ReceiptText, titulo: "Prestação de contas", href: "/financeiro", tom: "verde" },
-  { icone: MapPinned, titulo: "Mapa das casas", href: "/mapa", tom: "lago" },
-  { icone: CalendarDays, titulo: "Agenda das áreas", href: "/reservas", tom: "verde" },
-  { icone: UserCheck, titulo: "Autorizar visita", href: "/visitas", tom: "lago" },
-  { icone: Package, titulo: "Minhas encomendas", href: "/encomendas", tom: "areia" },
-  { icone: BookUser, titulo: "Contatos úteis", href: "/contatos", tom: "vinho" },
-  { icone: Megaphone, titulo: "Comunicados", tom: "areia" },
-  { icone: Vote, titulo: "Votações", tom: "vinho" },
+// Atalhos dos módulos (só aparecem os que o perfil pode usar).
+const ATALHOS: { icone: LucideIcon; titulo: string; href: string; tom: TomModulo; permissao: Permissao }[] = [
+  { icone: ReceiptText, titulo: "Prestação de contas", href: "/financeiro", tom: "verde", permissao: "financeiro.ver_publicado" },
+  { icone: CalendarDays, titulo: "Agenda das áreas", href: "/reservas", tom: "verde", permissao: "reservas.fazer" },
+  { icone: ClipboardPlus, titulo: "Informar problema", href: "/solicitacoes?nova=1", tom: "areia", permissao: "solicitacoes.abrir" },
+  { icone: Megaphone, titulo: "Comunicados", href: "/comunicados", tom: "areia", permissao: "comunicados.ver" },
+  { icone: UserCheck, titulo: "Autorizar visita", href: "/visitas", tom: "lago", permissao: "visitantes.autorizar" },
+  { icone: Package, titulo: "Minhas encomendas", href: "/encomendas", tom: "areia", permissao: "encomendas.ver_proprias" },
+  { icone: Vote, titulo: "Enquetes", href: "/enquetes", tom: "vinho", permissao: "enquetes.votar" },
+  { icone: Store, titulo: "Classificados", href: "/classificados", tom: "areia", permissao: "classificados.usar" },
+  { icone: FolderOpen, titulo: "Documentos", href: "/documentos", tom: "lago", permissao: "documentos.ver" },
+  { icone: MapPinned, titulo: "Mapa das casas", href: "/mapa", tom: "lago", permissao: "mapa.ver" },
+  { icone: BookUser, titulo: "Contatos úteis", href: "/contatos", tom: "vinho", permissao: "informacoes.ver" },
 ];
 
 /** Último mês PUBLICADO, ou null se ainda não houver. */
@@ -73,6 +86,7 @@ export default async function InicioMorador() {
   // Próximos eventos: de hoje em diante, deste mês e do seguinte.
   const proximos = [...eventos, ...eventosProx].filter((e) => e.data >= hoje).slice(0, 5);
   const temExemplo = eventos.some((e) => e.exemplo) || proximos.some((e) => e.exemplo);
+  const atalhos = ATALHOS.filter((a) => ctx.permissoes.has(a.permissao));
 
   return (
     <div className="flex flex-col gap-6">
@@ -98,6 +112,9 @@ export default async function InicioMorador() {
         </h1>
         <p className="mt-0.5 text-ink-2">Bem-vindo ao portal do {ctx.condominioNome}.</p>
       </header>
+
+      {/* Comunicados recentes (o urgente aparece cedo) */}
+      <WidgetComunicados ctx={ctx} />
 
       {/* Resumo do último mês publicado */}
       <section aria-labelledby="titulo-resumo">
@@ -138,14 +155,24 @@ export default async function InicioMorador() {
       {/* Atalhos dos módulos */}
       <section aria-labelledby="titulo-atalhos" className="flex flex-col gap-3">
         <TituloSecao id="titulo-atalhos">O que você precisa?</TituloSecao>
-        <ul className="grid grid-cols-3 gap-2.5 min-[360px]:grid-cols-4">
-          {ATALHOS.map((a) => (
+        {/* 3 por linha no celular (nomes como "Classificados" não cabem em 4 colunas a 360px). */}
+        <ul className="grid grid-cols-3 gap-2.5 min-[440px]:grid-cols-4">
+          {atalhos.map((a) => (
             <li key={a.titulo}>
-              <AtalhoModulo {...a} />
+              <AtalhoModulo icone={a.icone} titulo={a.titulo} href={a.href} tom={a.tom} />
             </li>
           ))}
         </ul>
       </section>
+
+      {/* Enquete aberta (ou link para os resultados) */}
+      <WidgetEnquetes ctx={ctx} />
+
+      {/* Solicitações da casa */}
+      <WidgetSolicitacoes ctx={ctx} />
+
+      {/* Votação oficial, PIX da taxa e ronda noturna */}
+      <WidgetInformacoesInicio ctx={ctx} />
 
       {/* Agenda */}
       <section aria-labelledby="titulo-agenda" className="flex flex-col gap-3">
@@ -200,22 +227,9 @@ export default async function InicioMorador() {
         )}
       </section>
 
-      {/* Votações: módulo ainda não pronto (não clicável) */}
-      <section
-        aria-label="Votações e assembleias, em breve"
-        className="flex items-center gap-3.5 rounded-[var(--radius-card)] bg-linear-135 from-vinho-de to-vinho-ate p-4 text-white shadow-card"
-      >
-        <span className="grid size-[46px] shrink-0 place-items-center rounded-[14px] bg-[rgb(255_255_255/0.16)]">
-          <Vote aria-hidden className="size-6" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <b className="block font-display text-[1.1rem]">Votações e assembleias</b>
-          <span className="text-[0.9rem] text-vinho-fg-suave">Vote pelo celular nas decisões do condomínio.</span>
-        </span>
-        <span className="shrink-0 rounded-full bg-[rgb(255_255_255/0.18)] px-2.5 py-1 text-[0.7rem] font-bold uppercase tracking-wide">
-          Em breve
-        </span>
-      </section>
+      {/* Documentos recentes e classificados */}
+      <WidgetDocumentos ctx={ctx} />
+      <WidgetClassificados ctx={ctx} />
     </div>
   );
 }

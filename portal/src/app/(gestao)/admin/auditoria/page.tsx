@@ -1,7 +1,20 @@
 import type { Metadata } from "next";
 import {
+  Archive,
   Ban,
   CalendarCheck,
+  CircleCheck,
+  CircleX,
+  ClipboardList,
+  FilePlus2,
+  FileX2,
+  FolderOpen,
+  Megaphone,
+  MessageSquare,
+  RefreshCw,
+  Send,
+  Store,
+  Vote,
   CalendarPlus,
   CalendarX2,
   DoorClosed,
@@ -57,6 +70,31 @@ const DESCRICAO: Record<string, { texto: string; icone: LucideIcon }> = {
   "area.editar": { texto: "Alterou área de lazer", icone: Pencil },
   // Configurações
   "informacoes.alterar": { texto: "Alterou as informações do condomínio", icone: Settings },
+  // Comunicados
+  "comunicado.criar": { texto: "Criou comunicado", icone: Megaphone },
+  "comunicado.editar": { texto: "Alterou comunicado", icone: Pencil },
+  "comunicado.publicar": { texto: "Publicou comunicado", icone: Send },
+  "comunicado.arquivar": { texto: "Arquivou comunicado", icone: Archive },
+  // Solicitações
+  "solicitacao.abrir": { texto: "Abriu solicitação", icone: ClipboardList },
+  "solicitacao.comentar": { texto: "Comentou em solicitação", icone: MessageSquare },
+  "solicitacao.status": { texto: "Mudou a situação de solicitação", icone: RefreshCw },
+  "solicitacao.cancelar": { texto: "Cancelou solicitação", icone: CircleX },
+  // Documentos
+  "documento.criar": { texto: "Cadastrou documento", icone: FilePlus2 },
+  "documento.editar": { texto: "Alterou documento", icone: FolderOpen },
+  "documento.desativar": { texto: "Desativou documento", icone: FileX2 },
+  // Enquetes
+  "enquete.criar": { texto: "Criou enquete (rascunho)", icone: Vote },
+  "enquete.editar": { texto: "Editou rascunho de enquete", icone: Pencil },
+  "enquete.publicar": { texto: "Publicou enquete", icone: Send },
+  "enquete.encerrar": { texto: "Encerrou enquete antes do prazo", icone: Archive },
+  "enquete.votar": { texto: "Casa votou em enquete (opção não registrada)", icone: Vote },
+  // Classificados
+  "classificado.criar": { texto: "Enviou anúncio para aprovação", icone: Store },
+  "classificado.aprovar": { texto: "Aprovou anúncio", icone: CircleCheck },
+  "classificado.rejeitar": { texto: "Não aprovou anúncio", icone: CircleX },
+  "classificado.remover": { texto: "Removeu anúncio", icone: Archive },
 };
 
 export default async function PaginaAuditoria() {

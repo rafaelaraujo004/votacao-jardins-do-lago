@@ -21,15 +21,29 @@ const GRUPOS: { titulo: string; itens: Item[] }[] = [
     ],
   },
   { titulo: "Portaria", itens: [{ rotulo: "Histórico da portaria", icone: "DoorOpen", href: "/admin/portaria", permissao: "visitantes.ver_todos" }] },
-  { titulo: "Finanças", itens: [{ rotulo: "Prestação de contas", icone: "Landmark", href: "/admin/financeiro", permissao: "financeiro.ver" }] },
+  {
+    titulo: "Finanças",
+    itens: [
+      { rotulo: "Prestação de contas", icone: "Landmark", href: "/admin/financeiro", permissao: "financeiro.ver" },
+      { rotulo: "Relatórios", icone: "ChartColumn", href: "/admin/relatorios", permissao: "relatorios.ver" },
+    ],
+  },
   {
     titulo: "Serviços",
     itens: [
       { rotulo: "Reservas e áreas", icone: "CalendarDays", href: "/admin/reservas", permissao: "reservas.ver_todas" },
-      { rotulo: "Solicitações", icone: "Wrench", fase: "Fase 4", permissao: "solicitacoes.gerenciar" },
+      { rotulo: "Solicitações", icone: "ClipboardList", href: "/admin/solicitacoes", permissao: "solicitacoes.gerenciar" },
     ],
   },
-  { titulo: "Comunicação", itens: [{ rotulo: "Comunicados e documentos", icone: "Megaphone", fase: "Fase 4", permissao: "comunicados.ver" }] },
+  {
+    titulo: "Comunicação",
+    itens: [
+      { rotulo: "Comunicados", icone: "Megaphone", href: "/admin/comunicados", permissao: "comunicados.ver" },
+      { rotulo: "Documentos", icone: "FolderOpen", href: "/admin/documentos", permissao: "documentos.ver" },
+      { rotulo: "Enquetes", icone: "Vote", href: "/admin/enquetes", permissao: "enquetes.gerenciar" },
+      { rotulo: "Classificados", icone: "Store", href: "/admin/classificados", permissao: "classificados.moderar" },
+    ],
+  },
   { titulo: "Configurações", itens: [{ rotulo: "Informações do condomínio", icone: "Settings", href: "/admin/informacoes", permissao: "informacoes.gerenciar" }] },
   { titulo: "Controle", itens: [{ rotulo: "Auditoria", icone: "ScrollText", href: "/admin/auditoria", permissao: "auditoria.ver" }] },
 ];

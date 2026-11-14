@@ -6,7 +6,21 @@ import { describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 import { AREAS_PROTEGIDAS, areaProtegida, config, proxy } from "@/proxy";
 
-const ROTAS_DO_MORADOR = ["/inicio", "/financeiro", "/mapa", "/contatos", "/mais", "/reservas", "/visitas", "/encomendas"];
+const ROTAS_DO_MORADOR = [
+  "/inicio",
+  "/financeiro",
+  "/mapa",
+  "/contatos",
+  "/mais",
+  "/reservas",
+  "/visitas",
+  "/encomendas",
+  "/comunicados",
+  "/solicitacoes",
+  "/documentos",
+  "/enquetes",
+  "/classificados",
+];
 
 function pedido(caminho: string, comCookie = false): NextRequest {
   const cabecalhos = comCookie ? { cookie: "__session=abc" } : undefined;
@@ -40,7 +54,18 @@ describe("proxy", () => {
   });
 
   it("também protege subpáginas, relatório, equipe e conta", () => {
-    for (const rota of ["/reservas/x", "/relatorio/financeiro?mes=2026-10", "/admin/pessoas", "/portaria", "/conta/senha"]) {
+    for (const rota of [
+      "/reservas/x",
+      "/comunicados/abc",
+      "/solicitacoes/abc",
+      "/enquetes/abc",
+      "/classificados/moderar",
+      "/relatorio/financeiro?mes=2026-10",
+      "/admin/pessoas",
+      "/admin/relatorios/csv?assunto=reservas&ano=2026",
+      "/portaria",
+      "/conta/senha",
+    ]) {
       const r = proxy(pedido(rota));
       expect(new URL(r.headers.get("location") ?? "").pathname, rota).toBe("/entrar");
     }

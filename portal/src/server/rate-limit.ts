@@ -6,7 +6,9 @@ import { Timestamp, type Firestore } from "firebase-admin/firestore";
  * Limite de tentativas, guardado no próprio Firestore (sem serviço extra).
  * Ex.: no máximo 10 logins por IP a cada 5 minutos.
  * A chave é um hash: o IP não fica gravado em texto no banco.
- * Os documentos expiram sozinhos (política TTL no campo `expiraEm`).
+ * O campo `expiraEm` diz até quando a contagem vale; documento vencido é
+ * reaproveitado na próxima tentativa (o projeto está no plano gratuito
+ * Spark, sem política de expiração automática — TTL).
  */
 export async function consumirTentativa(
   db: Firestore,
