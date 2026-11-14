@@ -1,6 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, CalendarX2, ChevronRight, Clock, ShieldCheck, TreePalm, Users, XCircle, Zap } from "lucide-react";
+import {
+  AlarmClock,
+  ArrowLeft,
+  CalendarRange,
+  CalendarX2,
+  ChevronRight,
+  Clock,
+  ListChecks,
+  ShieldCheck,
+  TreePalm,
+  Users,
+  Wrench,
+  XCircle,
+  Zap,
+} from "lucide-react";
 import { exigirPermissao, type Contexto } from "@/server/contexto";
 import { listarAreas, minhasReservas, ocupacaoDaArea, type Reserva } from "@/server/dados/reservas";
 import { areasAtivas, ocupacaoSemCasaDaArea } from "@/server/dados/morador";
@@ -10,8 +24,12 @@ import { dataCurta } from "@/lib/agenda";
 import {
   dataValida,
   REGEX_MES_RESERVA,
+  avisoDesistenciaTardia,
   conferirPedido,
+  contarNoDia,
   descreverFaixa,
+  desistenciaForaDoPrazo,
+  textoHoras,
   janelaDoMorador,
   mesAnteriorDe,
   minutosAgora,
@@ -26,7 +44,8 @@ import { AcaoConfirmada } from "@/components/ui/acao-confirmada";
 import { CabecalhoPagina, TituloSecao } from "@/components/ui/painel";
 import { CalendarioReservas, type InfoDia } from "@/components/reservas/calendario-reservas";
 import { FormularioPedido } from "@/components/reservas/formulario-pedido";
-import { EtiquetaReserva, Legenda } from "@/components/reservas/pecas";
+import { AvisosDaArea, EtiquetaCanceladaTarde, EtiquetaReserva, Legenda, ListaUsoLivre } from "@/components/reservas/pecas";
+import { WidgetInformacoesInicio } from "@/components/informacoes/widget-inicio";
 
 export const metadata: Metadata = { title: "Reservas" };
 
@@ -76,6 +95,8 @@ export default async function ReservasMorador({ searchParams }: PageProps<"/rese
   const agoraMin = minutosAgora(agora, ctx.fuso);
   const ativas = fonte.areas;
   const area = ativas.find((a) => a.id === params.area) ?? null;
+  // Prazo de desistência atual de cada área (usado quando a reserva é antiga e não guardou o prazo).
+  const prazos: Record<string, number> = Object.fromEntries(ativas.map((a) => [a.id, a.prazoDesistenciaHoras]));
 
   const cabecalho = (
     <CabecalhoPagina
@@ -116,41 +137,30 @@ export default async function ReservasMorador({ searchParams }: PageProps<"/rese
             Quando a administração cadastrar as áreas de lazer, elas aparecem aqui.
           </EstadoVazio>
         ) : (
-          <section aria-labelledby="titulo-areas" className="flex flex-col gap-3">
-            <TituloSecao id="titulo-areas">Escolha a área</TituloSecao>
-            <ul className="grid gap-3 sm:grid-cols-2">
-              {ativas.map((a) => (
-                <li key={a.id}>
-                  <Link
-                    href={link(a.id, hoje.slice(0, 7))}
-                    className="flex h-full items-center gap-3 rounded-[var(--radius-card)] border border-borda-luz bg-surface p-4 shadow-card transition-shadow active:shadow-afundado"
-                  >
-                    <span className="grid size-[46px] shrink-0 place-items-center rounded-[14px] bg-ok-soft text-pine">
-                      <TreePalm aria-hidden className="size-6" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <b className="block text-[1.05rem] text-ink">{a.nome}</b>
-                      <span className="block text-[0.88rem] text-muted">
-                        {a.faixas.length === 1 ? descreverFaixa(a.faixas[0]) : `${a.faixas.length} horários por dia`} · até {a.capacidade} pessoas
-                      </span>
-                      <span className="mt-0.5 block text-[0.84rem] font-bold text-ink-2">
-                        {a.exigeAprovacao ? "Precisa de aprovação" : "Confirma na hora"}
-                      </span>
-                    </span>
-                    <ChevronRight aria-hidden className="size-5 shrink-0 text-pine" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
+          <>
+            <ListaDeAreas
+              id="titulo-areas"
+              titulo="Áreas de lazer"
+              areas={ativas.filter((a) => a.tipo === "area")}
+              href={(a) => link(a.id, hoje.slice(0, 7))}
+            />
+            <ListaDeAreas
+              id="titulo-equipamentos"
+              titulo="Equipamentos"
+              areas={ativas.filter((a) => a.tipo === "equipamento")}
+              href={(a) => link(a.id, hoje.slice(0, 7))}
+            />
+          </>
         )}
-        {podeReservar ? <MinhasReservas reservas={minhas} hoje={hoje} agoraMin={agoraMin} /> : null}
+        {podeReservar ? <MinhasReservas reservas={minhas} hoje={hoje} agoraMin={agoraMin} prazos={prazos} /> : null}
+        {/* Quem cuida das reservas (nome e telefone publicados pelo síndico). */}
+        <WidgetInformacoesInicio ctx={ctx} mostrar={["responsavel"]} titulo="Dúvidas sobre reservas" />
       </div>
     );
   }
 
   // ----- Área escolhida: regras, calendário, horários do dia -----
-  const janela = janelaDoMorador(area, hoje);
+  const janela = janelaDoMorador(area, hoje, agoraMin);
   const mesHoje = hoje.slice(0, 7);
   const ultimoMes = janela.ultimo.slice(0, 7);
   const mesPedido = typeof params.mes === "string" && REGEX_MES_RESERVA.test(params.mes) ? params.mes : mesHoje;
@@ -195,9 +205,20 @@ export default async function ReservasMorador({ searchParams }: PageProps<"/rese
   const livresDoDia = dia
     ? livresDe(dia).map((s) => ({ id: s.faixa.id, rotulo: s.faixa.rotulo, horario: descreverFaixa(s.faixa).split(" · ")[1] }))
     : [];
-  // Regras que valem para o dia inteiro (antecedência, limite do mês). "24:00" = ignora o horário.
+  // Regras que valem para o dia inteiro (antecedência, limites do mês e do dia). "24:00" = fim do dia.
+  // O limite do dia conta só reservas ativas; das outras casas sabemos apenas que existem (sem saber qual casa).
+  const contas = dia ? contarNoDia(ocupacao.filter((o) => o.data === dia)) : { daCasa: 0, outrasCasas: 0 };
   const problemaDoDia = dia
-    ? conferirPedido({ area, data: dia, faixa: { inicio: "24:00" }, hoje, agoraMinutos: agoraMin, reservasDaCasaNoMes: usadasNoMes(dia.slice(0, 7)) })
+    ? conferirPedido({
+        area,
+        data: dia,
+        faixa: { inicio: "24:00" },
+        hoje,
+        agoraMinutos: agoraMin,
+        reservasDaCasaNoMes: usadasNoMes(dia.slice(0, 7)),
+        reservasDaCasaNoDia: contas.daCasa,
+        outrasCasasNoDia: contas.outrasCasas,
+      })
     : null;
   const minhasDaArea = minhas.filter((r) => r.amenityId === area.id);
 
@@ -210,6 +231,7 @@ export default async function ReservasMorador({ searchParams }: PageProps<"/rese
       {semCasa}
       {aviso}
 
+      <AvisosDaArea avisos={area.avisos} />
       <RegrasDaArea area={area} />
 
       <section aria-labelledby="titulo-calendario" className="flex flex-col gap-3">
@@ -267,6 +289,7 @@ export default async function ReservasMorador({ searchParams }: PageProps<"/rese
                     </li>
                   ))}
                 </ul>
+                <ListaUsoLivre faixas={area.faixasLivres} />
                 {!podeReservar || !ctx.unitId ? null : problemaDoDia ? (
                   <Alerta tipo="info" titulo="Não dá para reservar neste dia">
                     {problemaDoDia}
@@ -276,7 +299,7 @@ export default async function ReservasMorador({ searchParams }: PageProps<"/rese
                     Escolha outro dia no calendário.
                   </Alerta>
                 ) : (
-                  <FormularioPedido areaId={area.id} data={dia} faixas={livresDoDia} exigeAprovacao={area.exigeAprovacao} />
+                  <FormularioPedido areaId={area.id} data={dia} faixas={livresDoDia} exigeAprovacao={area.exigeAprovacao} exigencias={area.exigencias} />
                 )}
               </>
             )}
@@ -285,20 +308,71 @@ export default async function ReservasMorador({ searchParams }: PageProps<"/rese
       </section>
 
       {podeReservar ? (
-        <MinhasReservas reservas={minhasDaArea} hoje={hoje} agoraMin={agoraMin} titulo={`Minhas reservas · ${area.nome}`} />
+        <MinhasReservas reservas={minhasDaArea} hoje={hoje} agoraMin={agoraMin} prazos={prazos} titulo={`Minhas reservas · ${area.nome}`} />
       ) : null}
     </div>
   );
 }
 
+/** Cartão de uma área ou equipamento na lista (leva ao calendário). */
+function ListaDeAreas({
+  id,
+  titulo,
+  areas,
+  href,
+}: {
+  id: string;
+  titulo: string;
+  areas: ConfigArea[];
+  href: (a: ConfigArea) => string;
+}) {
+  if (!areas.length) return null;
+  return (
+    <section aria-labelledby={id} className="flex flex-col gap-3">
+      <TituloSecao id={id}>{titulo}</TituloSecao>
+      <ul className="grid gap-3 sm:grid-cols-2">
+        {areas.map((a) => {
+          const Icone = a.tipo === "equipamento" ? Wrench : TreePalm;
+          return (
+            <li key={a.id}>
+              <Link
+                href={href(a)}
+                className="flex h-full min-h-11 items-center gap-3 rounded-[var(--radius-card)] border border-borda-luz bg-surface p-4 shadow-card transition-shadow active:shadow-afundado"
+              >
+                <span className="grid size-[46px] shrink-0 place-items-center rounded-[14px] bg-ok-soft text-pine">
+                  <Icone aria-hidden className="size-6" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <b className="block text-[1.05rem] text-ink">{a.nome}</b>
+                  <span className="block text-[0.88rem] text-muted">
+                    {a.faixas.length === 1 ? descreverFaixa(a.faixas[0]) : `${a.faixas.length} horários por dia`}
+                    {a.tipo === "area" && a.capacidade > 0 ? ` · até ${a.capacidade} pessoas` : ""}
+                  </span>
+                  <span className="mt-0.5 block text-[0.84rem] font-bold text-ink-2">
+                    {a.exigeAprovacao ? "Precisa de aprovação" : "Confirma na hora"}
+                  </span>
+                </span>
+                <ChevronRight aria-hidden className="size-5 shrink-0 text-pine" />
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 function RegrasDaArea({ area }: { area: ConfigArea }) {
+  const limiteDia = area.limitePorCasaPorDia;
   return (
     <Cartao className="flex flex-col gap-3 p-4">
-      <h2 className="text-[1.1rem] font-bold text-destaque">Regras da área</h2>
+      <h2 className="text-[1.1rem] font-bold text-destaque">{area.tipo === "equipamento" ? "Regras do equipamento" : "Regras da área"}</h2>
       <ul className="flex flex-col gap-1.5 text-[0.95rem] text-ink-2">
-        <li className="flex items-start gap-2">
-          <Users aria-hidden className="mt-0.5 size-4 shrink-0 text-pine" /> Até {area.capacidade} pessoas
-        </li>
+        {area.tipo === "area" && area.capacidade > 0 ? (
+          <li className="flex items-start gap-2">
+            <Users aria-hidden className="mt-0.5 size-4 shrink-0 text-pine" /> Até {area.capacidade} pessoas
+          </li>
+        ) : null}
         <li className="flex items-start gap-2">
           {area.exigeAprovacao ? (
             <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0 text-pine" />
@@ -309,13 +383,47 @@ function RegrasDaArea({ area }: { area: ConfigArea }) {
         </li>
         <li className="flex items-start gap-2">
           <Clock aria-hidden className="mt-0.5 size-4 shrink-0 text-pine" />
-          {area.antecedenciaMinDias === 0
-            ? `Pode reservar para hoje e até ${area.antecedenciaMaxDias} dias à frente`
-            : `Reserve com ${area.antecedenciaMinDias} a ${area.antecedenciaMaxDias} dias de antecedência`}
-          {area.limitePorMes ? ` · até ${area.limitePorMes} por casa no mês` : ""}
+          {area.antecedenciaMinimaHoras === 0
+            ? `Pode reservar até o horário começar, e até ${area.antecedenciaMaxDias} dias à frente`
+            : `Reserve com pelo menos ${textoHoras(area.antecedenciaMinimaHoras)} de antecedência, e até ${area.antecedenciaMaxDias} dias à frente`}
         </li>
+        {area.limitePorMes || limiteDia ? (
+          <li className="flex items-start gap-2">
+            <CalendarRange aria-hidden className="mt-0.5 size-4 shrink-0 text-pine" />
+            <span>
+              {[
+                area.limitePorMes ? `Até ${area.limitePorMes} por casa no mês` : "",
+                limiteDia
+                  ? `até ${limiteDia} por casa no mesmo dia${area.permitirExtraSeDiaLivre ? " (pode passar disso se nenhuma outra casa reservou o dia)" : ""}`
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" · ")
+                .replace(/^a/, "A")}
+            </span>
+          </li>
+        ) : null}
+        {area.prazoDesistenciaHoras > 0 ? (
+          <li className="flex items-start gap-2">
+            <AlarmClock aria-hidden className="mt-0.5 size-4 shrink-0 text-pine" />
+            Desistência sem multa até {textoHoras(area.prazoDesistenciaHoras)} antes do horário. Depois disso, fica sujeita a multa
+            conforme o regimento.
+          </li>
+        ) : null}
       </ul>
       {area.regras ? <p className="whitespace-pre-line text-ink-2">{area.regras}</p> : null}
+      {area.exigencias.length ? (
+        <div className="flex flex-col gap-1.5">
+          <b className="flex items-center gap-2 text-ink">
+            <ListChecks aria-hidden className="size-4 text-pine" /> Exigências (você confirma ao pedir)
+          </b>
+          <ul className="flex list-disc flex-col gap-1 pl-5 text-ink-2">
+            {area.exigencias.map((e, i) => (
+              <li key={i}>{e}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </Cartao>
   );
 }
@@ -324,11 +432,14 @@ function MinhasReservas({
   reservas,
   hoje,
   agoraMin,
+  prazos,
   titulo = "Minhas reservas",
 }: {
   reservas: Reserva[];
   hoje: string;
   agoraMin: number;
+  /** Prazo de desistência atual de cada área (para reservas antigas que não guardaram o prazo). */
+  prazos: Record<string, number>;
   titulo?: string;
 }) {
   return (
@@ -340,34 +451,48 @@ function MinhasReservas({
         </EstadoVazio>
       ) : (
         <ul className="flex flex-col gap-2.5">
-          {reservas.map((r) => (
-            <li key={r.id} className="saltado flex flex-col gap-2 rounded-2xl px-4 py-3 sm:flex-row sm:items-center">
-              <span className="min-w-0 flex-1">
-                <b className="block text-ink">{r.areaNome}</b>
-                <span className="block text-[0.9rem] text-ink-2">
-                  {dataCurta(r.data)}/{r.data.slice(0, 4)} · {descreverFaixa({ rotulo: r.faixaRotulo, inicio: r.inicio, fim: r.fim })}
+          {reservas.map((r) => {
+            const prazo = r.prazoDesistenciaHoras ?? prazos[r.amenityId] ?? 0;
+            const tardia = desistenciaForaDoPrazo(r, prazo, hoje, agoraMin);
+            return (
+              <li key={r.id} className="saltado flex flex-col gap-2 rounded-2xl px-4 py-3 sm:flex-row sm:items-center">
+                <span className="min-w-0 flex-1">
+                  <b className="block text-ink">{r.areaNome}</b>
+                  <span className="block text-[0.9rem] text-ink-2">
+                    {dataCurta(r.data)}/{r.data.slice(0, 4)} · {descreverFaixa({ rotulo: r.faixaRotulo, inicio: r.inicio, fim: r.fim })}
+                  </span>
+                  {(r.status === "recusada" || r.status === "cancelada") && r.motivo ? (
+                    <span className="block text-[0.86rem] text-muted">Motivo: {r.motivo}</span>
+                  ) : null}
                 </span>
-                {(r.status === "recusada" || r.status === "cancelada") && r.motivo ? (
-                  <span className="block text-[0.86rem] text-muted">Motivo: {r.motivo}</span>
-                ) : null}
-              </span>
-              <span className="flex flex-wrap items-center gap-2">
-                <EtiquetaReserva status={r.status} />
-                {podeCancelarMorador(r, hoje, agoraMin) ? (
-                  <AcaoConfirmada
-                    acao={cancelarReserva}
-                    campos={{ id: r.id }}
-                    titulo={r.status === "pendente" ? "Cancelar este pedido?" : "Cancelar esta reserva?"}
-                    mensagem={`${r.areaNome} · ${dataISOParaBR(r.data)} · ${r.faixaRotulo}. O horário fica livre para outras casas.`}
-                    textoConfirmar="Sim, cancelar"
-                    perigo
-                  >
-                    <XCircle aria-hidden className="size-4" /> Cancelar
-                  </AcaoConfirmada>
-                ) : null}
-              </span>
-            </li>
-          ))}
+                <span className="flex flex-wrap items-center gap-2">
+                  <EtiquetaReserva status={r.status} />
+                  {r.cancelamentoTardio ? <EtiquetaCanceladaTarde /> : null}
+                  {podeCancelarMorador(r, hoje, agoraMin) ? (
+                    <AcaoConfirmada
+                      acao={cancelarReserva}
+                      campos={{ id: r.id }}
+                      titulo={r.status === "pendente" ? "Cancelar este pedido?" : tardia ? "Desistir fora do prazo?" : "Cancelar esta reserva?"}
+                      mensagem={
+                        tardia ? (
+                          <>
+                            <b className="block text-danger">{avisoDesistenciaTardia(prazo)}</b>
+                            {`${r.areaNome} · ${dataISOParaBR(r.data)} · ${r.faixaRotulo}. O horário fica livre para outras casas.`}
+                          </>
+                        ) : (
+                          `${r.areaNome} · ${dataISOParaBR(r.data)} · ${r.faixaRotulo}. O horário fica livre para outras casas.`
+                        )
+                      }
+                      textoConfirmar={tardia ? "Sim, desistir mesmo assim" : "Sim, cancelar"}
+                      perigo
+                    >
+                      <XCircle aria-hidden className="size-4" /> Cancelar
+                    </AcaoConfirmada>
+                  ) : null}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>

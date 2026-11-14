@@ -2,10 +2,12 @@
 
 /**
  * Pedido de reserva do morador: escolhe uma faixa livre do dia e confirma.
- * O servidor confere tudo de novo (horário livre, antecedência, limite do mês).
+ * Se a área tiver exigências, elas aparecem antes do botão, com a caixa
+ * "Li e concordo com as regras" obrigatória (o aceite fica gravado na reserva).
+ * O servidor confere tudo de novo (horário livre, antecedência, limites, aceite).
  */
 import { useRouter } from "next/navigation";
-import { CalendarCheck, Send } from "lucide-react";
+import { CalendarCheck, ListChecks, Send } from "lucide-react";
 import { Campo, classeEntrada } from "@/components/ui/basicos";
 import { BotaoEnviar, Formulario } from "@/components/ui/formulario";
 import { pedirReserva } from "@/server/acoes/reservas";
@@ -16,12 +18,15 @@ export function FormularioPedido({
   data,
   faixas,
   exigeAprovacao,
+  exigencias = [],
 }: {
   areaId: string;
   data: string;
   /** Só as faixas LIVRES do dia. */
   faixas: { id: string; rotulo: string; horario: string }[];
   exigeAprovacao: boolean;
+  /** Regras que o morador precisa aceitar antes de pedir. */
+  exigencias?: string[];
 }) {
   const router = useRouter();
   return (
@@ -52,6 +57,23 @@ export function FormularioPedido({
       <Campo id="observacao" rotulo="Observação (opcional)" dica="Ex.: aniversário, número aproximado de convidados. Não coloque CPF nem dados bancários.">
         <textarea id="observacao" name="observacao" rows={2} maxLength={300} className={`${classeEntrada} py-3`} aria-describedby="observacao-dica" />
       </Campo>
+
+      {exigencias.length ? (
+        <div className="flex flex-col gap-3 rounded-2xl border-[1.5px] border-warn bg-warn-soft p-4">
+          <b className="flex items-center gap-2 text-ink">
+            <ListChecks aria-hidden className="size-5 text-warn" /> Antes de pedir, leia as regras
+          </b>
+          <ul className="flex list-disc flex-col gap-1 pl-5 text-ink-2">
+            {exigencias.map((e, i) => (
+              <li key={i}>{e}</li>
+            ))}
+          </ul>
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 font-bold text-ink">
+            <input type="checkbox" name="aceite" value="sim" required className="size-6 shrink-0 accent-pine" />
+            Li e concordo com as regras
+          </label>
+        </div>
+      ) : null}
 
       <div>
         <BotaoEnviar largo textoEnviando="Enviando…">

@@ -7,6 +7,8 @@ import { EMERGENCIAS } from "@/lib/condominio";
 import { Alerta, Cartao, EstadoVazio } from "@/components/ui/basicos";
 import { CabecalhoPagina, TituloSecao } from "@/components/ui/painel";
 import { EnderecoCopiavel } from "@/components/ui/endereco";
+import { AtalhoVotacao, CartaoPix, CartaoResponsavelReservas, CartaoRonda } from "@/components/informacoes/cartoes";
+import { ehCelular, formatarTelefone, linkConversaWhatsApp, linkLigar } from "@/lib/validacao-informacoes";
 
 export const metadata: Metadata = { title: "Contatos úteis" };
 
@@ -16,13 +18,6 @@ const ICONE_EMERGENCIA: Record<string, { icone: LucideIcon; cor: string }> = {
   "192": { icone: Ambulance, cor: "text-plum" },
   "193": { icone: Flame, cor: "text-texto-laranja" },
 };
-
-/** Só os dígitos do telefone, com o 55 do Brasil na frente (para tel: e wa.me). */
-function digitosBR(telefone: string): string | null {
-  const so = telefone.replace(/\D/g, "");
-  if (so.length < 8 || so.length > 13) return null;
-  return so.startsWith("55") && so.length >= 12 ? so : `55${so}`;
-}
 
 type Contato = { nome: string; detalhe: string | null; telefone: string | null; whatsapp: string | null; icone: LucideIcon };
 
@@ -49,7 +44,10 @@ const classeBotaoVerde =
 const classeBotaoSaltado =
   "saltado inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-2 font-bold text-pine active:shadow-afundado";
 
-/** Contatos (com login): endereço, telefones do condomínio (cadastro da administração) e emergência. */
+/**
+ * Contatos (com login): endereço, emergência, ronda noturna, telefones do condomínio,
+ * responsável pelas reservas, PIX da taxa e votação oficial (tudo do cadastro da administração).
+ */
 export default async function ContatosMorador() {
   const ctx = await exigirPermissao("informacoes.ver", "/contatos");
 
@@ -102,13 +100,16 @@ export default async function ContatosMorador() {
         </ul>
       </section>
 
+      {info?.telefoneRonda ? <CartaoRonda telefone={info.telefoneRonda} /> : null}
+
       <section aria-labelledby="titulo-condominio" className="flex flex-col gap-3">
         <TituloSecao id="titulo-condominio">Condomínio</TituloSecao>
         {contatos.length ? (
           <ul className="flex flex-col gap-3">
             {contatos.map((ct) => {
-              const tel = ct.telefone ? digitosBR(ct.telefone) : null;
-              const zap = ct.whatsapp ? digitosBR(ct.whatsapp) : null;
+              // Telefones já vêm normalizados (só números, com DDD) do servidor.
+              const tel = ct.telefone;
+              const zap = ct.whatsapp && ehCelular(ct.whatsapp) ? ct.whatsapp : null;
               return (
                 <li key={ct.nome}>
                   <Cartao className="flex flex-col gap-3">
@@ -118,7 +119,7 @@ export default async function ContatosMorador() {
                       </span>
                       <div className="min-w-0 flex-1">
                         <h3 className="text-[1.1rem] font-bold text-destaque">{ct.nome}</h3>
-                        {ct.telefone ? <p className="text-[0.95rem] text-ink-2">{ct.telefone}</p> : null}
+                        {ct.telefone ? <p className="text-[0.95rem] tabular-nums text-ink-2">{formatarTelefone(ct.telefone)}</p> : null}
                         {ct.detalhe ? (
                           <p className="mt-0.5 inline-flex items-center gap-1.5 text-[0.88rem] text-muted">
                             <Clock aria-hidden className="size-4 shrink-0" /> {ct.detalhe}
@@ -128,15 +129,15 @@ export default async function ContatosMorador() {
                     </div>
                     {/* Só aparecem botões com número válido (nada de botão que não faz nada). */}
                     {tel || zap ? (
-                      <div className="grid grid-cols-2 gap-2.5">
+                      <div className={tel && zap ? "grid grid-cols-2 gap-2.5" : "grid"}>
                         {tel ? (
-                          <a href={`tel:+${tel}`} aria-label={`Ligar para ${ct.nome}`} className={classeBotaoVerde}>
+                          <a href={linkLigar(tel)} aria-label={`Ligar para ${ct.nome}`} className={classeBotaoVerde}>
                             <Phone aria-hidden className="size-5" /> Ligar
                           </a>
                         ) : null}
                         {zap ? (
                           <a
-                            href={`https://wa.me/${zap}`}
+                            href={linkConversaWhatsApp(zap)}
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label={`WhatsApp de ${ct.nome} (abre em outra aba)`}
@@ -158,6 +159,22 @@ export default async function ContatosMorador() {
           </EstadoVazio>
         )}
       </section>
+
+      {info?.responsavelReservas ? (
+        <section aria-labelledby="titulo-reservas" className="flex flex-col gap-3">
+          <TituloSecao id="titulo-reservas">Reservas das áreas</TituloSecao>
+          <CartaoResponsavelReservas responsavel={info.responsavelReservas} />
+        </section>
+      ) : null}
+
+      {info?.pix ? (
+        <section aria-labelledby="titulo-pix" className="flex flex-col gap-3">
+          <TituloSecao id="titulo-pix">Pagamento da taxa</TituloSecao>
+          <CartaoPix pix={info.pix} />
+        </section>
+      ) : null}
+
+      {info?.linkVotacao ? <AtalhoVotacao link={info.linkVotacao} /> : null}
     </div>
   );
 }

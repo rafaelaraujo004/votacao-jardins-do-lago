@@ -14,9 +14,16 @@ import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "../firebase-admin";
 import { garantirPermissao, getContexto, ErroDeAcesso, type Contexto } from "../contexto";
 import { registrarAuditoria } from "../auditoria";
-import { acaoReserva, gravarReserva, paraReserva, type Reserva } from "../dados/reservas";
+import { acaoReserva, gravarReserva, paraArea, paraReserva, type Reserva } from "../dados/reservas";
 import { ErroDeNegocio, executar, lerFormulario, type Resultado } from "./resultado";
-import { AREAS_SUGERIDAS, idDaTrava, minutosAgora, podeCancelarMorador } from "@/lib/reservas";
+import {
+  AREAS_SUGERIDAS,
+  avisoDesistenciaTardia,
+  desistenciaForaDoPrazo,
+  idDaTrava,
+  minutosAgora,
+  podeCancelarMorador,
+} from "@/lib/reservas";
 import { dataISOParaBR, hojeISO } from "@/lib/formato";
 import {
   esquemaAprovar,
@@ -46,13 +53,20 @@ export async function salvarArea(_: Resultado, dados: FormData): Promise<Resulta
     const col = db.collection("condominiums").doc(ctx.condominioId).collection("amenities");
     const ref = v.id ? col.doc(v.id) : col.doc();
     const campos = {
+      tipo: v.tipo,
       nome: v.nome,
       regras: v.regras,
       capacidade: v.capacidade,
       exigeAprovacao: v.exigeAprovacao,
-      antecedenciaMinDias: v.antecedenciaMinDias,
+      antecedenciaMinimaHoras: v.antecedenciaMinimaHoras,
       antecedenciaMaxDias: v.antecedenciaMaxDias,
+      prazoDesistenciaHoras: v.prazoDesistenciaHoras,
       limitePorMes: v.limitePorMes,
+      limitePorCasaPorDia: v.limitePorCasaPorDia,
+      permitirExtraSeDiaLivre: v.permitirExtraSeDiaLivre,
+      exigencias: v.exigencias,
+      avisos: v.avisos,
+      faixasLivres: v.faixasLivres,
       ativa: v.ativa,
       ordem: v.ordem,
       faixas: v.faixas,
@@ -63,7 +77,8 @@ export async function salvarArea(_: Resultado, dados: FormData): Promise<Resulta
     await db.runTransaction(async (tx) => {
       const atual = await tx.get(ref);
       if (v.id && !atual.exists) throw new ErroDeNegocio("Área não encontrada. Atualize a página.");
-      if (v.id) tx.update(ref, campos);
+      // Ao editar, apaga o campo antigo em dias (agora a antecedência é em horas).
+      if (v.id) tx.update(ref, { ...campos, antecedenciaMinDias: FieldValue.delete() });
       else tx.create(ref, { ...campos, criadoEm: FieldValue.serverTimestamp() });
       registrarAuditoria(db, tx, {
         condominioId: ctx.condominioId,
@@ -74,10 +89,18 @@ export async function salvarArea(_: Resultado, dados: FormData): Promise<Resulta
         alvo: `amenities/${ref.id}`,
         detalhes: {
           nome: v.nome,
+          tipo: v.tipo,
           ativa: v.ativa,
           exigeAprovacao: v.exigeAprovacao,
           faixas: v.faixas.length,
+          faixasLivres: v.faixasLivres.length,
+          antecedenciaMinimaHoras: v.antecedenciaMinimaHoras,
+          prazoDesistenciaHoras: v.prazoDesistenciaHoras,
           limitePorMes: v.limitePorMes,
+          limitePorCasaPorDia: v.limitePorCasaPorDia,
+          permitirExtraSeDiaLivre: v.permitirExtraSeDiaLivre,
+          exigencias: v.exigencias.length,
+          avisos: v.avisos.length,
         },
       });
     });
@@ -88,7 +111,7 @@ export async function salvarArea(_: Resultado, dados: FormData): Promise<Resulta
   });
 }
 
-/** Cria Salão de festas, Churrasqueira e Quadra — só se ainda não houver nenhuma área. */
+/** Cria as áreas e equipamentos sugeridos (AREAS_SUGERIDAS) — só se ainda não houver nenhuma área. */
 export async function criarAreasSugeridas(): Promise<Resultado> {
   return executar(async () => {
     const ctx = garantirPermissao(await getContexto(), "areas.configurar");
@@ -113,7 +136,7 @@ export async function criarAreasSugeridas(): Promise<Resultado> {
     });
     revalidarReservas();
     revalidatePath("/admin/reservas/areas");
-    return `${AREAS_SUGERIDAS.length} áreas criadas. Confira as regras e os horários de cada uma.`;
+    return `${AREAS_SUGERIDAS.length} áreas e equipamentos criados. Confira as regras e os horários de cada um.`;
   });
 }
 
@@ -125,7 +148,15 @@ export async function pedirReserva(_: Resultado, dados: FormData): Promise<Resul
     const ctx = garantirPermissao(await getContexto(), "reservas.fazer");
     if (!ctx.unitId) throw new ErroDeNegocio("Seu cadastro não está ligado a uma casa. Fale com a administração.");
     const v = lerFormulario(esquemaPedido, dados);
-    const r = await gravarReserva(adminDb(), ctx, { ...v, tipo: "pedido", unitId: ctx.unitId });
+    const r = await gravarReserva(adminDb(), ctx, {
+      areaId: v.areaId,
+      data: v.data,
+      faixaId: v.faixaId,
+      observacao: v.observacao,
+      aceitouRegras: v.aceite,
+      tipo: "pedido",
+      unitId: ctx.unitId,
+    });
     revalidarReservas();
     return r.status === "pendente"
       ? `Pedido enviado: ${r.areaNome}, ${dataISOParaBR(r.data)} (${r.faixa}). Aguardando aprovação da administração.`
@@ -167,16 +198,21 @@ export async function bloquearFaixa(_: Resultado, dados: FormData): Promise<Resu
 
 type Mudanca = { id: string; motivo: string };
 
+/** O que a mudança de status devolve: a reserva (como estava antes) e se a desistência ficou fora do prazo. */
+type Mudou = { reserva: Reserva; cancelamentoTardio: boolean; prazoHoras: number };
+
 /**
  * Muda o status de uma reserva numa transação (com auditoria).
  * Ao recusar/cancelar, apaga a trava para o horário voltar a ficar livre.
+ * `tardio`: só na desistência do MORADOR — calcula se ficou fora do prazo.
  */
 async function mudarStatus(
   tipo: "aprovar" | "recusar" | "cancelar",
   { id, motivo }: Mudanca,
   conferir: (r: Reserva) => void,
   ctx: Contexto,
-): Promise<Reserva> {
+  tardio?: (r: Reserva, prazoHoras: number) => boolean,
+): Promise<Mudou> {
   const db = adminDb();
   const c = db.collection("condominiums").doc(ctx.condominioId);
   const ref = c.collection("reservations").doc(id);
@@ -188,6 +224,15 @@ async function mudarStatus(
     const travaRef = c.collection("reservationLocks").doc(idDaTrava(r.amenityId, r.data, r.faixaId));
     const trava = tipo === "aprovar" ? null : await tx.get(travaRef);
 
+    // Prazo de desistência: o que valia quando a reserva foi feita; em reservas antigas, o da área hoje.
+    let prazoHoras = 0;
+    let cancelamentoTardio = false;
+    if (tipo === "cancelar" && tardio) {
+      if (r.prazoDesistenciaHoras !== null) prazoHoras = r.prazoDesistenciaHoras;
+      else if (r.amenityId) prazoHoras = paraArea(r.amenityId, (await tx.get(c.collection("amenities").doc(r.amenityId))).data()).prazoDesistenciaHoras;
+      cancelamentoTardio = tardio(r, prazoHoras);
+    }
+
     const novoStatus = tipo === "aprovar" ? "confirmada" : tipo === "recusar" ? "recusada" : "cancelada";
     tx.update(ref, {
       status: novoStatus,
@@ -196,6 +241,7 @@ async function mudarStatus(
       decididoPor: ctx.uid,
       decididoPorNome: ctx.nome,
       decididoEm: FieldValue.serverTimestamp(),
+      ...(tipo === "cancelar" ? { canceladoEm: FieldValue.serverTimestamp(), cancelamentoTardio } : {}),
     });
     // Só apaga a trava se ela for desta reserva (nunca a de outra).
     if (trava?.exists && trava.get("reservaId") === r.id) tx.delete(travaRef);
@@ -215,9 +261,10 @@ async function mudarStatus(
         de: r.status,
         para: novoStatus,
         ...(motivo ? { motivo } : {}),
+        ...(cancelamentoTardio ? { cancelamentoTardio: true, prazoHoras } : {}),
       },
     });
-    return r;
+    return { reserva: r, cancelamentoTardio, prazoHoras };
   });
 }
 
@@ -226,7 +273,7 @@ export async function aprovarReserva(_: Resultado, dados: FormData): Promise<Res
     const ctx = garantirPermissao(await getContexto(), "reservas.gerenciar");
     const v = lerFormulario(esquemaAprovar, dados);
     const hoje = hojeISO(new Date(), ctx.fuso);
-    const r = await mudarStatus("aprovar", { id: v.id, motivo: "" }, (r) => {
+    const { reserva: r } = await mudarStatus("aprovar", { id: v.id, motivo: "" }, (r) => {
       if (r.status !== "pendente") throw new ErroDeNegocio("Este pedido já foi decidido. Atualize a página.");
       if (r.data < hoje) throw new ErroDeNegocio("A data deste pedido já passou. Recuse-o informando o motivo.");
     }, ctx);
@@ -239,7 +286,7 @@ export async function recusarReserva(_: Resultado, dados: FormData): Promise<Res
   return executar(async () => {
     const ctx = garantirPermissao(await getContexto(), "reservas.gerenciar");
     const v = lerFormulario(esquemaRecusar, dados);
-    const r = await mudarStatus("recusar", v, (r) => {
+    const { reserva: r } = await mudarStatus("recusar", v, (r) => {
       if (r.status !== "pendente") throw new ErroDeNegocio("Este pedido já foi decidido. Atualize a página.");
     }, ctx);
     revalidarReservas();
@@ -251,6 +298,8 @@ export async function recusarReserva(_: Resultado, dados: FormData): Promise<Res
  * Cancelar:
  * - administração ("reservas.gerenciar"): qualquer reserva ou bloqueio ativo, com motivo;
  * - morador ("reservas.fazer"): só da própria casa, só pedidos/reservas que ainda não começaram.
+ *   Pode desistir sempre; se faltar menos que o prazo de desistência da área, a reserva fica
+ *   marcada "cancelamentoTardio" (sujeita a multa conforme o regimento; o síndico vê no filtro).
  */
 export async function cancelarReserva(_: Resultado, dados: FormData): Promise<Resultado> {
   return executar(async () => {
@@ -267,7 +316,8 @@ export async function cancelarReserva(_: Resultado, dados: FormData): Promise<Re
 
     const agora = new Date();
     const hoje = hojeISO(agora, ctx.fuso);
-    const r = await mudarStatus("cancelar", v, (r) => {
+    const agoraMin = minutosAgora(agora, ctx.fuso);
+    const resultado = await mudarStatus("cancelar", v, (r) => {
       if (admin) {
         if (r.status !== "pendente" && r.status !== "confirmada" && r.status !== "bloqueada") {
           throw new ErroDeNegocio("Esta reserva já não está ativa. Atualize a página.");
@@ -276,11 +326,15 @@ export async function cancelarReserva(_: Resultado, dados: FormData): Promise<Re
       }
       // Morador: só a própria casa (o servidor confere; o navegador não decide nada).
       if (!ctx.unitId || r.unitId !== ctx.unitId) throw new ErroDeNegocio("Reserva não encontrada. Atualize a página.");
-      if (!podeCancelarMorador(r, hoje, minutosAgora(agora, ctx.fuso))) {
+      if (!podeCancelarMorador(r, hoje, agoraMin)) {
         throw new ErroDeNegocio("Só é possível cancelar reservas que ainda não começaram. Fale com a administração.");
       }
-    }, ctx);
+    }, ctx, admin ? undefined : (r, prazo) => desistenciaForaDoPrazo(r, prazo, hoje, agoraMin));
+    const r = resultado.reserva;
     revalidarReservas();
+    if (resultado.cancelamentoTardio) {
+      return `Reserva cancelada: ${r.areaNome}, ${dataISOParaBR(r.data)}. ${avisoDesistenciaTardia(resultado.prazoHoras)}`;
+    }
     return r.status === "bloqueada"
       ? `Bloqueio removido: ${r.areaNome}, ${dataISOParaBR(r.data)}. O horário ficou livre.`
       : `Reserva cancelada: ${r.areaNome}, ${dataISOParaBR(r.data)}. O horário ficou livre.`;

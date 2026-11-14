@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Formulário de cadastro/edição de uma área de lazer.
- * As faixas de horário são uma lista: dá para acrescentar, remover ou usar um modelo pronto.
+ * Formulário de cadastro/edição de uma área de lazer ou equipamento.
+ * Listas editáveis: faixas reserváveis, faixas de uso livre, exigências e avisos.
  * A conferência de horários sobrepostos aparece na hora (e o servidor confere de novo).
  */
 import { useState } from "react";
@@ -12,12 +12,17 @@ import { Campo, classeEntrada } from "@/components/ui/basicos";
 import { Botao } from "@/components/ui/botao";
 import { BotaoEnviar, Formulario } from "@/components/ui/formulario";
 import { salvarArea } from "@/server/acoes/reservas";
-import { faixasDeUmaHora, validarFaixas, type ConfigArea } from "@/lib/reservas";
+import { faixasDeUmaHora, validarFaixas, validarFaixasLivres, type ConfigArea, type TipoArea } from "@/lib/reservas";
 
-type Linha = { chave: number; rotulo: string; inicio: string; fim: string };
+type Horario = { rotulo: string; inicio: string; fim: string };
+type Linha = Horario & { chave: number };
+type Item = { chave: number; texto: string };
 
-const MODELOS: { nome: string; faixas: Omit<Linha, "chave">[] }[] = [
+const DIA_INTEIRO_EQUIPAMENTO: Horario[] = [{ rotulo: "Dia inteiro", inicio: "07:00", fim: "18:00" }];
+
+const MODELOS: { nome: string; faixas: Horario[] }[] = [
   { nome: "Dia inteiro", faixas: [{ rotulo: "Dia inteiro", inicio: "10:00", fim: "23:00" }] },
+  { nome: "Dia inteiro (equipamento, 7h às 18h)", faixas: DIA_INTEIRO_EQUIPAMENTO },
   {
     nome: "Manhã, tarde e noite",
     faixas: [
@@ -33,18 +38,28 @@ const MODELOS: { nome: string; faixas: Omit<Linha, "chave">[] }[] = [
 ];
 
 let contador = 0;
-const comChave = (f: Omit<Linha, "chave">): Linha => ({ ...f, chave: ++contador });
+const comChave = (f: Horario): Linha => ({ ...f, chave: ++contador });
+const item = (texto: string): Item => ({ chave: ++contador, texto });
+const preenchidas = (linhas: Linha[]) => linhas.filter((l) => l.rotulo || l.inicio || l.fim);
 
 export function FormularioArea({ area }: { area: ConfigArea | null }) {
   const router = useRouter();
+  const [tipo, setTipo] = useState<TipoArea>(area?.tipo ?? "area");
   const [linhas, setLinhas] = useState<Linha[]>(() =>
     (area?.faixas.length ? area.faixas : MODELOS[0].faixas).map(({ rotulo, inicio, fim }) => comChave({ rotulo, inicio, fim })),
   );
-  const preenchidas = linhas.filter((l) => l.rotulo || l.inicio || l.fim);
-  const problema = validarFaixas(preenchidas);
+  const [livres, setLivres] = useState<Linha[]>(() => (area?.faixasLivres ?? []).map(comChave));
+  const [exigencias, setExigencias] = useState<Item[]>(() => (area?.exigencias ?? []).map(item));
+  const [avisos, setAvisos] = useState<Item[]>(() => (area?.avisos ?? []).map(item));
+  const [limiteDia, setLimiteDia] = useState(area?.limitePorCasaPorDia ? String(area.limitePorCasaPorDia) : "");
 
-  function alterar(chave: number, campo: "rotulo" | "inicio" | "fim", valor: string) {
-    setLinhas((atual) => atual.map((l) => (l.chave === chave ? { ...l, [campo]: valor } : l)));
+  const problema = validarFaixas(preenchidas(linhas)) ?? validarFaixasLivres(preenchidas(livres), preenchidas(linhas));
+  const equipamento = tipo === "equipamento";
+
+  function trocarTipo(novo: TipoArea) {
+    setTipo(novo);
+    // Área nova virando equipamento: sugere a faixa "Dia inteiro" (dá para mudar depois).
+    if (!area && novo === "equipamento") setLinhas(DIA_INTEIRO_EQUIPAMENTO.map(comChave));
   }
 
   return (
@@ -58,8 +73,24 @@ export function FormularioArea({ area }: { area: ConfigArea | null }) {
     >
       {area ? <input type="hidden" name="id" value={area.id} /> : null}
 
-      <Campo id="nome" rotulo="Nome da área">
-        <input id="nome" name="nome" required minLength={3} maxLength={60} defaultValue={area?.nome} placeholder="Ex.: Salão de festas" className={classeEntrada} />
+      <Campo id="tipo" rotulo="Tipo">
+        <select id="tipo" name="tipo" value={tipo} onChange={(e) => trocarTipo(e.target.value as TipoArea)} className={classeEntrada}>
+          <option value="area">Área de lazer (salão, churrasqueira, quadra…)</option>
+          <option value="equipamento">Equipamento (roçadeira, carrinho de mão…)</option>
+        </select>
+      </Campo>
+
+      <Campo id="nome" rotulo={equipamento ? "Nome do equipamento" : "Nome da área"}>
+        <input
+          id="nome"
+          name="nome"
+          required
+          minLength={3}
+          maxLength={60}
+          defaultValue={area?.nome}
+          placeholder={equipamento ? "Ex.: Roçadeira" : "Ex.: Salão de festas"}
+          className={classeEntrada}
+        />
       </Campo>
 
       <Campo id="regras" rotulo="Regras de uso" dica="Aparecem para o morador antes de reservar. Sem valores de taxa: isso é decidido em assembleia.">
@@ -76,23 +107,79 @@ export function FormularioArea({ area }: { area: ConfigArea | null }) {
       </Campo>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Campo id="capacidade" rotulo="Capacidade (pessoas)">
-          <input id="capacidade" name="capacidade" type="number" inputMode="numeric" min={1} max={2000} required defaultValue={area?.capacidade ?? 30} className={classeEntrada} />
-        </Campo>
+        {equipamento ? (
+          <input type="hidden" name="capacidade" value="1" />
+        ) : (
+          <Campo id="capacidade" rotulo="Capacidade (pessoas; 0 = não mostrar)">
+            <input id="capacidade" name="capacidade" type="number" inputMode="numeric" min={0} max={2000} required defaultValue={area?.capacidade ?? 30} className={classeEntrada} />
+          </Campo>
+        )}
         <Campo id="exigeAprovacao" rotulo="Pedido do morador">
           <select id="exigeAprovacao" name="exigeAprovacao" defaultValue={area?.exigeAprovacao === false ? "nao" : "sim"} className={classeEntrada}>
             <option value="sim">Exige aprovação da administração</option>
             <option value="nao">Confirma na hora (sem aprovação)</option>
           </select>
         </Campo>
-        <Campo id="antecedenciaMinDias" rotulo="Antecedência mínima (dias)" dica="0 = pode pedir para o mesmo dia.">
-          <input id="antecedenciaMinDias" name="antecedenciaMinDias" type="number" inputMode="numeric" min={0} max={365} required defaultValue={area?.antecedenciaMinDias ?? 1} className={classeEntrada} aria-describedby="antecedenciaMinDias-dica" />
+        <Campo id="antecedenciaMinimaHoras" rotulo="Antecedência mínima (horas)" dica="Ex.: 24 = um dia antes; 72 = três dias. 0 = até o horário começar.">
+          <input
+            id="antecedenciaMinimaHoras"
+            name="antecedenciaMinimaHoras"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={8760}
+            required
+            defaultValue={area?.antecedenciaMinimaHoras ?? 24}
+            className={classeEntrada}
+            aria-describedby="antecedenciaMinimaHoras-dica"
+          />
         </Campo>
         <Campo id="antecedenciaMaxDias" rotulo="Antecedência máxima (dias)" dica="Até quantos dias à frente.">
           <input id="antecedenciaMaxDias" name="antecedenciaMaxDias" type="number" inputMode="numeric" min={1} max={365} required defaultValue={area?.antecedenciaMaxDias ?? 60} className={classeEntrada} aria-describedby="antecedenciaMaxDias-dica" />
         </Campo>
+        <Campo id="prazoDesistenciaHoras" rotulo="Prazo de desistência (horas)" dica="Desistir faltando menos que isso fica registrado como fora do prazo (multa conforme o regimento). 0 = sem prazo.">
+          <input
+            id="prazoDesistenciaHoras"
+            name="prazoDesistenciaHoras"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={8760}
+            required
+            defaultValue={area?.prazoDesistenciaHoras ?? 0}
+            className={classeEntrada}
+            aria-describedby="prazoDesistenciaHoras-dica"
+          />
+        </Campo>
         <Campo id="limitePorMes" rotulo="Limite por casa, por mês" dica="0 = sem limite.">
           <input id="limitePorMes" name="limitePorMes" type="number" inputMode="numeric" min={0} max={31} required defaultValue={area?.limitePorMes ?? 2} className={classeEntrada} aria-describedby="limitePorMes-dica" />
+        </Campo>
+        <Campo id="limitePorCasaPorDia" rotulo="Limite por casa, no mesmo dia" dica="Deixe em branco para não limitar.">
+          <input
+            id="limitePorCasaPorDia"
+            name="limitePorCasaPorDia"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={48}
+            value={limiteDia}
+            onChange={(e) => setLimiteDia(e.target.value)}
+            className={classeEntrada}
+            aria-describedby="limitePorCasaPorDia-dica"
+          />
+        </Campo>
+        <Campo id="permitirExtraSeDiaLivre" rotulo="Passar do limite do dia" dica="Só vale com limite por dia preenchido.">
+          <select
+            id="permitirExtraSeDiaLivre"
+            name="permitirExtraSeDiaLivre"
+            defaultValue={area?.permitirExtraSeDiaLivre ? "sim" : "nao"}
+            disabled={!limiteDia}
+            className={classeEntrada}
+            aria-describedby="permitirExtraSeDiaLivre-dica"
+          >
+            <option value="nao">Nunca</option>
+            <option value="sim">Pode, se nenhuma outra casa reservou o dia</option>
+          </select>
         </Campo>
         <Campo id="ativa" rotulo="Situação">
           <select id="ativa" name="ativa" defaultValue={area?.ativa === false ? "nao" : "sim"} className={classeEntrada}>
@@ -106,7 +193,7 @@ export function FormularioArea({ area }: { area: ConfigArea | null }) {
       </div>
 
       <fieldset className="flex flex-col gap-3 rounded-2xl border border-line p-4">
-        <legend className="px-1 font-bold">Faixas de horário</legend>
+        <legend className="px-1 font-bold">Faixas de horário (reserváveis)</legend>
         <p className="text-[0.92rem] text-muted">
           Cada faixa é um horário que pode ser reservado. Elas não podem se sobrepor.
           {area ? " Mudar um horário não altera reservas já feitas: elas continuam no horário antigo." : ""}
@@ -118,27 +205,93 @@ export function FormularioArea({ area }: { area: ConfigArea | null }) {
             </Botao>
           ))}
         </div>
+        <ListaHorarios prefixo="faixa" nomeItem="faixa" linhas={linhas} setLinhas={setLinhas} />
+      </fieldset>
 
+      <fieldset className="flex flex-col gap-3 rounded-2xl border border-line p-4">
+        <legend className="px-1 font-bold">Uso livre (sem reserva)</legend>
+        <p className="text-[0.92rem] text-muted">
+          Horários em que qualquer morador pode usar sem reservar. Aparecem na agenda só como informação e não podem coincidir com as
+          faixas reserváveis. Pode deixar vazio.
+        </p>
+        <ListaHorarios prefixo="livre" nomeItem="faixa de uso livre" linhas={livres} setLinhas={setLivres} />
+      </fieldset>
+
+      {problema ? (
+        <p role="status" className="flex items-center gap-1.5 text-[0.92rem] font-bold text-danger">
+          <CircleAlert aria-hidden className="size-4" />
+          {problema}
+        </p>
+      ) : null}
+
+      <fieldset className="flex flex-col gap-3 rounded-2xl border border-line p-4">
+        <legend className="px-1 font-bold">Exigências (“Li e concordo”)</legend>
+        <p className="text-[0.92rem] text-muted">
+          O morador vê estas regras antes de pedir e precisa marcar “Li e concordo com as regras”. O aceite fica gravado na reserva.
+        </p>
+        <ListaTextos nome="exigencia" rotuloItem="Exigência" exemplo="Ex.: Devolver limpo até as 10h do dia seguinte." itens={exigencias} setItens={setExigencias} maximo={20} />
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-3 rounded-2xl border border-line p-4">
+        <legend className="px-1 font-bold">Avisos em destaque</legend>
+        <p className="text-[0.92rem] text-muted">Aparecem em destaque na tela da área (ex.: manutenção, combustível por conta de quem reserva).</p>
+        <ListaTextos nome="aviso" rotuloItem="Aviso" exemplo="Ex.: Combustível por conta de quem reserva." itens={avisos} setItens={setAvisos} maximo={10} />
+      </fieldset>
+
+      <div className="flex flex-wrap gap-2">
+        <BotaoEnviar>{area ? "Salvar alterações" : equipamento ? "Cadastrar equipamento" : "Cadastrar área"}</BotaoEnviar>
+      </div>
+    </Formulario>
+  );
+}
+
+/** Lista editável de horários (nome, início e fim), enviada como campos repetidos "{prefixo}Rotulo/Inicio/Fim". */
+function ListaHorarios({
+  prefixo,
+  nomeItem,
+  linhas,
+  setLinhas,
+}: {
+  prefixo: "faixa" | "livre";
+  nomeItem: string;
+  linhas: Linha[];
+  setLinhas: (f: (atual: Linha[]) => Linha[]) => void;
+}) {
+  function alterar(chave: number, campo: keyof Horario, valor: string) {
+    setLinhas((atual) => atual.map((l) => (l.chave === chave ? { ...l, [campo]: valor } : l)));
+  }
+  return (
+    <>
+      {linhas.length ? (
         <ul className="flex flex-col gap-3">
           {linhas.map((l, i) => (
             <li key={l.chave} className="grid grid-cols-2 items-end gap-2 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
               <label className="col-span-2 flex flex-col gap-1 sm:col-span-1">
-                <span className="text-[0.88rem] font-bold">Nome da faixa {i + 1}</span>
-                <input name="faixaRotulo" value={l.rotulo} onChange={(e) => alterar(l.chave, "rotulo", e.target.value)} maxLength={40} placeholder="Ex.: Manhã" className={classeEntrada} />
+                <span className="text-[0.88rem] font-bold">
+                  Nome {prefixo === "faixa" ? "da faixa" : "do uso livre"} {i + 1}
+                </span>
+                <input
+                  name={`${prefixo}Rotulo`}
+                  value={l.rotulo}
+                  onChange={(e) => alterar(l.chave, "rotulo", e.target.value)}
+                  maxLength={40}
+                  placeholder={prefixo === "faixa" ? "Ex.: Manhã" : "Ex.: Manhã livre"}
+                  className={classeEntrada}
+                />
               </label>
               <label className="flex flex-col gap-1">
                 <span className="text-[0.88rem] font-bold">Início</span>
-                <input name="faixaInicio" type="time" value={l.inicio} onChange={(e) => alterar(l.chave, "inicio", e.target.value)} className={classeEntrada} />
+                <input name={`${prefixo}Inicio`} type="time" value={l.inicio} onChange={(e) => alterar(l.chave, "inicio", e.target.value)} className={classeEntrada} />
               </label>
               <label className="flex flex-col gap-1">
                 <span className="text-[0.88rem] font-bold">Fim</span>
-                <input name="faixaFim" type="time" value={l.fim} onChange={(e) => alterar(l.chave, "fim", e.target.value)} className={classeEntrada} />
+                <input name={`${prefixo}Fim`} type="time" value={l.fim} onChange={(e) => alterar(l.chave, "fim", e.target.value)} className={classeEntrada} />
               </label>
               <Botao
                 variante="discreto"
                 className="col-span-2 sm:col-span-1"
                 icone={<Trash2 aria-hidden className="size-5" />}
-                aria-label={`Remover a faixa ${l.rotulo || i + 1}`}
+                aria-label={`Remover a ${nomeItem} ${l.rotulo || i + 1}`}
                 onClick={() => setLinhas((atual) => atual.filter((x) => x.chave !== l.chave))}
               >
                 <span className="sm:sr-only">Remover</span>
@@ -146,29 +299,79 @@ export function FormularioArea({ area }: { area: ConfigArea | null }) {
             </li>
           ))}
         </ul>
+      ) : (
+        <p className="text-[0.92rem] text-muted">Nenhuma {nomeItem} cadastrada.</p>
+      )}
+      <div>
+        <Botao
+          tamanho="pequeno"
+          variante="secundario"
+          icone={<Plus aria-hidden className="size-4" />}
+          onClick={() => setLinhas((atual) => [...atual, comChave({ rotulo: "", inicio: "", fim: "" })])}
+        >
+          {prefixo === "faixa" ? "Acrescentar faixa" : "Acrescentar uso livre"}
+        </Botao>
+      </div>
+    </>
+  );
+}
 
+/** Lista editável de textos (exigências, avisos), enviada como campo repetido `nome`. */
+function ListaTextos({
+  nome,
+  rotuloItem,
+  exemplo,
+  itens,
+  setItens,
+  maximo,
+}: {
+  nome: "exigencia" | "aviso";
+  rotuloItem: string;
+  exemplo: string;
+  itens: Item[];
+  setItens: (f: (atual: Item[]) => Item[]) => void;
+  maximo: number;
+}) {
+  return (
+    <>
+      {itens.length ? (
+        <ul className="flex flex-col gap-3">
+          {itens.map((it, i) => (
+            <li key={it.chave} className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
+              <label className="flex flex-col gap-1">
+                <span className="text-[0.88rem] font-bold">
+                  {rotuloItem} {i + 1}
+                </span>
+                <input
+                  name={nome}
+                  value={it.texto}
+                  onChange={(e) => setItens((atual) => atual.map((x) => (x.chave === it.chave ? { ...x, texto: e.target.value } : x)))}
+                  maxLength={200}
+                  placeholder={exemplo}
+                  className={classeEntrada}
+                />
+              </label>
+              <Botao
+                variante="discreto"
+                icone={<Trash2 aria-hidden className="size-5" />}
+                aria-label={`Remover ${rotuloItem.toLowerCase()} ${i + 1}`}
+                onClick={() => setItens((atual) => atual.filter((x) => x.chave !== it.chave))}
+              >
+                <span className="sr-only">Remover</span>
+              </Botao>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-[0.92rem] text-muted">Nenhum item cadastrado.</p>
+      )}
+      {itens.length < maximo ? (
         <div>
-          <Botao
-            tamanho="pequeno"
-            variante="secundario"
-            icone={<Plus aria-hidden className="size-4" />}
-            onClick={() => setLinhas((atual) => [...atual, comChave({ rotulo: "", inicio: "", fim: "" })])}
-          >
-            Acrescentar faixa
+          <Botao tamanho="pequeno" variante="secundario" icone={<Plus aria-hidden className="size-4" />} onClick={() => setItens((atual) => [...atual, item("")])}>
+            Acrescentar {rotuloItem.toLowerCase()}
           </Botao>
         </div>
-
-        {problema ? (
-          <p role="status" className="flex items-center gap-1.5 text-[0.92rem] font-bold text-danger">
-            <CircleAlert aria-hidden className="size-4" />
-            {problema}
-          </p>
-        ) : null}
-      </fieldset>
-
-      <div className="flex flex-wrap gap-2">
-        <BotaoEnviar>{area ? "Salvar alterações" : "Cadastrar área"}</BotaoEnviar>
-      </div>
-    </Formulario>
+      ) : null}
+    </>
   );
 }

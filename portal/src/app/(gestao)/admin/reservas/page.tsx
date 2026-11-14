@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Ban, CalendarDays, CalendarPlus, Check, Settings2, TreePalm, X, XCircle } from "lucide-react";
+import { AlarmClockOff, Ban, CalendarDays, CalendarPlus, Check, Settings2, TreePalm, X, XCircle } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
-import { listarAreas, numerosDaAgenda, pedidosPendentes, reservasDaAreaNoMes, type Reserva } from "@/server/dados/reservas";
+import {
+  cancelamentosTardios,
+  listarAreas,
+  numerosDaAgenda,
+  pedidosPendentes,
+  reservasDaAreaNoMes,
+  type Reserva,
+} from "@/server/dados/reservas";
 import { listarUnidades } from "@/server/dados/unidades";
 import { aprovarReserva, bloquearFaixa, cancelarReserva, recusarReserva, reservarParaCasa } from "@/server/acoes/reservas";
-import { dataISOParaBR, hojeISO } from "@/lib/formato";
+import { dataISOParaBR, formatarDataHora, hojeISO } from "@/lib/formato";
 import { dataCurta } from "@/lib/agenda";
 import {
   dataValida,
@@ -24,7 +31,7 @@ import { AcaoConfirmada } from "@/components/ui/acao-confirmada";
 import { BlocoNumero, SegmentoLinks, TituloSecao } from "@/components/ui/painel";
 import { CalendarioReservas, type InfoDia } from "@/components/reservas/calendario-reservas";
 import { DialogoFormulario } from "@/components/reservas/dialogo-formulario";
-import { COR_PONTO, EtiquetaReserva, Legenda } from "@/components/reservas/pecas";
+import { COR_PONTO, EtiquetaCanceladaTarde, EtiquetaReserva, Legenda, ListaUsoLivre } from "@/components/reservas/pecas";
 
 export const metadata: Metadata = { title: "Reservas e áreas" };
 
@@ -33,16 +40,20 @@ function link(area: string, mes: string, dia?: string) {
   return `/admin/reservas?area=${area}&mes=${mes}${dia ? `&dia=${dia}` : ""}`;
 }
 
+/** Filtro "Cancelada fora do prazo" (desistências tardias dos moradores). */
+const LINK_FORA_DO_PRAZO = "/admin/reservas?ver=fora-do-prazo";
+
 export default async function AgendaReservas({ searchParams }: PageProps<"/admin/reservas">) {
   const ctx = await exigirPermissao("reservas.ver_todas");
   const podeGerenciar = ctx.permissoes.has("reservas.gerenciar");
   const podeConfigurar = ctx.permissoes.has("areas.configurar");
   const hoje = hojeISO(new Date(), ctx.fuso);
 
-  const [areas, numeros, pendentes, unidades] = await Promise.all([
+  const [areas, numeros, pendentes, tardios, unidades] = await Promise.all([
     listarAreas(ctx),
     numerosDaAgenda(ctx),
     pedidosPendentes(ctx),
+    cancelamentosTardios(ctx),
     podeGerenciar && ctx.permissoes.has("unidades.ver") ? listarUnidades(ctx) : Promise.resolve([]),
   ]);
 
@@ -78,6 +89,68 @@ export default async function AgendaReservas({ searchParams }: PageProps<"/admin
 
   // Filtros do endereço: área, mês e dia (sempre conferidos).
   const params = await searchParams;
+  const verForaDoPrazo = params.ver === "fora-do-prazo";
+  const filtro = (
+    <SegmentoLinks
+      rotulo="O que mostrar"
+      ariaCurrent="page"
+      opcoes={[
+        { rotulo: "Agenda", href: "/admin/reservas", ativo: !verForaDoPrazo },
+        { rotulo: `Canceladas fora do prazo (${tardios.length})`, href: LINK_FORA_DO_PRAZO, ativo: verForaDoPrazo },
+      ]}
+    />
+  );
+
+  if (verForaDoPrazo) {
+    return (
+      <div className="flex flex-col gap-6">
+        {titulo}
+        {filtro}
+        <section aria-labelledby="titulo-tardios" className="flex flex-col gap-3">
+          <TituloSecao id="titulo-tardios" extra={`${tardios.length} ${tardios.length === 1 ? "registro" : "registros"}`}>
+            Canceladas fora do prazo
+          </TituloSecao>
+          <p className="text-ink-2">
+            Moradores que desistiram de uma reserva confirmada faltando menos que o prazo de desistência da área. A multa, se houver, segue o
+            regimento: o portal só registra.
+          </p>
+          {tardios.length === 0 ? (
+            <EstadoVazio icone={AlarmClockOff} titulo="Nenhuma desistência fora do prazo">
+              Quando um morador desistir depois do prazo, a reserva aparece aqui.
+            </EstadoVazio>
+          ) : (
+            <ul className="flex flex-col gap-2.5">
+              {tardios.map((r) => (
+                <li key={r.id} className="saltado flex flex-col gap-2 rounded-2xl p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <b className="text-ink">
+                      {r.areaNome} · {r.unidadeRotulo ?? "—"}
+                    </b>
+                    <EtiquetaCanceladaTarde />
+                  </div>
+                  <span className="text-[0.92rem] text-ink-2">
+                    {dataISOParaBR(r.data)} · {descreverFaixa({ rotulo: r.faixaRotulo, inicio: r.inicio, fim: r.fim })}
+                  </span>
+                  <span className="text-[0.88rem] text-muted">
+                    {r.canceladoEm ? `Cancelada em ${formatarDataHora(r.canceladoEm, ctx.fuso)}` : "Cancelada"}
+                    {r.prazoDesistenciaHoras ? ` · prazo da área: ${r.prazoDesistenciaHoras} horas` : ""}
+                    {r.decididoPorNome ? ` · por ${r.decididoPorNome}` : ""}
+                  </span>
+                  <Link
+                    href={link(r.amenityId, r.data.slice(0, 7), r.data)}
+                    className="inline-flex min-h-11 w-fit items-center gap-1.5 text-[0.9rem] font-bold text-lake"
+                  >
+                    <CalendarDays aria-hidden className="size-4" /> Ver no calendário
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+    );
+  }
+
   const area: ConfigArea = areas.find((a) => a.id === params.area) ?? areas[0];
   const mesHoje = hoje.slice(0, 7);
   const mes = typeof params.mes === "string" && REGEX_MES_RESERVA.test(params.mes) ? params.mes : mesHoje;
@@ -111,6 +184,7 @@ export default async function AgendaReservas({ searchParams }: PageProps<"/admin
   return (
     <div className="flex flex-col gap-6">
       {titulo}
+      {filtro}
 
       <div className="grid grid-cols-3 gap-2.5">
         <BlocoNumero rotulo="Pendentes" valor={numeros.pendentes} detalhe="aguardando você" cor={numeros.pendentes ? "laranja" : "ink"} />
@@ -152,7 +226,7 @@ export default async function AgendaReservas({ searchParams }: PageProps<"/admin
           rolavel
           ariaCurrent="page"
           opcoes={areas.map((a) => ({
-            rotulo: a.ativa ? a.nome : `${a.nome} (inativa)`,
+            rotulo: `${a.nome}${a.tipo === "equipamento" ? " (equipamento)" : ""}${a.ativa ? "" : " (inativa)"}`,
             href: link(a.id, mes),
             ativo: a.id === area.id,
           }))}
@@ -255,6 +329,8 @@ export default async function AgendaReservas({ searchParams }: PageProps<"/admin
               ))}
             </ul>
 
+            <ListaUsoLivre faixas={area.faixasLivres} />
+
             {foraDasFaixas.length ? (
               <div className="flex flex-col gap-2">
                 <h4 className="font-bold">Em horários que mudaram depois</h4>
@@ -282,6 +358,7 @@ export default async function AgendaReservas({ searchParams }: PageProps<"/admin
                       <span className="flex flex-wrap items-center gap-2">
                         <b>{r.faixaRotulo}</b>
                         <EtiquetaReserva status={r.status} />
+                        {r.cancelamentoTardio ? <EtiquetaCanceladaTarde /> : null}
                       </span>
                       <DetalheReserva reserva={r} />
                     </li>
@@ -311,6 +388,7 @@ function DetalheReserva({ reserva: r }: { reserva: Reserva }) {
         </p>
       )}
       {r.observacao ? <p className="text-muted">“{r.observacao}”</p> : null}
+      {r.aceitouRegrasEm ? <p className="text-muted">Aceitou as regras da área ao pedir.</p> : null}
       {(r.status === "recusada" || r.status === "cancelada") && r.motivo ? (
         <p className="text-muted">
           Motivo: {r.motivo}

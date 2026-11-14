@@ -4,13 +4,31 @@
  */
 import { z } from "zod";
 import { idDocumento } from "./validacao";
-import { normalizarFaixas, validarFaixas, dataValida, type Faixa } from "./reservas";
+import {
+  TIPOS_AREA,
+  dataValida,
+  normalizarFaixas,
+  normalizarFaixasLivres,
+  validarFaixas,
+  validarFaixasLivres,
+  type Faixa,
+} from "./reservas";
 
 /** Campo que pode vir repetido no formulário (vira lista) ou uma vez só (vira lista de 1). */
 const lista = z.preprocess(
   (v) => (v === undefined ? [] : Array.isArray(v) ? v : [v]),
   z.array(z.string().max(80, "Texto muito longo.")).max(48),
 );
+
+/** Lista de textos (exigências, avisos): tira espaços e linhas vazias. */
+const listaTextos = (rotulo: string, maxItens: number, maxLetras: number) =>
+  z
+    .preprocess(
+      (v) => (v === undefined ? [] : Array.isArray(v) ? v : [v]),
+      z.array(z.string().trim().max(maxLetras, `${rotulo}: cada item pode ter até ${maxLetras} caracteres.`)),
+    )
+    .transform((itens) => itens.filter(Boolean))
+    .refine((itens) => itens.length <= maxItens, `${rotulo}: no máximo ${maxItens} itens.`);
 
 /** Número inteiro digitado num campo de texto/número. */
 const inteiro = (rotulo: string, min: number, max: number) =>
@@ -41,21 +59,42 @@ export function juntarFaixas(rotulos: string[], inicios: string[], fins: string[
 export const esquemaArea = z
   .object({
     id: z.union([z.literal(""), idDocumento]).optional(),
-    nome: z.string().trim().min(3, "Informe o nome da área (ex.: Salão de festas).").max(60, "Nome muito longo."),
+    tipo: z.enum(TIPOS_AREA, { error: "Diga se é uma área ou um equipamento." }).default("area"),
+    nome: z.string().trim().min(3, "Informe o nome (ex.: Salão de festas).").max(60, "Nome muito longo."),
     regras: z.string().trim().max(1500, "Regras muito longas (máximo 1.500 caracteres).").default(""),
-    capacidade: inteiro("Capacidade", 1, 2000),
+    capacidade: inteiro("Capacidade", 0, 2000), // 0 = não informar
     exigeAprovacao: simNao("Diga se a área exige aprovação."),
-    antecedenciaMinDias: inteiro("Antecedência mínima", 0, 365),
+    antecedenciaMinimaHoras: inteiro("Antecedência mínima", 0, 8760),
     antecedenciaMaxDias: inteiro("Antecedência máxima", 1, 365),
-    limitePorMes: inteiro("Limite por casa", 0, 31),
+    prazoDesistenciaHoras: inteiro("Prazo de desistência", 0, 8760).default(0),
+    limitePorMes: inteiro("Limite por casa no mês", 0, 31),
+    /** Vazio = sem limite por dia. */
+    limitePorCasaPorDia: z
+      .string()
+      .trim()
+      .default("")
+      .transform((v, contexto) => {
+        if (v === "" || v === "0") return null;
+        if (!/^\d+$/.test(v) || Number(v) < 1 || Number(v) > 48) {
+          contexto.addIssue({ code: "custom", message: "Limite por casa no dia: use um número entre 1 e 48, ou deixe em branco." });
+          return z.NEVER;
+        }
+        return Number(v);
+      }),
+    permitirExtraSeDiaLivre: simNao("Diga se pode passar do limite quando o dia estiver livre.").default(false),
     ativa: simNao("Diga se a área está ativa."),
     ordem: inteiro("Ordem", 0, 99).default(99),
     faixaRotulo: lista,
     faixaInicio: lista,
     faixaFim: lista,
+    livreRotulo: lista,
+    livreInicio: lista,
+    livreFim: lista,
+    exigencia: listaTextos("Exigências", 20, 200),
+    aviso: listaTextos("Avisos", 10, 200),
   })
   .transform((v, contexto) => {
-    if (v.antecedenciaMaxDias < v.antecedenciaMinDias) {
+    if (v.antecedenciaMaxDias * 24 < v.antecedenciaMinimaHoras) {
       contexto.addIssue({ code: "custom", message: "A antecedência máxima precisa ser maior ou igual à mínima." });
       return z.NEVER;
     }
@@ -65,15 +104,30 @@ export const esquemaArea = z
       contexto.addIssue({ code: "custom", message: problema });
       return z.NEVER;
     }
+    const livres = juntarFaixas(v.livreRotulo, v.livreInicio, v.livreFim);
+    const problemaLivres = validarFaixasLivres(livres, faixas);
+    if (problemaLivres) {
+      contexto.addIssue({ code: "custom", message: problemaLivres });
+      return z.NEVER;
+    }
     return {
       id: v.id || null,
+      tipo: v.tipo,
       nome: v.nome,
       regras: v.regras,
-      capacidade: v.capacidade,
+      // Equipamento não tem "capacidade de pessoas": guarda 1.
+      capacidade: v.tipo === "equipamento" ? 1 : v.capacidade,
       exigeAprovacao: v.exigeAprovacao,
-      antecedenciaMinDias: v.antecedenciaMinDias,
+      antecedenciaMinimaHoras: v.antecedenciaMinimaHoras,
       antecedenciaMaxDias: v.antecedenciaMaxDias,
+      prazoDesistenciaHoras: v.prazoDesistenciaHoras,
       limitePorMes: v.limitePorMes,
+      limitePorCasaPorDia: v.limitePorCasaPorDia,
+      // Sem limite por dia, a opção "passar do limite" não faz sentido.
+      permitirExtraSeDiaLivre: v.limitePorCasaPorDia !== null && v.permitirExtraSeDiaLivre,
+      exigencias: v.exigencia,
+      avisos: v.aviso,
+      faixasLivres: normalizarFaixasLivres(livres),
       ativa: v.ativa,
       ordem: v.ordem,
       faixas: normalizarFaixas(faixas),
@@ -93,10 +147,19 @@ export const esquemaPedido = z.object({
   data,
   faixaId,
   observacao,
+  /** Caixa "Li e concordo com as regras" (o servidor exige quando a área tem exigências). */
+  aceite: z
+    .enum(["sim"])
+    .optional()
+    .transform((v) => v === "sim"),
 });
 
 /** Reserva feita pela administração para uma casa. */
-export const esquemaReservaAdmin = esquemaPedido.extend({
+export const esquemaReservaAdmin = z.object({
+  areaId: idDocumento,
+  data,
+  faixaId,
+  observacao,
   unitId: idDocumento.refine(Boolean, "Escolha a casa."),
 });
 

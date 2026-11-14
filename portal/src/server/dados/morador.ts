@@ -14,7 +14,7 @@ import type { DocumentData } from "firebase-admin/firestore";
 import { adminDb } from "../firebase-admin";
 import { garantirPermissao, type Contexto } from "../contexto";
 import type { Lancamento } from "./financeiro";
-import { paraArea, paraReserva, type Reserva } from "./reservas";
+import { ordenarAreas, paraArea, paraReserva, type Reserva } from "./reservas";
 import { calcularSaldos, REGEX_MES, type FormaPagamento, type MesComSaldo, type MesResumo, type TipoLancamento } from "@/lib/financeiro";
 import { dataCurta, dataISO, type EventoAgenda } from "@/lib/agenda";
 import { descreverFaixa, ocupaHorario, REGEX_MES_RESERVA, type ConfigArea, type StatusReserva } from "@/lib/reservas";
@@ -88,14 +88,14 @@ export async function lancamentosPublicados(ctx: Contexto, mes: string): Promise
 
 // ---------- Áreas de lazer e agenda (sem as casas dos outros) ----------
 
-/** Áreas de lazer ativas (configuração da área não tem dado pessoal). */
+/** Áreas de lazer e equipamentos ativos (configuração da área não tem dado pessoal). */
 export async function areasAtivas(ctx: Contexto): Promise<ConfigArea[]> {
   garantirPermissao(ctx, "area.morador");
   const snap = await base(ctx).collection("amenities").get();
   return snap.docs
     .map((d) => paraArea(d.id, d.data()))
     .filter((a) => a.ativa)
-    .sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome, "pt-BR"));
+    .sort(ordenarAreas); // áreas primeiro, depois equipamentos
 }
 
 /** O que o morador vê de um horário ocupado: SEM a casa de quem reservou. */

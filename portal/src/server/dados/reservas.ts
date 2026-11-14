@@ -9,6 +9,7 @@ import { hojeISO } from "@/lib/formato";
 import { dataCurta, dataISO, type EventoAgenda } from "@/lib/agenda";
 import {
   STATUS_RESERVA,
+  antecedenciaEmHoras,
   conferirPedido,
   descreverFaixa,
   idDaTrava,
@@ -18,6 +19,7 @@ import {
   sobrepoe,
   type ConfigArea,
   type Faixa,
+  type FaixaLivre,
   type StatusReserva,
 } from "@/lib/reservas";
 
@@ -25,7 +27,8 @@ import {
  * Dados das reservas das áreas de lazer.
  *
  * Coleções (dentro de condominiums/{c}):
- * - amenities/{id}: configuração de cada área (faixas de horário, regras, limites);
+ * - amenities/{id}: configuração de cada área ou equipamento (faixas de horário, regras,
+ *   limites, exigências, avisos e horários de uso livre);
  * - reservations/{id}: cada pedido, reserva ou bloqueio. NUNCA é apagado: muda de status
  *   (pendente → confirmada / recusada / cancelada) e guarda quem decidiu e o motivo;
  * - reservationLocks/{area_data_faixa}: a "trava" do horário. Existe enquanto o horário
@@ -57,23 +60,49 @@ function numero(v: unknown, padrao: number): number {
   return typeof v === "number" && Number.isFinite(v) ? v : padrao;
 }
 
+/** Lista de textos (exigências, avisos), sem itens vazios. */
+function textos(v: unknown): string[] {
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && x.trim() !== "").map((x) => x.trim()) : [];
+}
+
+function faixasLivresDe(v: unknown): FaixaLivre[] {
+  if (!Array.isArray(v)) return [];
+  return (v as Partial<FaixaLivre>[])
+    .filter((f) => typeof f?.inicio === "string" && typeof f.fim === "string")
+    .map((f) => ({ rotulo: texto(f.rotulo, "Uso livre"), inicio: f.inicio!, fim: f.fim! }));
+}
+
 export function paraArea(id: string, d: DocumentData | undefined): ConfigArea {
   const faixas = Array.isArray(d?.faixas) ? (d.faixas as Partial<Faixa>[]) : [];
+  const limiteDia = d?.limitePorCasaPorDia;
   return {
     id,
+    tipo: d?.tipo === "equipamento" ? "equipamento" : "area",
     nome: texto(d?.nome, id),
     regras: texto(d?.regras),
     capacidade: numero(d?.capacidade, 0),
     exigeAprovacao: d?.exigeAprovacao !== false, // padrão: exige
-    antecedenciaMinDias: numero(d?.antecedenciaMinDias, 1),
+    // Campo novo em HORAS; áreas antigas só têm "antecedenciaMinDias" (convertido x24).
+    antecedenciaMinimaHoras: antecedenciaEmHoras(d),
     antecedenciaMaxDias: numero(d?.antecedenciaMaxDias, 60),
+    prazoDesistenciaHoras: Math.max(0, numero(d?.prazoDesistenciaHoras, 0)),
     limitePorMes: numero(d?.limitePorMes, 0),
+    limitePorCasaPorDia: typeof limiteDia === "number" && Number.isFinite(limiteDia) && limiteDia > 0 ? limiteDia : null,
+    permitirExtraSeDiaLivre: d?.permitirExtraSeDiaLivre === true,
+    exigencias: textos(d?.exigencias),
+    avisos: textos(d?.avisos),
+    faixasLivres: faixasLivresDe(d?.faixasLivres),
     ativa: d?.ativa !== false,
     ordem: numero(d?.ordem, 99),
     faixas: faixas
       .filter((f) => typeof f?.id === "string" && typeof f.inicio === "string" && typeof f.fim === "string")
       .map((f) => ({ id: f.id!, rotulo: texto(f.rotulo, f.id), inicio: f.inicio!, fim: f.fim! })),
   };
+}
+
+/** Ordem das listas: áreas primeiro, depois equipamentos; dentro de cada grupo, pela "ordem" e pelo nome. */
+export function ordenarAreas(a: ConfigArea, b: ConfigArea): number {
+  return (a.tipo === b.tipo ? 0 : a.tipo === "area" ? -1 : 1) || a.ordem - b.ordem || a.nome.localeCompare(b.nome, "pt-BR");
 }
 
 export type Reserva = {
@@ -97,6 +126,13 @@ export type Reserva = {
   criadoPorNome: string;
   criadoEm: Date | null;
   decididoPorNome: string;
+  /** Morador desistiu de uma reserva confirmada faltando menos que o prazo de desistência. */
+  cancelamentoTardio: boolean;
+  canceladoEm: Date | null;
+  /** Quando o morador marcou "Li e concordo com as regras" (null se a área não pedia). */
+  aceitouRegrasEm: Date | null;
+  /** Prazo de desistência (horas) que valia quando a reserva foi feita (null em reservas antigas). */
+  prazoDesistenciaHoras: number | null;
 };
 
 function paraStatus(v: unknown): StatusReserva {
@@ -123,6 +159,11 @@ export function paraReserva(id: string, d: DocumentData | undefined): Reserva {
     criadoPorNome: texto(d?.criadoPorNome),
     criadoEm: (d?.criadoEm as Timestamp | undefined)?.toDate?.() ?? null,
     decididoPorNome: texto(d?.decididoPorNome),
+    cancelamentoTardio: d?.cancelamentoTardio === true,
+    canceladoEm: (d?.canceladoEm as Timestamp | undefined)?.toDate?.() ?? null,
+    aceitouRegrasEm: (d?.aceitouRegrasEm as Timestamp | undefined)?.toDate?.() ?? null,
+    prazoDesistenciaHoras:
+      typeof d?.prazoDesistenciaHoras === "number" && Number.isFinite(d.prazoDesistenciaHoras) ? d.prazoDesistenciaHoras : null,
   };
 }
 
@@ -138,7 +179,7 @@ export async function listarAreas(ctx: Contexto): Promise<ConfigArea[]> {
   return snap.docs
     .map((d) => paraArea(d.id, d.data()))
     .filter((a) => veTodas || a.ativa)
-    .sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome, "pt-BR"));
+    .sort(ordenarAreas);
 }
 
 export async function obterArea(ctx: Contexto, id: string): Promise<ConfigArea | null> {
@@ -165,6 +206,18 @@ export async function pedidosPendentes(ctx: Contexto): Promise<Reserva[]> {
   garantirUmaDas(ctx, ["reservas.ver_todas"]);
   const snap = await base(ctx).collection("reservations").where("status", "==", "pendente").get();
   return snap.docs.map((d) => paraReserva(d.id, d.data())).sort(porDataEHora);
+}
+
+/**
+ * Desistências fora do prazo (filtro do síndico), as mais recentes primeiro.
+ * Consulta de um campo só (não precisa de índice composto).
+ */
+export async function cancelamentosTardios(ctx: Contexto): Promise<Reserva[]> {
+  garantirUmaDas(ctx, ["reservas.ver_todas"]);
+  const snap = await base(ctx).collection("reservations").where("cancelamentoTardio", "==", true).get();
+  return snap.docs
+    .map((d) => paraReserva(d.id, d.data()))
+    .sort((a, b) => (b.canceladoEm?.getTime() ?? 0) - (a.canceladoEm?.getTime() ?? 0) || porDataEHora(b, a));
 }
 
 /** Números do topo da agenda: pendentes, reservas de hoje e dos próximos 7 dias. */
@@ -310,6 +363,8 @@ export type NovaReserva = {
   unitId: string | null;
   /** Motivo do bloqueio. */
   motivo?: string;
+  /** Pedido do morador: marcou "Li e concordo com as regras"? (exigido quando a área tem exigências) */
+  aceitouRegras?: boolean;
 };
 
 export type ReservaGravada = { id: string; status: StatusReserva; areaNome: string; faixa: string; data: string };
@@ -350,6 +405,8 @@ export async function gravarReserva(
       // 1) Leituras (numa transação, todas vêm antes das gravações).
       const [areaDoc, travaDoc, unidadeDoc] = await tx.getAll(areaRef, travaRef, ...(unidadeRef ? [unidadeRef] : []));
       const doDia = await tx.get(c.collection("reservations").where("amenityId", "==", nova.areaId).where("data", "==", nova.data));
+      // Reservas da casa no mês (limite mensal). O limite do DIA usa "doDia" (mesma área e data),
+      // lido dentro da transação: se outra casa reservar ao mesmo tempo, a transação é refeita.
       const daCasa = unidadeRef
         ? await tx.get(c.collection("reservations").where("unitId", "==", nova.unitId).where("mes", "==", mes))
         : null;
@@ -370,6 +427,13 @@ export async function gravarReserva(
         .map((d) => paraReserva(d.id, d.data()))
         .filter((r) => r.amenityId === nova.areaId && (r.status === "pendente" || r.status === "confirmada")).length;
 
+      // Limite por casa no dia: conta as reservas ativas (pendentes/confirmadas) da área nesse dia.
+      const ativasDoDia = doDia.docs
+        .map((d) => paraReserva(d.id, d.data()))
+        .filter((r) => r.status === "pendente" || r.status === "confirmada");
+      const reservasDaCasaNoDia = nova.unitId ? ativasDoDia.filter((r) => r.unitId === nova.unitId).length : 0;
+      const outrasCasasNoDia = ativasDoDia.filter((r) => r.unitId !== nova.unitId).length;
+
       const problema = conferirPedido({
         area,
         data: nova.data,
@@ -377,9 +441,17 @@ export async function gravarReserva(
         hoje,
         agoraMinutos: minutosAgora(agora, ctx.fuso),
         reservasDaCasaNoMes,
+        reservasDaCasaNoDia,
+        outrasCasasNoDia,
         peloAdmin: nova.tipo !== "pedido",
       });
       if (problema) throw new ErroDeNegocio(problema);
+
+      // Exigências da área: o morador precisa marcar "Li e concordo com as regras".
+      const precisaAceite = nova.tipo === "pedido" && area.exigencias.length > 0;
+      if (precisaAceite && nova.aceitouRegras !== true) {
+        throw new ErroDeNegocio("Leia as regras e marque “Li e concordo com as regras” para continuar.");
+      }
 
       // 2) O horário está livre? Primeiro a trava; depois qualquer reserva com horário sobreposto.
       const ocupadas = doDia.docs.map((d) => paraReserva(d.id, d.data())).filter((r) => ocupaHorario(r.status));
@@ -416,6 +488,11 @@ export async function gravarReserva(
         decididoPor: nova.tipo === "pedido" ? null : ctx.uid,
         decididoPorNome: nova.tipo === "pedido" ? "" : ctx.nome,
         decididoEm: nova.tipo === "pedido" ? null : FieldValue.serverTimestamp(),
+        // Regras do momento da reserva (a desistência é julgada pelo prazo que valia quando reservou).
+        prazoDesistenciaHoras: area.prazoDesistenciaHoras,
+        aceitouRegrasEm: precisaAceite ? FieldValue.serverTimestamp() : null,
+        cancelamentoTardio: false,
+        canceladoEm: null,
       });
       // Trava antiga "esquecida" (de uma reserva que já não ocupa o horário) é sobrescrita.
       const dadosTrava = { reservaId: reservaRef.id, amenityId: area.id, data: nova.data, faixaId: faixa.id, criadoEm: FieldValue.serverTimestamp() };
@@ -436,6 +513,7 @@ export async function gravarReserva(
           unidade: nova.unitId,
           status,
           origem: nova.tipo === "pedido" ? "morador" : "administracao",
+          ...(precisaAceite ? { aceitouRegras: true } : {}),
           ...(nova.tipo === "bloqueio" ? { motivo: nova.motivo ?? "" } : {}),
         },
       });

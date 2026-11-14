@@ -1,10 +1,18 @@
 /**
  * Peças das reservas: etiqueta de situação (ícone + texto, nunca só cor),
- * cores dos pontinhos do calendário e a legenda.
+ * cores dos pontinhos do calendário, legenda, horários de uso livre e avisos.
  */
-import { Ban, CalendarCheck, CircleDashed, CircleSlash, CircleX, Clock, type LucideIcon } from "lucide-react";
-import { Etiqueta } from "@/components/ui/basicos";
-import { ROTULO_STATUS, type EstadoFaixa, type StatusReserva } from "@/lib/reservas";
+import { AlarmClockOff, Ban, CalendarCheck, CircleDashed, CircleSlash, CircleX, Clock, Sun, type LucideIcon } from "lucide-react";
+import { Alerta, Etiqueta } from "@/components/ui/basicos";
+import {
+  ROTULO_CANCELADA_TARDE,
+  ROTULO_STATUS,
+  ROTULO_USO_LIVRE,
+  horaCurta,
+  type EstadoFaixa,
+  type FaixaLivre,
+  type StatusReserva,
+} from "@/lib/reservas";
 import { cx } from "@/lib/cx";
 
 type Tom = "ok" | "info" | "aviso" | "erro" | "neutro" | "destaque";
@@ -44,5 +52,57 @@ export function Legenda({ itens }: { itens: { cor: string; texto: string }[] }) 
         </li>
       ))}
     </ul>
+  );
+}
+
+/** Etiqueta do síndico: o morador desistiu faltando menos que o prazo de desistência. */
+export function EtiquetaCanceladaTarde() {
+  return (
+    <Etiqueta tom="erro" icone={AlarmClockOff}>
+      {ROTULO_CANCELADA_TARDE}
+    </Etiqueta>
+  );
+}
+
+/** Horários de uso livre da área (só informação: não são reserváveis). */
+export function ListaUsoLivre({ faixas }: { faixas: FaixaLivre[] }) {
+  if (!faixas.length) return null;
+  return (
+    <ul className="flex flex-col gap-2" aria-label="Horários de uso livre">
+      {faixas.map((f) => (
+        <li
+          key={`${f.inicio}-${f.fim}`}
+          className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-dashed border-line px-3 py-2"
+        >
+          <span>
+            <b>{f.rotulo}</b>{" "}
+            <span className="text-[0.88rem] text-muted">
+              {horaCurta(f.inicio)} às {horaCurta(f.fim)}
+            </span>
+          </span>
+          <Etiqueta tom="ok" icone={Sun}>
+            {ROTULO_USO_LIVRE}
+          </Etiqueta>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Avisos da área em destaque (ex.: "Combustível por conta de quem reserva"). */
+export function AvisosDaArea({ avisos }: { avisos: string[] }) {
+  if (!avisos.length) return null;
+  return (
+    <Alerta tipo="aviso" titulo={avisos.length === 1 ? "Aviso" : "Avisos"}>
+      {avisos.length === 1 ? (
+        <p>{avisos[0]}</p>
+      ) : (
+        <ul className="flex list-disc flex-col gap-1 pl-5">
+          {avisos.map((a, i) => (
+            <li key={i}>{a}</li>
+          ))}
+        </ul>
+      )}
+    </Alerta>
   );
 }
