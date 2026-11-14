@@ -25,10 +25,17 @@ for (const nome of ["FIREBASE_PRIVATE_KEY", "PORTARIA_SEGREDO_CODIGO"]) {
     process.exitCode = 1;
     continue;
   }
-  const r = spawnSync("npx", ["--yes", "vercel@latest", "env", "add", nome, "production", "--sensitive", "--force"], {
+  // Uma linha de comando só (sem lista de argumentos): é o jeito que funciona no Windows.
+  // O valor vai pela entrada padrão, nunca na linha de comando.
+  const r = spawnSync(`npx --yes vercel@latest env add ${nome} --environment production --sensitive --force`, {
     input: valor,
     encoding: "utf8",
     shell: true,
   });
-  console.log(`${nome}: ${r.status === 0 ? "enviado" : "falhou (rode de novo ou cadastre no painel da Vercel)"}`);
+  if (r.status === 0) console.log(`${nome}: enviado`);
+  else {
+    const linhas = [r.stderr ?? "", r.stdout ?? ""].join("\n").split("\n");
+    const motivo = linhas.filter((l) => /error|erro|!/i.test(l)).slice(-3).join(" | ");
+    console.log(`${nome}: falhou — ${motivo || "sem detalhe"}`);
+  }
 }
