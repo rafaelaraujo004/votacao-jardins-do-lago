@@ -1,61 +1,21 @@
 "use client";
 
 /**
- * Mapa das casas (planta ILUSTRATIVA, ainda não é a planta oficial).
+ * Mapa das casas — PLANTA REAL do condomínio (225 lotes, dados em src/lib/planta.ts).
  * - Digite o número da casa para destacá-la.
- * - Toque numa casa para ver o número e a quadra.
+ * - Toque numa casa para ver o número e onde ela fica.
  * - Ampliar / Reduzir mudam o tamanho do desenho (dá para arrastar para os lados).
  * As cores usam os tokens do portal (var(--...)), então funcionam no claro e no escuro.
  */
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { MapPin, Search, X, ZoomIn, ZoomOut } from "lucide-react";
 import { cx } from "@/lib/cx";
+import { AREA_DESENHO, CONTORNO_TERRENO, LOTES, QUADRAS, TOTAL_LOTES, loteDoNumero, type Lote } from "@/lib/planta";
 
-// ---------- Dados do desenho ----------
-
-type Quadra = { letra: string; qtd: number; x: number; y: number };
-
-// 4 quadras com 28 casas + 4 com 27 = 220 casas. A numeração segue a ordem A, B, C... H.
-const QUADRAS: Quadra[] = [
-  { letra: "A", qtd: 28, x: 24, y: 120 },
-  { letra: "B", qtd: 28, x: 216, y: 120 },
-  { letra: "C", qtd: 28, x: 24, y: 210 },
-  { letra: "D", qtd: 28, x: 216, y: 210 },
-  { letra: "E", qtd: 27, x: 24, y: 300 },
-  { letra: "F", qtd: 27, x: 216, y: 300 },
-  { letra: "G", qtd: 27, x: 24, y: 390 },
-  { letra: "H", qtd: 27, x: 216, y: 390 },
-];
-const LARGURA_QUADRA = 160;
-const ALTURA_QUADRA = 72;
-const TOTAL_CASAS = QUADRAS.reduce((soma, q) => soma + q.qtd, 0);
-
-type Lote = { numero: number; quadra: string; x: number; y: number; w: number; h: number };
-
-/** Calcula a posição de cada casa (metade em cima, metade embaixo em cada quadra). */
-function montarLotes(): Lote[] {
-  const lotes: Lote[] = [];
-  let numero = 1;
-  for (const q of QUADRAS) {
-    const cima = Math.ceil(q.qtd / 2);
-    const linhas: [number, number][] = [
-      [cima, 0],
-      [q.qtd - cima, ALTURA_QUADRA / 2],
-    ];
-    for (const [qtd, deslocY] of linhas) {
-      const lw = LARGURA_QUADRA / qtd;
-      for (let i = 0; i < qtd; i++) {
-        lotes.push({ numero, quadra: q.letra, x: q.x + i * lw, y: q.y + deslocY + 1, w: lw - 1, h: ALTURA_QUADRA / 2 - 2 });
-        numero++;
-      }
-    }
-  }
-  return lotes;
-}
-const LOTES = montarLotes();
-
-// Tamanhos do desenho: 100% (inteiro) até 300%.
-const ZOOMS = [1, 1.5, 2, 3];
+// Tamanhos do desenho: 100% (planta inteira) até 400% (números bem legíveis no celular).
+const ZOOMS = [1, 2, 3, 4];
+/** Ao achar uma casa, aproxima pelo menos até este nível. */
+const ZOOM_AO_ACHAR = 2;
 
 // Cores (tokens do portal)
 const COR = {
@@ -69,10 +29,19 @@ const COR = {
   achadaTexto: "var(--canvas)",
   lago: "var(--petala-azul)",
   verde: "var(--pine)",
+  arvore: "var(--petala-verde)",
   sobreVerde: "var(--canvas)",
   texto: "var(--ink)",
   suave: "var(--muted)",
 };
+
+const pontos = (p: [number, number][]) => p.map(([x, y]) => `${x},${y}`).join(" ");
+
+// Árvores do parque (decoração).
+const ARVORES: [number, number][] = [
+  [330, 230], [420, 215], [455, 250], [500, 225], [430, 300], [470, 330], [520, 300],
+  [330, 320], [360, 350], [545, 345], [600, 330], [310, 470], [620, 470],
+];
 
 export function MapaInterativo() {
   const [busca, setBusca] = useState("");
@@ -81,7 +50,7 @@ export function MapaInterativo() {
   const [nivelZoom, setNivelZoom] = useState(0);
   const refCaixa = useRef<HTMLDivElement>(null);
 
-  const lote = selecionado ? LOTES[selecionado - 1] : null;
+  const lote = selecionado ? loteDoNumero(selecionado) : null;
   const zoom = ZOOMS[nivelZoom];
 
   // Sempre que a casa escolhida (ou o zoom) muda, centraliza a casa na caixa do mapa.
@@ -104,7 +73,12 @@ export function MapaInterativo() {
   function numeroValido(texto: string): number | null {
     if (!/^\d{1,3}$/.test(texto.trim())) return null;
     const n = Number(texto.trim());
-    return n >= 1 && n <= TOTAL_CASAS ? n : null;
+    return n >= 1 && n <= TOTAL_LOTES ? n : null;
+  }
+
+  function escolher(n: number) {
+    setSelecionado(n);
+    if (nivelZoom < ZOOM_AO_ACHAR) setNivelZoom(ZOOM_AO_ACHAR); // aproxima para a casa aparecer bem
   }
 
   function aoDigitar(valor: string) {
@@ -117,10 +91,9 @@ export function MapaInterativo() {
     const n = numeroValido(limpo);
     if (n) {
       setErro("");
-      setSelecionado(n);
-      if (nivelZoom === 0) setNivelZoom(1); // aproxima um pouco para a casa aparecer bem
+      escolher(n);
     } else {
-      setErro(`Digite um número de casa de 1 a ${TOTAL_CASAS}.`);
+      setErro(`Digite um número de casa de 1 a ${TOTAL_LOTES}.`);
     }
   }
 
@@ -128,12 +101,11 @@ export function MapaInterativo() {
     e.preventDefault();
     const n = numeroValido(busca);
     if (!n) {
-      setErro(`Digite um número de casa de 1 a ${TOTAL_CASAS}.`);
+      setErro(`Digite um número de casa de 1 a ${TOTAL_LOTES}.`);
       return;
     }
     setErro("");
-    setSelecionado(n);
-    if (nivelZoom === 0) setNivelZoom(1);
+    escolher(n);
   }
 
   function limpar() {
@@ -141,6 +113,8 @@ export function MapaInterativo() {
     setBusca("");
     setErro("");
   }
+
+  const { x: vx, y: vy, w: vw, h: vh } = AREA_DESENHO;
 
   return (
     <div className="flex flex-col gap-4">
@@ -185,10 +159,8 @@ export function MapaInterativo() {
               <MapPin aria-hidden className="size-6" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="font-display text-[1.2rem] font-bold leading-tight text-destaque">
-                Casa {lote.numero} — Quadra {lote.quadra}
-              </p>
-              <p className="text-[0.88rem] text-muted">Toque em outra casa para trocar</p>
+              <p className="font-display text-[1.2rem] font-bold leading-tight text-destaque">Casa {lote.numero}</p>
+              <p className="text-[0.88rem] text-muted">{lote.trecho}</p>
             </div>
             <button
               type="button"
@@ -208,95 +180,104 @@ export function MapaInterativo() {
         className="afundado max-h-[62vh] overflow-auto rounded-[var(--radius-card)] p-2 [-webkit-overflow-scrolling:touch]"
       >
         <svg
-          viewBox="0 0 400 600"
+          viewBox={`${vx} ${vy} ${vw} ${vh}`}
           role="img"
-          aria-label={`Planta ilustrativa do condomínio com ${TOTAL_CASAS} casas nas quadras A a H, lago, área de lazer e portaria.`}
+          aria-label={`Planta do condomínio com ${TOTAL_LOTES} casas, lago, área de lazer, quadra de esportes e portaria.`}
           className="block h-auto max-w-none transition-[width] duration-200"
           style={{ width: `${zoom * 100}%` }}
         >
-          <rect x={0} y={0} width={400} height={600} rx={12} fill={COR.fundo} />
+          <defs>
+            {/* Pontilhado das áreas verdes (como na planta). */}
+            <pattern id="pontilhado" width="14" height="14" patternUnits="userSpaceOnUse">
+              <rect width="14" height="14" fill={COR.gramado} />
+              <circle cx="4" cy="4" r="1.3" fill={COR.arvore} opacity="0.45" />
+              <circle cx="11" cy="11" r="1.3" fill={COR.arvore} opacity="0.45" />
+            </pattern>
+          </defs>
 
-          {/* Lago */}
-          <path d="M0 0 H400 V62 Q330 92 240 76 Q150 60 80 84 Q30 98 0 86Z" fill={COR.lago} opacity={0.85} />
-          <path d="M60 36 h40 M170 24 h50 M280 44 h44 M120 58 h30" stroke={COR.sobreVerde} strokeWidth={2} strokeLinecap="round" opacity={0.5} />
-          <text x={200} y={46} textAnchor="middle" fontSize={15} fontWeight={700} fill={COR.sobreVerde} className="font-display">
+          <rect x={vx} y={vy} width={vw} height={vh} rx={18} fill={COR.fundo} />
+
+          {/* Terreno: o que não é quadra nem área verde é rua. */}
+          <polygon points={pontos(CONTORNO_TERRENO)} fill={COR.rua} />
+
+          {/* APP (área de preservação) à esquerda do parque */}
+          <rect x={112} y={292} width={164} height={212} rx={8} fill="url(#pontilhado)" />
+          <text x={194} y={402} textAnchor="middle" fontSize={15} fontWeight={700} fill={COR.suave}>
+            APP
+          </text>
+          <text x={194} y={420} textAnchor="middle" fontSize={10} fill={COR.suave}>
+            área de preservação
+          </text>
+
+          {/* Parque, lago e área de lazer */}
+          <path
+            d="M298 214 L360 214 L560 214 L652 290 L652 410 L640 418 L640 505 L298 505 Z"
+            fill="url(#pontilhado)"
+          />
+          <path
+            d="M362 410 Q372 382 420 386 Q470 392 520 380 Q590 372 604 410 Q616 455 590 486 Q556 506 470 498 Q392 502 368 476 Q352 448 362 410 Z"
+            fill={COR.lago}
+            opacity={0.8}
+          />
+          <path d="M430 420 v52 M470 414 v62" stroke={COR.sobreVerde} strokeWidth={3} strokeLinecap="round" opacity={0.6} />
+          <text x={530} y={452} textAnchor="middle" fontSize={18} fontWeight={700} fill={COR.sobreVerde} className="font-display">
             Lago
           </text>
 
-          {/* Ruas */}
-          <rect x={190} y={96} width={20} height={470} fill={COR.rua} />
-          {[104, 194, 284, 374, 464].map((y) => (
-            <rect key={y} x={14} y={y} width={372} height={12} fill={COR.rua} />
+          {/* Trilha do parque */}
+          <path
+            d="M318 360 Q300 330 330 318 Q372 300 392 262 Q420 220 470 232 Q520 246 512 300 Q506 336 540 340"
+            fill="none"
+            stroke={COR.rua}
+            strokeWidth={8}
+            strokeLinecap="round"
+          />
+          {ARVORES.map(([cx, cy]) => (
+            <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={7} fill={COR.arvore} opacity={0.75} />
           ))}
 
-          {/* Quadras e casas */}
-          {QUADRAS.map((q) => {
-            const lx = q.x < 200 ? q.x - 12 : q.x + LARGURA_QUADRA + 12;
-            return (
-              <g key={q.letra}>
-                <rect x={q.x - 2} y={q.y - 2} width={LARGURA_QUADRA + 4} height={ALTURA_QUADRA + 4} rx={6} fill={COR.gramado} />
-                <circle cx={lx} cy={q.y + ALTURA_QUADRA / 2} r={9} fill={COR.verde} />
-                <text
-                  x={lx}
-                  y={q.y + ALTURA_QUADRA / 2 + 4}
-                  textAnchor="middle"
-                  fontSize={11}
-                  fontWeight={700}
-                  fill={COR.sobreVerde}
-                  className="font-display"
-                >
-                  {q.letra}
-                </text>
-              </g>
-            );
-          })}
+          {/* Playground */}
+          <rect x={350} y={222} width={48} height={40} rx={10} fill="var(--petala-amarelo)" opacity={0.85} />
+          <text x={374} y={277} textAnchor="middle" fontSize={10} fontWeight={700} fill={COR.texto}>
+            Playground
+          </text>
+
+          {/* Quiosque / salão */}
+          <rect x={526} y={238} width={56} height={26} rx={4} fill="var(--petala-rosa)" opacity={0.85} />
+          <text x={554} y={278} textAnchor="middle" fontSize={10} fontWeight={700} fill={COR.texto}>
+            Quiosques
+          </text>
+
+          {/* Quadra de esportes (inclinada, como na planta) */}
+          <g transform="rotate(37 610 335)">
+            <rect x={572} y={312} width={78} height={46} rx={3} fill="var(--petala-laranja)" opacity={0.8} />
+            <line x1={611} y1={312} x2={611} y2={358} stroke={COR.sobreVerde} strokeWidth={1.5} />
+            <circle cx={611} cy={335} r={7} fill="none" stroke={COR.sobreVerde} strokeWidth={1.5} />
+          </g>
+          <text x={612} y={392} textAnchor="middle" fontSize={10} fontWeight={700} fill={COR.texto}>
+            Quadra
+          </text>
+
+          {/* Quadras de casas */}
+          {QUADRAS.map((q) => (
+            <polygon key={q.id} points={pontos(q.contorno)} fill="url(#pontilhado)" stroke={COR.casaBorda} strokeWidth={1.5} />
+          ))}
 
           {LOTES.map((l) => (
-            <CasaNoMapa key={l.numero} lote={l} escolhida={false} aoTocar={() => setSelecionado(l.numero)} />
+            <CasaNoMapa key={l.numero} lote={l} escolhida={false} aoTocar={() => escolher(l.numero)} />
           ))}
           {/* A casa escolhida é desenhada por último para ficar por cima. */}
           {lote ? <CasaNoMapa lote={lote} escolhida aoTocar={() => undefined} /> : null}
 
-          {/* Área de lazer */}
-          <rect x={14} y={480} width={172} height={72} rx={8} fill={COR.gramado} stroke={COR.verde} strokeWidth={1} />
-          <rect x={214} y={480} width={172} height={72} rx={8} fill={COR.gramado} stroke={COR.verde} strokeWidth={1} />
-          <rect x={24} y={490} width={70} height={36} rx={10} fill={COR.lago} opacity={0.75} />
-          <text x={59} y={512} textAnchor="middle" fontSize={9} fontWeight={700} fill={COR.texto}>
-            Piscina
-          </text>
-          <rect x={102} y={490} width={76} height={36} rx={4} fill={COR.fundo} stroke={COR.achada} strokeWidth={1.5} />
-          <text x={140} y={511} textAnchor="middle" fontSize={8} fontWeight={700} fill={COR.achada}>
-            Salão de festas
-          </text>
-          <text x={100} y={545} textAnchor="middle" fontSize={9} fontWeight={700} fill={COR.texto}>
-            Área de lazer
-          </text>
-          <rect x={224} y={488} width={86} height={46} rx={3} fill="var(--petala-laranja)" opacity={0.75} />
-          <line x1={267} y1={488} x2={267} y2={534} stroke={COR.fundo} strokeWidth={1.2} />
-          <text x={267} y={546} textAnchor="middle" fontSize={8.5} fontWeight={700} fill={COR.texto}>
-            Quadra
-          </text>
-          <circle cx={348} cy={510} r={22} fill="var(--petala-amarelo)" opacity={0.8} />
-          <text x={348} y={513} textAnchor="middle" fontSize={7.5} fontWeight={700} fill={COR.texto}>
-            Playground
-          </text>
-
-          {/* Árvores decorativas */}
-          {[
-            [30, 98],
-            [380, 98],
-            [188, 470],
-            [212, 470],
-          ].map(([cx, cy]) => (
-            <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={5} fill={COR.verde} />
-          ))}
-
-          {/* Portaria */}
-          <rect x={170} y={562} width={60} height={30} rx={6} fill={COR.verde} />
-          <text x={200} y={581} textAnchor="middle" fontSize={10} fontWeight={700} fill={COR.sobreVerde} className="font-display">
+          {/* Portaria e entrada */}
+          <rect x={268} y={895} width={56} height={100} fill={COR.rua} />
+          <circle cx={296} cy={858} r={30} fill={COR.rua} />
+          <circle cx={296} cy={858} r={17} fill={COR.arvore} opacity={0.85} />
+          <rect x={272} y={918} width={48} height={26} rx={6} fill={COR.verde} />
+          <text x={296} y={935} textAnchor="middle" fontSize={11} fontWeight={700} fill={COR.sobreVerde} className="font-display">
             Portaria
           </text>
-          <text x={262} y={584} textAnchor="middle" fontSize={9} fill={COR.suave}>
+          <text x={366} y={972} textAnchor="middle" fontSize={12} fill={COR.suave}>
             ↓ PA-160
           </text>
         </svg>
@@ -332,9 +313,13 @@ export function MapaInterativo() {
         </ItemLegenda>
         <ItemLegenda cor={COR.achada}>Casa encontrada</ItemLegenda>
         <ItemLegenda cor={COR.gramado} borda={COR.verde}>
-          Lazer e jardins
+          Áreas verdes
         </ItemLegenda>
         <ItemLegenda cor={COR.lago}>Lago</ItemLegenda>
+        <ItemLegenda cor={COR.rua} borda={COR.casaBorda}>
+          Ruas
+        </ItemLegenda>
+        <ItemLegenda cor="var(--petala-laranja)">Quadra de esportes</ItemLegenda>
       </ul>
     </div>
   );
@@ -342,24 +327,26 @@ export function MapaInterativo() {
 
 /** Um lote (casa) no desenho. Fica fora da navegação por teclado: a busca faz esse papel. */
 function CasaNoMapa({ lote, escolhida, aoTocar }: { lote: Lote; escolhida: boolean; aoTocar: () => void }) {
+  // Letra do tamanho do lote: cabe em lotes estreitos (rua de baixo) e nos largos.
+  const fonte = Math.min(13, lote.w * 0.42, lote.h * 0.55);
   return (
     <g data-casa={escolhida ? lote.numero : undefined} onClick={aoTocar} className={cx(!escolhida && "cursor-pointer")}>
-      <title>{`Casa ${lote.numero} — Quadra ${lote.quadra}`}</title>
+      <title>{`Casa ${lote.numero} — ${lote.trecho}`}</title>
       <rect
-        x={lote.x}
-        y={lote.y}
-        width={lote.w}
-        height={lote.h}
-        rx={1.5}
+        x={lote.x + 0.75}
+        y={lote.y + 0.75}
+        width={lote.w - 1.5}
+        height={lote.h - 1.5}
+        rx={2}
         fill={escolhida ? COR.achada : COR.casa}
         stroke={escolhida ? COR.texto : COR.casaBorda}
-        strokeWidth={escolhida ? 1.2 : 0.6}
+        strokeWidth={escolhida ? 2.5 : 0.8}
       />
       <text
         x={lote.x + lote.w / 2}
-        y={lote.y + lote.h / 2 + 2}
+        y={lote.y + lote.h / 2 + fonte * 0.36}
         textAnchor="middle"
-        fontSize={5}
+        fontSize={fonte}
         fontWeight={700}
         fill={escolhida ? COR.achadaTexto : COR.casaTexto}
         pointerEvents="none"
