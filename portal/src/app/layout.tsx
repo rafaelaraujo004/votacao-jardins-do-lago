@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import localFont from "next/font/local";
 import { ProvedorDeAvisos } from "@/components/ui/avisos";
 import { BarraNavegacao } from "@/components/ui/barra-navegacao";
+import { BloqueioZoom } from "@/components/ui/bloqueio-zoom";
 import "./globals.css";
 
 // Fontes servidas pelo próprio portal (nenhuma chamada a servidores de terceiros).
@@ -31,6 +32,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // Sem zoom no sistema (pedido do dono): o portal se comporta como um app.
+  // Para quem enxerga pouco existe a opção "Letra grande" na tela Mais.
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#12382a" },
@@ -48,6 +53,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: scriptTema }} />
       </head>
       <body className="min-h-dvh bg-canvas text-ink antialiased">
+        <BloqueioZoom />
         <Suspense fallback={null}>
           <BarraNavegacao />
         </Suspense>
