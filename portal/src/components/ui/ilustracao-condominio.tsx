@@ -46,7 +46,8 @@ export function IlustracaoCondominio({ className }: { className?: string }) {
 
         {/* céu e sol */}
         <rect width="360" height="190" fill="url(#ceu)" />
-        <circle cx="300" cy="44" r="20" fill="#f6d77a" opacity="0.9" />
+        {/* o sol fica no meio do céu, longe do nome (que fica à direita) */}
+        <circle cx="168" cy="40" r="17" fill="#f6d77a" opacity="0.9" />
 
         {/* morros ao fundo */}
         <path d="M0 110 Q60 70 130 98 T260 92 T360 100 V190 H0 Z" fill="#a9c99a" />
@@ -81,9 +82,9 @@ export function IlustracaoCondominio({ className }: { className?: string }) {
 
       {/* nome do condomínio sobre o céu */}
       <div className="pointer-events-none absolute right-4 top-3 text-right leading-none">
-        <span className="block font-display text-[0.95rem] font-semibold text-[#8a7340]">Residencial</span>
-        <span className="block font-display text-[1.75rem] font-extrabold tracking-tight text-[#8b2a5c]">Jardins</span>
-        <span className="block font-display text-[0.95rem] font-semibold text-[#8a7340]">do Lago</span>
+        <span className="block font-display text-[clamp(0.78rem,3.4vw,0.95rem)] font-semibold text-[#8a7340]">Residencial</span>
+        <span className="block font-display text-[clamp(1.4rem,6.6vw,1.75rem)] font-extrabold tracking-tight text-[#8b2a5c]">Jardins</span>
+        <span className="block font-display text-[clamp(0.78rem,3.4vw,0.95rem)] font-semibold text-[#8a7340]">do Lago</span>
       </div>
     </div>
   );

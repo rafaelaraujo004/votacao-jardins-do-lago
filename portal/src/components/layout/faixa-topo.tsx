@@ -64,13 +64,21 @@ export function FaixaTopo({
           Demonstração · dados fictícios
         </p>
       ) : null}
-      <div className={cx("relative mx-auto flex items-center gap-3 px-4 pb-16", demo ? "pt-2" : "pt-4", largura)}>
-        <Logo largura={70} className="shrink-0" />
-        <div className="flex min-w-0 flex-1 flex-col leading-tight">
-          <span className="truncate font-display text-[1.06rem] font-bold tracking-tight">{titulo}</span>
-          <span className="mt-0.5 truncate text-[0.8rem] text-band-muted">{ENDERECO_LINHA}</span>
-          {subtitulo ? <span className="mt-0.5 truncate text-[0.84rem] font-bold text-band-fg/90">{subtitulo}</span> : null}
+      {/*
+        Celular: a marca (logo + nome) ocupa a linha de cima inteira e os botões
+        descem para uma segunda linha, à direita. Assim o nome nunca fica espremido.
+        Telas maiores: tudo numa linha só.
+      */}
+      <div className={cx("relative mx-auto flex flex-wrap items-center gap-x-3 gap-y-2.5 px-4 pb-16", demo ? "pt-2" : "pt-4", largura)}>
+        <div className="flex min-w-0 flex-1 basis-[15rem] items-center gap-3">
+          <Logo largura={64} className="shrink-0" />
+          <div className="flex min-w-0 flex-1 flex-col leading-tight">
+            <span className="line-clamp-2 font-display text-[1.06rem] font-bold tracking-tight">{titulo}</span>
+            <span className="mt-0.5 truncate text-[0.8rem] text-band-muted">{ENDERECO_LINHA}</span>
+            {subtitulo ? <span className="mt-0.5 truncate text-[0.84rem] font-bold text-band-fg/90">{subtitulo}</span> : null}
+          </div>
         </div>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
         {contaHref ? (
           <Link href={contaHref} title="Trocar senha" className={cx("grid size-11 place-items-center rounded-full", classeBotaoFaixa)}>
             <KeyRound aria-hidden className="size-5" />
@@ -80,6 +88,7 @@ export function FaixaTopo({
         <BotaoTema className={classeBotaoFaixa} />
         {sessao ? <ChipCasa rotulo={sessao.rotulo} /> : null}
         <BotaoSair redondo className={classeBotaoFaixa} />
+        </div>
       </div>
       {children}
     </header>

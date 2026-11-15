@@ -124,7 +124,7 @@ export function NavMorador({ casa }: { casa: string }) {
         {ITENS_MORADOR.map(({ rotulo, icone: Icone, href, fase }) => {
           const atual = ativo(caminho, href);
           const classes = cx(
-            "group flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-2xl text-[0.76rem] font-bold lg:min-h-12 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-base",
+            "group flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-0.5 text-[clamp(0.6rem,3.15vw,0.76rem)] font-bold tracking-tight lg:min-h-12 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-base",
             atual ? "text-destaque lg:shadow-afundado" : "text-muted hover:text-ink",
           );
           const pilula = cx(

@@ -158,7 +158,7 @@ export function SegmentoLinks({
 export function TituloSecao({ children, extra, id }: { children: ReactNode; extra?: ReactNode; id?: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <h2 id={id} className="text-[1.2rem] font-bold text-destaque">
+      <h2 id={id} className="scroll-mt-6 text-[1.2rem] font-bold text-destaque">
         {children}
       </h2>
       {extra ? <span className="text-[0.88rem] text-muted">{extra}</span> : null}

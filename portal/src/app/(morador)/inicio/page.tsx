@@ -12,6 +12,7 @@ import {
   MapPinned,
   Megaphone,
   Package,
+  QrCode,
   ReceiptText,
   Store,
   UserCheck,
@@ -41,8 +42,10 @@ import type { LucideIcon } from "lucide-react";
 export const metadata: Metadata = { title: "Início" };
 
 // Atalhos dos módulos (só aparecem os que o perfil pode usar).
+// São 12 de propósito: a grade fecha sem buracos em 3 colunas (celular) e em 4 (telas maiores).
 const ATALHOS: { icone: LucideIcon; titulo: string; href: string; tom: TomModulo; permissao: Permissao }[] = [
   { icone: ReceiptText, titulo: "Prestação de contas", href: "/financeiro", tom: "verde", permissao: "financeiro.ver_publicado" },
+  { icone: QrCode, titulo: "Pagar taxa", href: "/contatos#titulo-pix", tom: "verde", permissao: "informacoes.ver" },
   { icone: CalendarDays, titulo: "Agenda das áreas", href: "/reservas", tom: "verde", permissao: "reservas.fazer" },
   { icone: ClipboardPlus, titulo: "Informar problema", href: "/solicitacoes?nova=1", tom: "areia", permissao: "solicitacoes.abrir" },
   { icone: Megaphone, titulo: "Comunicados", href: "/comunicados", tom: "areia", permissao: "comunicados.ver" },

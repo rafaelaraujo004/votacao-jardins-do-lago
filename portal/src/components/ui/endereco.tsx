@@ -62,7 +62,7 @@ export function EnderecoCopiavel({ className }: { className?: string }) {
         <MapPin aria-hidden className="mt-0.5 size-5 shrink-0 text-plum" />
         <div className="min-w-0">
           <span className="rotulo-caixa block">Endereço</span>
-          <p ref={refTexto} className="m-0 select-text text-[0.95rem] leading-snug text-ink">
+          <p ref={refTexto} className="m-0 select-text text-[0.95rem] leading-snug text-ink [text-wrap:pretty]">
             {ENDERECO_LINHA}
             <br />
             {ENDERECO_CIDADE}
@@ -72,18 +72,19 @@ export function EnderecoCopiavel({ className }: { className?: string }) {
           </p>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-2.5">
+      {/* Lado a lado quando cabem; um embaixo do outro em telas estreitas (sem quebrar o texto). */}
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(10.5rem,1fr))] gap-2.5">
         <button
           type="button"
           onClick={() => aoCopiar(ENDERECO.cep, "CEP", refCep.current)}
-          className="botao-verde inline-flex min-h-12 items-center justify-center gap-1.5 rounded-full px-2 text-[0.92rem] font-bold active:shadow-afundado"
+          className="botao-verde inline-flex min-h-12 items-center justify-center gap-1.5 rounded-full px-3 text-[0.92rem] font-bold whitespace-nowrap active:shadow-afundado"
         >
           <Copy aria-hidden className="size-[18px] shrink-0" /> Copiar CEP
         </button>
         <button
           type="button"
           onClick={() => aoCopiar(ENDERECO_COMPLETO, "Endereço", refTexto.current)}
-          className="saltado inline-flex min-h-12 items-center justify-center gap-1.5 rounded-full px-2 text-[0.92rem] font-bold text-ink active:shadow-afundado"
+          className="saltado inline-flex min-h-12 items-center justify-center gap-1.5 rounded-full px-3 text-[0.92rem] font-bold whitespace-nowrap text-ink active:shadow-afundado"
         >
           <Copy aria-hidden className="size-[18px] shrink-0" /> Copiar endereço
         </button>

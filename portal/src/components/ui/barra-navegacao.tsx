@@ -24,6 +24,22 @@ export function BarraNavegacao() {
     if (estado === "andando") setEstado("terminando");
   }
 
+  // Link com âncora (ex.: "/contatos#titulo-pix"): a tela chega por partes, então
+  // rola até a âncora depois que ela existir (tenta algumas vezes, por pouco tempo).
+  useEffect(() => {
+    const ancora = decodeURIComponent(location.hash.slice(1));
+    if (!ancora) return;
+    let tentativas = 0;
+    const id = setInterval(() => {
+      const alvo = document.getElementById(ancora);
+      if (alvo || ++tentativas > 20) {
+        clearInterval(id);
+        alvo?.scrollIntoView({ block: "start" });
+      }
+    }, 100);
+    return () => clearInterval(id);
+  }, [rota]);
+
   // ...e some logo depois.
   useEffect(() => {
     if (estado !== "terminando") return;
