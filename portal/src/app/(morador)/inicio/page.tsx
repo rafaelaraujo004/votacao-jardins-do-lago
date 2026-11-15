@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import {
   BookUser,
@@ -67,18 +68,61 @@ async function ultimoMesPublicado(ctx: Contexto): Promise<MesComSaldo | null | "
   }
 }
 
-/** Início do morador (com login): nada aqui identifica OUTRAS casas ou pessoas. */
-export default async function InicioMorador() {
-  const ctx = await exigirPermissao("area.morador", "/inicio");
+/** Espaço reservado enquanto um bloco do Início carrega (evita a tela "pular"). */
+function BlocoCarregando({ altura }: { altura: string }) {
+  return <div aria-hidden className={cx("esqueleto w-full rounded-[var(--radius-card)]", altura)} />;
+}
 
+/** Resumo do último mês publicado (chega logo depois do resto da tela). */
+async function ResumoInicio({ ctx }: { ctx: Contexto }) {
+  const resumo = await ultimoMesPublicado(ctx);
+  return (
+  <section aria-labelledby="titulo-resumo">
+    {resumo && resumo !== "erro" ? (
+      <Link
+        href="/financeiro"
+        className="block rounded-[var(--radius-card)] border border-borda-luz bg-surface p-4 shadow-card transition-shadow active:shadow-afundado"
+      >
+        <div className="mb-3 flex items-baseline justify-between gap-3">
+          <h2 id="titulo-resumo" className="text-[1.1rem] font-bold text-destaque">
+            Resumo de {nomeDoMes(resumo.mes)}
+          </h2>
+          <span className="inline-flex shrink-0 items-center text-[0.88rem] font-bold text-pine">
+            Ver contas <ChevronRight aria-hidden className="size-4" />
+          </span>
+        </div>
+        {/* Em telas pequenas o saldo ocupa a linha toda; receitas e despesas ficam lado a lado. */}
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+          <BlocoNumero rotulo="Saldo" valor={formatarMoeda(resumo.saldoFinalCentavos)} cor="pine" className="col-span-2 sm:col-span-1" />
+          <BlocoNumero rotulo="Receitas" valor={formatarMoeda(resumo.receitasCentavos)} cor="lake" />
+          <BlocoNumero rotulo="Despesas" valor={formatarMoeda(resumo.despesasCentavos)} cor="plum" />
+        </div>
+      </Link>
+    ) : (
+      <Cartao className="p-4">
+        <h2 id="titulo-resumo" className="text-[1.1rem] font-bold text-destaque">
+          Prestação de contas
+        </h2>
+        <p className="mt-1 text-ink-2">
+          {resumo === "erro"
+            ? "Não foi possível carregar o resumo agora. Tente novamente mais tarde."
+            : "A primeira prestação de contas ainda não foi publicada."}
+        </p>
+      </Cartao>
+    )}
+  </section>
+  );
+}
+
+/** Agenda do mês e próximos eventos (chega logo depois do resto da tela). */
+async function AgendaInicio({ ctx }: { ctx: Contexto }) {
   // Mês atual no fuso do condomínio.
   const hoje = hojeISO(new Date(), ctx.fuso);
   const [ano, mes, dia] = hoje.split("-").map(Number);
   const proxAno = mes === 12 ? ano + 1 : ano;
   const proxMes = mes === 12 ? 1 : mes + 1;
 
-  const [resumo, eventos, eventosProx] = await Promise.all([
-    ultimoMesPublicado(ctx),
+  const [eventos, eventosProx] = await Promise.all([
     eventosDoMes(ctx, ano, mes),
     eventosDoMes(ctx, proxAno, proxMes),
   ]);
@@ -86,6 +130,66 @@ export default async function InicioMorador() {
   // Próximos eventos: de hoje em diante, deste mês e do seguinte.
   const proximos = [...eventos, ...eventosProx].filter((e) => e.data >= hoje).slice(0, 5);
   const temExemplo = eventos.some((e) => e.exemplo) || proximos.some((e) => e.exemplo);
+
+  return (
+  <section aria-labelledby="titulo-agenda" className="flex flex-col gap-3">
+    <TituloSecao
+      id="titulo-agenda"
+      extra={
+        temExemplo ? (
+          <Etiqueta tom="aviso" icone={FlaskConical}>
+            exemplo
+          </Etiqueta>
+        ) : undefined
+      }
+    >
+      Agenda do condomínio
+    </TituloSecao>
+    <Cartao className="p-4">
+      <Calendario ano={ano} mes={mes} hoje={dia} eventos={eventos} />
+    </Cartao>
+    <Link
+      href="/reservas"
+      className="saltado inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-full px-4 font-bold text-pine active:shadow-afundado"
+    >
+      <CalendarDays aria-hidden className="size-5" /> Ver horários livres das áreas
+    </Link>
+
+    <h3 className="mt-2 text-[1.05rem] font-bold text-destaque">Próximos eventos</h3>
+    {proximos.length ? (
+      <ul className="flex flex-col gap-2.5">
+        {proximos.map((e) => (
+          <li key={e.id} className="saltado flex items-center gap-3 rounded-2xl px-3 py-2.5">
+            <span className="afundado flex h-[54px] w-[50px] shrink-0 flex-col items-center justify-center rounded-[14px] leading-none">
+              <b className="font-display text-[1.25rem] font-extrabold text-destaque">{Number(e.data.slice(8))}</b>
+              <small className="mt-1 text-[0.68rem] font-bold uppercase tracking-wide text-ink-2">{mesCurto(e.data)}</small>
+            </span>
+            <span className="min-w-0 flex-1">
+              <b className="block leading-snug text-ink">{e.titulo}</b>
+              <span className="text-[0.86rem] text-muted">{e.detalhe}</span>
+              {e.exemplo ? (
+                <span className="ml-1.5 rounded-full bg-sand px-2 py-px text-[0.68rem] font-bold uppercase tracking-wide text-ink-2">
+                  exemplo
+                </span>
+              ) : null}
+            </span>
+            <i aria-hidden className={cx("size-[9px] shrink-0 rounded-full", COR_EVENTO[e.tipo])} />
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <EstadoVazio icone={CalendarX2} titulo="Nenhum evento marcado">
+        Quando houver reservas das áreas de lazer, manutenções ou assembleias, elas aparecem aqui.
+      </EstadoVazio>
+    )}
+  </section>
+  );
+}
+
+/** Início do morador (com login): nada aqui identifica OUTRAS casas ou pessoas. */
+export default async function InicioMorador() {
+  const ctx = await exigirPermissao("area.morador", "/inicio");
+
   const atalhos = ATALHOS.filter((a) => ctx.permissoes.has(a.permissao));
 
   return (
@@ -114,43 +218,14 @@ export default async function InicioMorador() {
       </header>
 
       {/* Comunicados recentes (o urgente aparece cedo) */}
-      <WidgetComunicados ctx={ctx} />
+      <Suspense fallback={<BlocoCarregando altura="h-28" />}>
+        <WidgetComunicados ctx={ctx} />
+      </Suspense>
 
       {/* Resumo do último mês publicado */}
-      <section aria-labelledby="titulo-resumo">
-        {resumo && resumo !== "erro" ? (
-          <Link
-            href="/financeiro"
-            className="block rounded-[var(--radius-card)] border border-borda-luz bg-surface p-4 shadow-card transition-shadow active:shadow-afundado"
-          >
-            <div className="mb-3 flex items-baseline justify-between gap-3">
-              <h2 id="titulo-resumo" className="text-[1.1rem] font-bold text-destaque">
-                Resumo de {nomeDoMes(resumo.mes)}
-              </h2>
-              <span className="inline-flex shrink-0 items-center text-[0.88rem] font-bold text-pine">
-                Ver contas <ChevronRight aria-hidden className="size-4" />
-              </span>
-            </div>
-            {/* Em telas pequenas o saldo ocupa a linha toda; receitas e despesas ficam lado a lado. */}
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-              <BlocoNumero rotulo="Saldo" valor={formatarMoeda(resumo.saldoFinalCentavos)} cor="pine" className="col-span-2 sm:col-span-1" />
-              <BlocoNumero rotulo="Receitas" valor={formatarMoeda(resumo.receitasCentavos)} cor="lake" />
-              <BlocoNumero rotulo="Despesas" valor={formatarMoeda(resumo.despesasCentavos)} cor="plum" />
-            </div>
-          </Link>
-        ) : (
-          <Cartao className="p-4">
-            <h2 id="titulo-resumo" className="text-[1.1rem] font-bold text-destaque">
-              Prestação de contas
-            </h2>
-            <p className="mt-1 text-ink-2">
-              {resumo === "erro"
-                ? "Não foi possível carregar o resumo agora. Tente novamente mais tarde."
-                : "A primeira prestação de contas ainda não foi publicada."}
-            </p>
-          </Cartao>
-        )}
-      </section>
+      <Suspense fallback={<BlocoCarregando altura="h-40" />}>
+        <ResumoInicio ctx={ctx} />
+      </Suspense>
 
       {/* Atalhos dos módulos */}
       <section aria-labelledby="titulo-atalhos" className="flex flex-col gap-3">
@@ -166,70 +241,32 @@ export default async function InicioMorador() {
       </section>
 
       {/* Enquete aberta (ou link para os resultados) */}
-      <WidgetEnquetes ctx={ctx} />
+      <Suspense fallback={<BlocoCarregando altura="h-28" />}>
+        <WidgetEnquetes ctx={ctx} />
+      </Suspense>
 
       {/* Solicitações da casa */}
-      <WidgetSolicitacoes ctx={ctx} />
+      <Suspense fallback={<BlocoCarregando altura="h-28" />}>
+        <WidgetSolicitacoes ctx={ctx} />
+      </Suspense>
 
       {/* Votação oficial, PIX da taxa e ronda noturna */}
-      <WidgetInformacoesInicio ctx={ctx} />
+      <Suspense fallback={<BlocoCarregando altura="h-32" />}>
+        <WidgetInformacoesInicio ctx={ctx} />
+      </Suspense>
 
       {/* Agenda */}
-      <section aria-labelledby="titulo-agenda" className="flex flex-col gap-3">
-        <TituloSecao
-          id="titulo-agenda"
-          extra={
-            temExemplo ? (
-              <Etiqueta tom="aviso" icone={FlaskConical}>
-                exemplo
-              </Etiqueta>
-            ) : undefined
-          }
-        >
-          Agenda do condomínio
-        </TituloSecao>
-        <Cartao className="p-4">
-          <Calendario ano={ano} mes={mes} hoje={dia} eventos={eventos} />
-        </Cartao>
-        <Link
-          href="/reservas"
-          className="saltado inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-full px-4 font-bold text-pine active:shadow-afundado"
-        >
-          <CalendarDays aria-hidden className="size-5" /> Ver horários livres das áreas
-        </Link>
-
-        <h3 className="mt-2 text-[1.05rem] font-bold text-destaque">Próximos eventos</h3>
-        {proximos.length ? (
-          <ul className="flex flex-col gap-2.5">
-            {proximos.map((e) => (
-              <li key={e.id} className="saltado flex items-center gap-3 rounded-2xl px-3 py-2.5">
-                <span className="afundado flex h-[54px] w-[50px] shrink-0 flex-col items-center justify-center rounded-[14px] leading-none">
-                  <b className="font-display text-[1.25rem] font-extrabold text-destaque">{Number(e.data.slice(8))}</b>
-                  <small className="mt-1 text-[0.68rem] font-bold uppercase tracking-wide text-ink-2">{mesCurto(e.data)}</small>
-                </span>
-                <span className="min-w-0 flex-1">
-                  <b className="block leading-snug text-ink">{e.titulo}</b>
-                  <span className="text-[0.86rem] text-muted">{e.detalhe}</span>
-                  {e.exemplo ? (
-                    <span className="ml-1.5 rounded-full bg-sand px-2 py-px text-[0.68rem] font-bold uppercase tracking-wide text-ink-2">
-                      exemplo
-                    </span>
-                  ) : null}
-                </span>
-                <i aria-hidden className={cx("size-[9px] shrink-0 rounded-full", COR_EVENTO[e.tipo])} />
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <EstadoVazio icone={CalendarX2} titulo="Nenhum evento marcado">
-            Quando houver reservas das áreas de lazer, manutenções ou assembleias, elas aparecem aqui.
-          </EstadoVazio>
-        )}
-      </section>
+      <Suspense fallback={<BlocoCarregando altura="h-96" />}>
+        <AgendaInicio ctx={ctx} />
+      </Suspense>
 
       {/* Documentos recentes e classificados */}
-      <WidgetDocumentos ctx={ctx} />
-      <WidgetClassificados ctx={ctx} />
+      <Suspense fallback={<BlocoCarregando altura="h-28" />}>
+        <WidgetDocumentos ctx={ctx} />
+      </Suspense>
+      <Suspense fallback={<BlocoCarregando altura="h-28" />}>
+        <WidgetClassificados ctx={ctx} />
+      </Suspense>
     </div>
   );
 }

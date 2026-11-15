@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import localFont from "next/font/local";
 import { ProvedorDeAvisos } from "@/components/ui/avisos";
+import { BarraNavegacao } from "@/components/ui/barra-navegacao";
 import "./globals.css";
 
 // Fontes servidas pelo próprio portal (nenhuma chamada a servidores de terceiros).
@@ -46,6 +48,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: scriptTema }} />
       </head>
       <body className="min-h-dvh bg-canvas text-ink antialiased">
+        <Suspense fallback={null}>
+          <BarraNavegacao />
+        </Suspense>
         <ProvedorDeAvisos>{children}</ProvedorDeAvisos>
       </body>
     </html>
