@@ -53,6 +53,11 @@ const nextConfig: NextConfig = {
   // Quase todas as telas mudam por pessoa logada; por isso não usamos o cache de componentes.
   cacheComponents: false,
   poweredByHeader: false,
+  experimental: {
+    // Voltar a uma tela visitada há pouco é instantâneo (sem ir ao servidor de novo).
+    // Qualquer gravação (Server Action com revalidatePath) limpa essa memória na hora.
+    staleTimes: { dynamic: 30, static: 180 },
+  },
   turbopack: {
     rules: {
       "*.css": {

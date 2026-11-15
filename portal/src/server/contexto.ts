@@ -100,14 +100,32 @@ export async function carregarContexto(db: Firestore, uid: string): Promise<Cont
   };
 }
 
+/**
+ * Rapidez entre telas: a assinatura e a validade do cookie são conferidas em
+ * TODO pedido (é local, sem rede). Já a consulta de "sessão revogada" exige
+ * uma ida ao Firebase Auth; por isso ela é refeita no máximo a cada 2 minutos
+ * por cookie, em cada servidor. Suspender alguém continua valendo na hora,
+ * porque carregarContexto confere o status do vínculo a cada pedido.
+ */
+const REVOGACAO_CONFERIDA_MS = 2 * 60 * 1000;
+const revogacaoConferidaEm = new Map<string, number>();
+
 /** uid da sessão atual, conferindo assinatura, validade e revogação do cookie. */
 export const uidDaSessao = cache(async (): Promise<string | null> => {
   const cookie = (await cookies()).get(NOME_COOKIE_SESSAO)?.value;
   if (!cookie) return null;
   try {
-    const decodificado = await adminAuth().verifySessionCookie(cookie, true);
+    const agora = Date.now();
+    const conferidoEm = revogacaoConferidaEm.get(cookie);
+    const conferirRevogacao = conferidoEm === undefined || agora - conferidoEm > REVOGACAO_CONFERIDA_MS;
+    const decodificado = await adminAuth().verifySessionCookie(cookie, conferirRevogacao);
+    if (conferirRevogacao) {
+      if (revogacaoConferidaEm.size > 5000) revogacaoConferidaEm.clear();
+      revogacaoConferidaEm.set(cookie, agora);
+    }
     return decodificado.uid;
   } catch {
+    revogacaoConferidaEm.delete(cookie);
     return null;
   }
 });

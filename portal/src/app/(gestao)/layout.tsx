@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { KeyRound, Menu } from "lucide-react";
+import { KeyRound } from "lucide-react";
 import { exigirPermissao, type Contexto } from "@/server/contexto";
 import { NOME_DO_PAPEL, type Permissao } from "@/lib/permissoes";
 import { NavGestao, type GrupoMenu, type ItemMenuSerializavel } from "@/components/layout/navegacao";
 import { BotaoSair, classeBotaoFaixa } from "@/components/layout/faixa-topo";
 import { Logo } from "@/components/ui/marca";
+import { GavetaMenu } from "@/components/layout/gaveta-menu";
 import { BotaoTema } from "@/components/ui/tema";
 import { FaixaPetalas } from "@/components/ui/painel";
 import { ENDERECO_LINHA } from "@/lib/condominio";
@@ -74,24 +75,23 @@ export default async function LayoutGestao({ children }: LayoutProps<"/">) {
             <span className="mt-0.5 truncate text-[0.84rem] font-bold text-band-fg/90">{NOME_DO_PAPEL[ctx.papel]}</span>
           </div>
           <BotaoTema className={`${classeBotaoFaixa} lg:hidden`} />
-        </div>
-
-        {/* Celular: menu recolhível (funciona até sem JavaScript). */}
-        <details className="border-t border-white/10 lg:hidden">
-          <summary className="mx-2 my-1 flex min-h-12 cursor-pointer list-none items-center gap-2 rounded-full px-3 font-bold hover:bg-white/10">
-            <Menu aria-hidden className="size-5" /> Menu
-          </summary>
-          <div className="flex flex-col gap-4 px-2 pb-4">
-            <NavGestao grupos={grupos} />
-            <Link
-              href="/conta/senha"
-              className={`${classeBotaoFaixa} flex min-h-11 w-fit items-center gap-2 rounded-full px-3 font-bold`}
-            >
-              <KeyRound aria-hidden className="size-5" /> Trocar senha
-            </Link>
-            <BotaoSair className={`${classeBotaoFaixa} w-fit`} />
+          {/* Celular: botão sanduíche ao lado, abre a gaveta com as opções. */}
+          <div className="lg:hidden">
+            <GavetaMenu titulo="Menu" className={classeBotaoFaixa}>
+              <NavGestao grupos={grupos} />
+              <div className="mt-auto flex flex-col gap-2 border-t border-white/10 px-1 pt-4">
+                <span className="truncate px-2 text-[0.92rem] text-band-muted">{ctx.nome}</span>
+                <Link
+                  href="/conta/senha"
+                  className={`${classeBotaoFaixa} flex min-h-11 w-fit items-center gap-2 rounded-full px-3 font-bold`}
+                >
+                  <KeyRound aria-hidden className="size-5" /> Trocar senha
+                </Link>
+                <BotaoSair className={`${classeBotaoFaixa} w-fit`} />
+              </div>
+            </GavetaMenu>
           </div>
-        </details>
+        </div>
 
         <div className="hidden flex-1 px-2 pb-4 lg:block">
           <NavGestao grupos={grupos} />
