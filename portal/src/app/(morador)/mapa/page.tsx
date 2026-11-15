@@ -19,7 +19,7 @@ export default async function MapaMorador() {
         subtitulo={`${TOTAL_LOTES} lotes · desenhado a partir da planta oficial`}
       />
 
-      <Cartao>
+      <Cartao className="p-3 sm:p-5">
         <MapaInterativo />
       </Cartao>
 

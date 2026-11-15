@@ -4,10 +4,11 @@
  * Mapa das casas — PLANTA REAL do condomínio (225 lotes, dados em src/lib/planta.ts).
  * - Digite o número da casa para destacá-la.
  * - Toque numa casa para ver o número e onde ela fica.
- * - Ampliar / Reduzir mudam o tamanho do desenho (dá para arrastar para os lados).
+ * - Ampliar / Reduzir mudam o tamanho do desenho.
+ * - Clique e arraste (mouse) ou deslize o dedo para mover o mapa.
  * As cores usam os tokens do portal (var(--...)), então funcionam no claro e no escuro.
  */
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type PointerEvent as EventoPonteiro } from "react";
 import { MapPin, Search, X, ZoomIn, ZoomOut } from "lucide-react";
 import { cx } from "@/lib/cx";
 import { AREA_DESENHO, CONTORNO_TERRENO, LOTES, QUADRAS, TOTAL_LOTES, loteDoNumero, type Lote } from "@/lib/planta";
@@ -35,6 +36,14 @@ const COR = {
   suave: "var(--muted)",
 };
 
+const TELA_ESTREITA = "(max-width: 640px)";
+function assinarTela(avisar: () => void) {
+  const m = window.matchMedia(TELA_ESTREITA);
+  m.addEventListener("change", avisar);
+  return () => m.removeEventListener("change", avisar);
+}
+const ehTelaEstreita = () => window.matchMedia(TELA_ESTREITA).matches;
+
 const pontos = (p: [number, number][]) => p.map(([x, y]) => `${x},${y}`).join(" ");
 
 // Árvores do parque (decoração).
@@ -47,8 +56,59 @@ export function MapaInterativo() {
   const [busca, setBusca] = useState("");
   const [erro, setErro] = useState("");
   const [selecionado, setSelecionado] = useState<number | null>(null);
-  const [nivelZoom, setNivelZoom] = useState(0);
+  // null = a pessoa ainda não mexeu no zoom: no celular começa aproximado (200%),
+  // porque a planta inteira fica pequena demais numa tela estreita.
+  const [nivelEscolhido, setNivelEscolhido] = useState<number | null>(null);
+  const celular = useSyncExternalStore(assinarTela, ehTelaEstreita, () => false);
+  const nivelZoom = nivelEscolhido ?? (celular ? 1 : 0);
+  const setNivelZoom = (novo: number | ((atual: number) => number)) =>
+    setNivelEscolhido(typeof novo === "function" ? novo(nivelZoom) : novo);
   const refCaixa = useRef<HTMLDivElement>(null);
+  // Arrastar com o mouse: guarda onde o clique começou e se virou "arraste"
+  // (aí o clique NÃO escolhe casa, para não marcar uma casa sem querer).
+  const arraste = useRef<{ x: number; y: number; left: number; top: number; moveu: boolean } | null>(null);
+  const acabouDeArrastar = useRef(false);
+  const [arrastando, setArrastando] = useState(false);
+
+
+  function aoApertar(e: EventoPonteiro<HTMLDivElement>) {
+    // O dedo já rola a caixa sozinho; o arraste manual é para mouse e caneta.
+    if (e.pointerType === "touch" || e.button !== 0 || !refCaixa.current) return;
+    arraste.current = { x: e.clientX, y: e.clientY, left: refCaixa.current.scrollLeft, top: refCaixa.current.scrollTop, moveu: false };
+  }
+
+  function aoMover(e: EventoPonteiro<HTMLDivElement>) {
+    const a = arraste.current;
+    const caixa = refCaixa.current;
+    if (!a || !caixa) return;
+    const dx = e.clientX - a.x;
+    const dy = e.clientY - a.y;
+    if (!a.moveu && Math.hypot(dx, dy) < 5) return; // tremidinha do clique não conta
+    if (!a.moveu) {
+      a.moveu = true;
+      setArrastando(true);
+      caixa.setPointerCapture(e.pointerId);
+    }
+    caixa.scrollLeft = a.left - dx;
+    caixa.scrollTop = a.top - dy;
+  }
+
+  function aoSoltar(e: EventoPonteiro<HTMLDivElement>) {
+    const a = arraste.current;
+    arraste.current = null;
+    if (!a?.moveu) return;
+    acabouDeArrastar.current = true; // o "click" que vem logo depois é ignorado
+    setArrastando(false);
+    if (refCaixa.current?.hasPointerCapture(e.pointerId)) refCaixa.current.releasePointerCapture(e.pointerId);
+  }
+
+  function tocouNaCasa(n: number) {
+    if (acabouDeArrastar.current) {
+      acabouDeArrastar.current = false;
+      return;
+    }
+    escolher(n);
+  }
 
   const lote = selecionado ? loteDoNumero(selecionado) : null;
   const zoom = ZOOMS[nivelZoom];
@@ -177,7 +237,18 @@ export function MapaInterativo() {
       {/* O desenho */}
       <div
         ref={refCaixa}
-        className="afundado max-h-[62vh] overflow-auto rounded-[var(--radius-card)] p-2 [-webkit-overflow-scrolling:touch]"
+        onPointerDown={aoApertar}
+        onPointerMove={aoMover}
+        onPointerUp={aoSoltar}
+        onPointerCancel={aoSoltar}
+        onClickCapture={() => {
+          // clique que terminou um arraste: some no próximo quadro
+          if (acabouDeArrastar.current) requestAnimationFrame(() => (acabouDeArrastar.current = false));
+        }}
+        className={cx(
+          "afundado h-[72dvh] min-h-[420px] overflow-auto overscroll-contain rounded-[var(--radius-card)] p-1.5 select-none [-webkit-overflow-scrolling:touch] lg:h-[78dvh]",
+          arrastando ? "cursor-grabbing" : "cursor-grab",
+        )}
       >
         <svg
           viewBox={`${vx} ${vy} ${vw} ${vh}`}
@@ -264,7 +335,7 @@ export function MapaInterativo() {
           ))}
 
           {LOTES.map((l) => (
-            <CasaNoMapa key={l.numero} lote={l} escolhida={false} aoTocar={() => escolher(l.numero)} />
+            <CasaNoMapa key={l.numero} lote={l} escolhida={false} aoTocar={() => tocouNaCasa(l.numero)} />
           ))}
           {/* A casa escolhida é desenhada por último para ficar por cima. */}
           {lote ? <CasaNoMapa lote={lote} escolhida aoTocar={() => undefined} /> : null}
