@@ -22,15 +22,18 @@ portal/
     (publico)/entrar/        entrada (botões de demonstração só no local)
     (morador)/inicio/        início do morador
     (portaria)/portaria/     tela de trabalho da portaria
-    (gestao)/admin/          painel do síndico e do conselho (+ /admin/auditoria)
+    (gestao)/admin/          painel do síndico e do conselho (+ /admin/auditoria, /admin/links)
+    (atalhos)/               links curtos que só encaminham: /sindico, /conselho, /morador
     identidade/              vitrine do visual (só local)
     api/sessao/              cria a sessão
     api/demo/entrar/         login de demonstração (404 fora do simulador)
+    api/sinais/              "o que mudou?" para as telas se atualizarem sozinhas
   src/components/ui/       peças visuais reutilizáveis
   src/components/layout/   faixa do topo e menus
   src/lib/                 código que pode rodar em qualquer lugar (permissões, formatos, validação)
   src/server/              código SÓ do servidor (Admin SDK, contexto, sessão, auditoria)
-  src/proxy.ts             triagem rápida: todas as áreas sem cookie → /entrar?volta=...
+  src/proxy.ts             triagem rápida: todas as áreas sem cookie → /entrar?volta=...;
+                           com cookie, anota o caminho pedido (x-portal-caminho) para o servidor
   firestore.rules          regras do banco
   scripts/                 simulador, dados de demonstração, criação do condomínio
   tests/                   unit/, regras/, integracao/
@@ -79,3 +82,34 @@ Peças: `Botao`, `BotaoLink`, `Cartao`, `Alerta`, `Etiqueta`, `EstadoVazio`, `Ca
 - **Morador** (celular primeiro): área **sempre com login** (o layout exige `area.morador`; cada página confere de novo) com faixa verde e **"Casa 12 · Sair"** no topo; o condomínio vem sempre da sessão, nunca da URL; barra inferior com 5 itens: Início · Contas · Agenda · Pedidos (solicitações) · Mais (no computador vira coluna, com o bloco da casa: Autorizar visita e Encomendas). Mapa, Contatos, Comunicados, Documentos, Enquetes, Classificados, Visitas e Encomendas ficam em **Mais** e nos atalhos do Início (filtrados pelas permissões). O Início mostra os comunicados recentes no topo, a enquete aberta, as solicitações da casa, o PIX da taxa, a ronda e o atalho da votação oficial (quando houver link). `/entrar` tem as abas "Sou morador" (usuário + senha) e "Sou da equipe" (e-mail + senha).
 - **Portaria** (tablet/computador): uma tela de trabalho com buscar, validar código, entrada/saída, nova encomenda e listas do dia.
 - **Gestão** (síndico e conselho): menu lateral em grupos, filtrado pelas permissões (Pessoas, Portaria, Finanças com Relatórios, Serviços com Reservas e Solicitações, Comunicação com Comunicados, Documentos, Enquetes e Classificados, Configurações → Informações do condomínio, Auditoria). O painel `/admin` mostra as pendências (solicitações abertas, reservas pendentes, anúncios para aprovar) e os atalhos. Conselho vê "Somente consulta".
+
+## Links por módulo
+
+Cada módulo tem um link curto, o mesmo para todo mundo. "Síndico e conselho" depende das permissões: o conselho só vê o que o perfil dele permite (o resto vai para "sem acesso") (lista única em `src/lib/modulos.ts`; o síndico copia e manda pelo WhatsApp em **Configurações → Links de acesso**, `/admin/links`):
+
+| Link | Morador | Portaria | Síndico e conselho |
+|---|---|---|---|
+| `/sindico`, `/conselho` | — (sem acesso) | — (sem acesso) | `/admin` |
+| `/portaria` | `/visitas` | `/portaria` | síndico: `/portaria` (pode operar) · conselho: sem acesso |
+| `/morador` | `/inicio` | `/portaria` | `/admin` |
+| `/reservas` | `/reservas` | `/portaria` | `/admin/reservas` |
+| `/visitas`, `/encomendas` | a própria tela | `/portaria` | `/admin/portaria` (síndico) |
+| `/financeiro` | `/financeiro` | — | `/admin/financeiro` |
+| `/comunicados`, `/solicitacoes`, `/documentos`, `/enquetes`, `/classificados` | a própria tela | — | `/admin/<módulo>` (se o perfil puder) |
+| `/mapa` | `/mapa` | — | `/mapa` (síndico) |
+| `/contatos` | `/contatos` | — | `/admin/informacoes` (síndico) |
+
+- Sem login, o proxy manda para `/entrar?volta=<link>`; a tela de entrada diz "Entre para abrir: Reservas" e já marca a aba certa (equipe para `/sindico`, `/conselho`, `/portaria`). Depois do login, a pessoa segue para a versão do módulo do perfil dela.
+- Já logado: o servidor (`exigirPermissao` e `exigirAreaDoMorador` em `src/server/contexto.ts`) faz o mesmo encaminhamento. O destino sempre exige a permissão da tela.
+- O `?c=` do link (só fora do condomínio padrão, ex.: a demonstração) vai junto para a tela de entrada, apenas para montar o login do morador.
+
+## Sincronização entre as telas
+
+O que uma pessoa faz aparece sozinho para as outras, em poucos segundos, sem ninguém recarregar a página:
+
+1. Toda alteração já grava a **auditoria** na mesma transação (`registrarAuditoria`). Junto, ela marca "o módulo X mudou agora" em `condominiums/{c}/sistema/sinais` (`src/server/sinais.ts`; a lista ação → módulo está em `src/lib/sincronizacao.ts` e o TypeScript obriga a incluir toda ação nova).
+2. As molduras das três áreas têm o componente `<Sincronizar>` (`src/components/layout/sincronizar.tsx`): com a tela visível, pergunta `GET /api/sinais` a cada 20 s (portaria: 15 s) e logo que a pessoa volta para a aba.
+3. Mudou um módulo que a tela mostra → `router.refresh()` (busca só os dados novos, sem piscar a página). Mudou outro módulo → atualiza quando a pessoa for até aquela tela.
+4. Não atualiza enquanto a pessoa digita ou está com uma janela de confirmação aberta; espera ela terminar. Por segurança, atualiza também a cada 30 min (portaria: 10 min), por causa da virada do dia.
+
+Custo: cada pergunta lê **um** documento (o servidor guarda por 2 min o condomínio de cada pessoa). Isso cabe com folga no plano gratuito (Spark), ao contrário de recarregar a tela inteira de tempo em tempo.

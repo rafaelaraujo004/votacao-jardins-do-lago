@@ -64,6 +64,9 @@ condominiums/{c}                     nome, status, fuso, moeda, (portalPublico: 
   mapPoints/{id}  usefulInfo/{id}
   counters/solicitacoes-AAAA         {ultimo, ano, atualizadoEm} — numeração dos protocolos (só servidor, em transação)
   auditLogs/{id}                     uid, nome, papel, acao, alvo, detalhes, criadoEm — só acréscimo
+  sistema/sinais                     {portaria, reservas, financeiro, comunicados, solicitacoes, documentos,
+                                     enquetes, classificados, pessoas, informacoes}: hora da última mudança de
+                                     cada módulo (só servidor; gravado junto com a auditoria)
 ```
 
 Coleções em inglês (padrão do Firebase e da sugestão inicial); campos em português (linguagem do projeto).
@@ -86,6 +89,7 @@ Coleções em inglês (padrão do Firebase e da sugestão inicial); campos em po
 | `votes/{unitId}` com o id da casa | O "1 voto por casa" vem do próprio caminho: a transação usa `create`, que falha se a casa já votou. O síndico só vê `totais`. |
 | `counters/solicitacoes-AAAA` | Protocolo sequencial por ano sem repetir, lido e gravado na mesma transação que cria a solicitação. |
 | `classifieds` só pelo servidor | O documento tem `autorUid` e `unitId`; os outros moradores recebem só primeiro nome e o contato escolhido pelo autor. |
+| `sistema/sinais` (um documento por condomínio) | As telas abertas perguntam a cada 15–20 s "o que mudou?" lendo **só este documento** (e não a tela inteira). É gravado na mesma transação da auditoria, então só marca o que de fato foi salvo. Não tem dado pessoal. Veja "Sincronização" em ARQUITETURA.md. |
 | Áreas reais por id fixo | O script `configurar-jardins-do-lago` pode rodar de novo sem duplicar nada (merge por id). |
 
 ## Índices

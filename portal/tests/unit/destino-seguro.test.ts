@@ -62,9 +62,36 @@ describe("destinoDepoisDoLogin", () => {
 
   it("equipe volta só para dentro da própria área", () => {
     expect(destinoDepoisDoLogin("/admin", "/admin/pessoas")).toBe("/admin/pessoas");
-    expect(destinoDepoisDoLogin("/admin", "/visitas")).toBe("/admin");
+    expect(destinoDepoisDoLogin("/admin", "/admin/auditoria")).toBe("/admin/auditoria");
     expect(destinoDepoisDoLogin("/portaria", "/admin")).toBe("/portaria");
     expect(destinoDepoisDoLogin("/admin", "/administrador")).toBe("/admin");
+  });
+
+  it("link de módulo leva para a versão do módulo na área da pessoa", () => {
+    // Reservas
+    expect(destinoDepoisDoLogin("/inicio", "/reservas")).toBe("/reservas");
+    expect(destinoDepoisDoLogin("/admin", "/reservas")).toBe("/admin/reservas");
+    expect(destinoDepoisDoLogin("/portaria", "/reservas")).toBe("/portaria");
+    // Visitas e encomendas
+    expect(destinoDepoisDoLogin("/admin", "/visitas")).toBe("/admin/portaria");
+    expect(destinoDepoisDoLogin("/portaria", "/encomendas")).toBe("/portaria");
+    expect(destinoDepoisDoLogin("/inicio", "/visitas?filtro=usadas")).toBe("/visitas?filtro=usadas");
+    // Links da equipe
+    expect(destinoDepoisDoLogin("/admin", "/sindico")).toBe("/admin");
+    expect(destinoDepoisDoLogin("/admin", "/conselho")).toBe("/admin");
+    expect(destinoDepoisDoLogin("/portaria", "/portaria")).toBe("/portaria");
+    expect(destinoDepoisDoLogin("/inicio", "/sindico")).toBe("/inicio");
+    expect(destinoDepoisDoLogin("/portaria", "/sindico")).toBe("/portaria");
+    // Portal do morador
+    expect(destinoDepoisDoLogin("/inicio", "/morador")).toBe("/inicio");
+    expect(destinoDepoisDoLogin("/admin", "/morador")).toBe("/admin");
+    // Morador que recebeu um link da gestão vai para a versão dele
+    expect(destinoDepoisDoLogin("/inicio", "/admin/financeiro")).toBe("/financeiro");
+    // Detalhe com o mesmo formato leva o item junto
+    expect(destinoDepoisDoLogin("/admin", "/comunicados/abc123")).toBe("/admin/comunicados/abc123");
+    expect(destinoDepoisDoLogin("/inicio", "/admin/solicitacoes/xyz")).toBe("/solicitacoes/xyz");
+    // Módulo sem versão para a área → início
+    expect(destinoDepoisDoLogin("/portaria", "/financeiro")).toBe("/portaria");
   });
 
   it("síndico/conselho podem voltar ao relatório do financeiro; portaria não", () => {

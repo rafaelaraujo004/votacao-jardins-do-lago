@@ -21,6 +21,7 @@ import { cabecalhosSeguros, firebaseAuth } from "@/lib/firebase/client";
 import { codigoDoErro, esquemaLoginEquipe, mensagemErroLogin, SENHA_MAXIMA } from "@/lib/senha";
 import { emailDoMorador, normalizarUsuario } from "@/lib/usuario-morador";
 import { destinoDepoisDoLogin, destinoSeguro } from "@/lib/destino-seguro";
+import { abaDaEntrada } from "@/lib/modulos";
 import { useAvisos } from "@/components/ui/avisos";
 import { Alerta, Campo, classeEntrada } from "@/components/ui/basicos";
 import { Botao } from "@/components/ui/botao";
@@ -95,11 +96,9 @@ export function EntrarSenha({
 }) {
   const router = useRouter();
   const { avisar } = useAvisos();
-  // Quem veio de /admin ou /portaria já começa na aba da equipe.
+  // Quem veio por um link da equipe (/sindico, /conselho, /portaria, /admin...) já começa na aba da equipe.
   const caminhoVolta = destinoSeguro(volta)?.split(/[?#]/)[0] ?? "";
-  const [quem, setQuem] = useState<Quem>(
-    caminhoVolta.startsWith("/admin") || caminhoVolta.startsWith("/portaria") ? "equipe" : "morador",
-  );
+  const [quem, setQuem] = useState<Quem>(abaDaEntrada(caminhoVolta));
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [usuario, setUsuario] = useState("");

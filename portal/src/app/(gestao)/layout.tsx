@@ -6,6 +6,8 @@ import { NavGestao, type GrupoMenu, type ItemMenuSerializavel } from "@/componen
 import { BotaoSair, classeBotaoFaixa } from "@/components/layout/faixa-topo";
 import { Logo } from "@/components/ui/marca";
 import { GavetaMenu } from "@/components/layout/gaveta-menu";
+import { Sincronizar } from "@/components/layout/sincronizar";
+import { horaDaMontagem } from "@/lib/sincronizacao";
 import { BotaoTema } from "@/components/ui/tema";
 import { FaixaPetalas } from "@/components/ui/painel";
 import { ENDERECO_LINHA } from "@/lib/condominio";
@@ -45,7 +47,13 @@ const GRUPOS: { titulo: string; itens: Item[] }[] = [
       { rotulo: "Classificados", icone: "Store", href: "/admin/classificados", permissao: "classificados.moderar" },
     ],
   },
-  { titulo: "Configurações", itens: [{ rotulo: "Informações do condomínio", icone: "Settings", href: "/admin/informacoes", permissao: "informacoes.gerenciar" }] },
+  {
+    titulo: "Configurações",
+    itens: [
+      { rotulo: "Links de acesso", icone: "Link2", href: "/admin/links", permissao: "area.gestao" },
+      { rotulo: "Informações do condomínio", icone: "Settings", href: "/admin/informacoes", permissao: "informacoes.gerenciar" },
+    ],
+  },
   { titulo: "Controle", itens: [{ rotulo: "Auditoria", icone: "ScrollText", href: "/admin/auditoria", permissao: "auditoria.ver" }] },
 ];
 
@@ -120,6 +128,7 @@ export default async function LayoutGestao({ children }: LayoutProps<"/">) {
         ) : null}
         {children}
       </main>
+      <Sincronizar montadaEm={horaDaMontagem()} />
     </div>
   );
 }

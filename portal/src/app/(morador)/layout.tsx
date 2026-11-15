@@ -1,7 +1,9 @@
-import { exigirPermissao, type Contexto } from "@/server/contexto";
+import { exigirAreaDoMorador, type Contexto } from "@/server/contexto";
 import { NOME_DO_PAPEL } from "@/lib/permissoes";
 import { FaixaTopo } from "@/components/layout/faixa-topo";
 import { NavMorador } from "@/components/layout/navegacao";
+import { Sincronizar } from "@/components/layout/sincronizar";
+import { horaDaMontagem } from "@/lib/sincronizacao";
 
 /** Texto curto do topo: "Casa 12" para o morador, o perfil para a equipe. */
 function rotuloDaSessao(ctx: Contexto): string {
@@ -13,12 +15,14 @@ function rotuloDaSessao(ctx: Contexto): string {
  * Moldura da ÁREA DO MORADOR. Tudo aqui exige login:
  * - sem sessão → /entrar (o proxy já manda com o ?volta=);
  * - senha provisória → /conta/senha;
- * - sem a permissão "area.morador" → "sem acesso".
+ * - sem a permissão "area.morador" → a versão do módulo na área da pessoa ou "sem acesso";
+ * - equipe abrindo um link de módulo (ex.: /reservas) → a versão do módulo na área dela.
  * O condomínio vem SEMPRE da sessão (nunca da URL).
  * Cada página confere de novo (defesa em profundidade).
+ * <Sincronizar> mantém a tela em dia com o que as outras pessoas fazem.
  */
 export default async function LayoutMorador({ children }: LayoutProps<"/">) {
-  const ctx = await exigirPermissao("area.morador");
+  const ctx = await exigirAreaDoMorador();
   const rotulo = rotuloDaSessao(ctx);
 
   return (
@@ -32,6 +36,7 @@ export default async function LayoutMorador({ children }: LayoutProps<"/">) {
           {children}
         </main>
       </div>
+      <Sincronizar montadaEm={horaDaMontagem()} />
     </div>
   );
 }

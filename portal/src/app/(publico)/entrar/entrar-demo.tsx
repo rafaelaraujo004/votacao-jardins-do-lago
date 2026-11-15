@@ -15,6 +15,7 @@ import { cabecalhosSeguros, firebaseAuth } from "@/lib/firebase/client";
 import { useAvisos } from "@/components/ui/avisos";
 import { Alerta } from "@/components/ui/basicos";
 import type { Papel } from "@/lib/permissoes";
+import { destinoDepoisDoLogin } from "@/lib/destino-seguro";
 
 type Perfil = { papel: Papel; titulo: string; nome: string; descricao: string };
 
@@ -30,7 +31,7 @@ async function lerErro(resposta: Response): Promise<string> {
   return corpo?.erro ?? "Algo deu errado. Tente de novo em instantes.";
 }
 
-export function EntrarDemo({ perfis }: { perfis: Perfil[] }) {
+export function EntrarDemo({ perfis, volta = null }: { perfis: Perfil[]; volta?: string | null }) {
   const router = useRouter();
   const { avisar } = useAvisos();
   const [entrando, setEntrando] = useState<Papel | null>(null);
@@ -61,7 +62,8 @@ export function EntrarDemo({ perfis }: { perfis: Perfil[] }) {
       const { destino } = (await r2.json()) as { destino: string };
 
       avisar("sucesso", "Pronto, você entrou.");
-      router.replace(destino);
+      // Veio por um link de módulo (ex.: /reservas)? Segue para a versão dele no perfil escolhido.
+      router.replace(destinoDepoisDoLogin(destino, volta));
       router.refresh();
     } catch (e) {
       const mensagem =

@@ -29,6 +29,7 @@ import {
   ScrollText,
   DoorOpen,
   Package,
+  Link2,
   type LucideIcon,
 } from "lucide-react";
 import { cx } from "@/lib/cx";
@@ -56,6 +57,7 @@ const ICONES = {
   Vote,
   Store,
   ChartColumn,
+  Link2,
 } satisfies Record<string, LucideIcon>;
 export type NomeIcone = keyof typeof ICONES;
 export type ItemMenuSerializavel = Omit<ItemMenu, "icone"> & { icone: NomeIcone };

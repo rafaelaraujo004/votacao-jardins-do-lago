@@ -46,6 +46,14 @@ Isso liga o simulador do Firebase (login + banco), cria os dados de **demonstra�
 
 > **Windows com acento no nome do usuário** (ex.: `C:\Users\Rafael Araújo`): o Java do simulador não funciona com essa pasta temporária. O script `scripts/firebase.mjs` já resolve isso sozinho, usando `C:\Users\Public\jardins-do-lago-tmp`.
 
+### Links de cada módulo
+
+Cada parte do portal tem o seu link (o mesmo para todos; cada pessoa cai na versão do seu perfil): `/sindico`, `/conselho`, `/portaria`, `/morador`, `/reservas`, `/visitas`, `/encomendas`, `/financeiro`, `/comunicados`, `/solicitacoes`, `/documentos`, `/enquetes`, `/classificados`, `/mapa`, `/contatos`. O síndico copia e manda pelo WhatsApp em **Configurações → Links de acesso**. Detalhes em [docs/ARQUITETURA.md](docs/ARQUITETURA.md#links-por-módulo).
+
+### Tudo sincronizado
+
+As telas abertas se atualizam sozinhas quando outra pessoa muda algo (ex.: o morador autoriza uma visita e a portaria já vê). Como funciona em [docs/ARQUITETURA.md](docs/ARQUITETURA.md#sincronização-entre-as-telas).
+
 ## 3. Testes
 
 | Comando | O que testa |

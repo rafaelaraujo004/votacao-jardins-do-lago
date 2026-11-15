@@ -27,7 +27,7 @@ Não existe área pública. Todas as páginas, ações e exportações exigem se
 
 ## Onde é aplicada
 
-1. **Páginas**: `exigirPermissao("area.gestao")` no layout de cada área. Sem login → `/entrar`; senha provisória → `/conta/senha`; sem permissão → `/sem-acesso`.
+1. **Páginas**: `exigirPermissao("area.gestao")` no layout de cada área. Sem login → `/entrar`; senha provisória → `/conta/senha`; sem permissão → a **versão do mesmo módulo** no perfil da pessoa (ex.: morador abrindo `/admin/reservas` → `/reservas`), ou `/sem-acesso` se não houver (lista em `src/lib/modulos.ts`). A equipe que abre um link da área do morador (ex.: síndico em `/reservas`) também vai para a sua versão (`/admin/reservas`); telas sem versão na gestão (ex.: `/mapa`) continuam abrindo para quem tem a permissão. O destino sempre exige a permissão da tela; um teste garante que nunca há ida e volta entre duas telas.
 2. **Ações e consultas**: `garantirPermissao(ctx, "financeiro.lancar")` no início de cada função de `src/server/`. Com senha provisória, `garantirPermissao` recusa tudo até a pessoa trocar a senha.
 3. **Menus**: só mostram o que a pessoa pode usar.
 4. **Regras do Firestore**: espelham o essencial (papel, unidade, condomínio, publicado/visível). Gravação direta: negada para todos.

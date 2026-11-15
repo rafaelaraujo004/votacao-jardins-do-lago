@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * Link de acesso dos moradores (tela de entrada) com os botões "Copiar link" e "Enviar pelo WhatsApp".
+ * Um link do portal com os botões "Copiar link", "Enviar pelo WhatsApp" e "Abrir".
+ * Usado no link de acesso dos moradores e na tela "Links de acesso" (um por módulo).
  * Se o navegador não deixar copiar, o link fica selecionado para copiar na mão.
  */
 import { useRef } from "react";
@@ -18,7 +19,17 @@ async function copiar(texto: string): Promise<boolean> {
   }
 }
 
-export function LinkMoradores({ link, linkWhatsApp }: { link: string; linkWhatsApp: string }) {
+export function LinkCopiavel({
+  rotulo,
+  link,
+  linkWhatsApp,
+  textoAbrir = "Abrir a tela de entrada",
+}: {
+  rotulo: string;
+  link: string;
+  linkWhatsApp: string;
+  textoAbrir?: string;
+}) {
   const { avisar } = useAvisos();
   const refLink = useRef<HTMLParagraphElement>(null);
 
@@ -44,7 +55,7 @@ export function LinkMoradores({ link, linkWhatsApp }: { link: string; linkWhatsA
       <div className="afundado flex items-start gap-3 rounded-2xl px-4 py-3">
         <Link2 aria-hidden className="mt-0.5 size-5 shrink-0 text-plum" />
         <div className="min-w-0">
-          <span className="rotulo-caixa block">Link de acesso dos moradores</span>
+          <span className="rotulo-caixa block">{rotulo}</span>
           <p ref={refLink} className="m-0 select-text break-all font-bold text-ink">
             {link}
           </p>
@@ -58,7 +69,7 @@ export function LinkMoradores({ link, linkWhatsApp }: { link: string; linkWhatsA
           <MessageCircle aria-hidden className="size-5" /> Enviar pelo WhatsApp
         </a>
         <a href={link} target="_blank" rel="noopener noreferrer" className={classesDoBotao("secundario")}>
-          <ExternalLink aria-hidden className="size-5" /> Abrir a tela de entrada
+          <ExternalLink aria-hidden className="size-5" /> {textoAbrir}
         </a>
       </div>
     </div>

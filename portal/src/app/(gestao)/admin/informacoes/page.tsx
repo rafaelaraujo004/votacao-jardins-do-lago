@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import Link from "next/link";
 import { CalendarCheck, KeyRound, Landmark, Phone, ShieldCheck, Vote } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
+import { enderecoBase } from "@/server/endereco";
 import { informacoesParaEdicao } from "@/server/dados/informacoes";
 import { idCondominioPadrao, linkAcessoMoradores } from "@/lib/condominio-id";
 import { salvarInformacoes, salvarLinkVotacao, salvarPix, salvarPlantao } from "@/server/acoes/informacoes";
@@ -21,22 +22,9 @@ import {
 import { Alerta, Campo, Cartao, classeEntrada, TituloPagina } from "@/components/ui/basicos";
 import { AtalhoVotacao, CartaoPix } from "@/components/informacoes/cartoes";
 import { BotaoEnviar, Formulario } from "@/components/ui/formulario";
-import { LinkMoradores } from "./link-moradores";
+import { LinkCopiavel } from "@/components/acesso/link-copiavel";
 
 export const metadata: Metadata = { title: "Informações do condomínio" };
-
-// Endereço usado se o pedido vier sem um "host" confiável.
-const ENDERECO_RESERVA = "https://portal-jardins-do-lago.vercel.app";
-
-/** Endereço base do portal a partir do próprio pedido (ex.: https://portal.exemplo.com). */
-async function enderecoBase(): Promise<string> {
-  const h = await headers();
-  const host = (h.get("x-forwarded-host") ?? h.get("host") ?? "").split(",")[0].trim();
-  if (!/^[A-Za-z0-9.-]+(:\d{1,5})?$/.test(host)) return ENDERECO_RESERVA;
-  const protoBruto = (h.get("x-forwarded-proto") ?? "").split(",")[0].trim();
-  const proto = protoBruto === "http" || protoBruto === "https" ? protoBruto : host.startsWith("localhost") ? "http" : "https";
-  return `${proto}://${host}`;
-}
 
 export default async function PaginaInformacoes() {
   const ctx = await exigirPermissao("informacoes.gerenciar");
@@ -66,7 +54,14 @@ export default async function PaginaInformacoes() {
           Mande este link no grupo dos moradores. Nada do portal abre sem login: cada morador entra com o usuário e a
           senha que você cria em “Moradores e equipe”. Quem não tiver usuário não vê nenhuma informação.
         </p>
-        <LinkMoradores link={link} linkWhatsApp={convite} />
+        <LinkCopiavel rotulo="Link de acesso dos moradores" link={link} linkWhatsApp={convite} />
+        <p className="text-[0.92rem] text-ink-2">
+          Quer mandar o link de uma parte só (reservas, portaria, painel do síndico...)? Veja{" "}
+          <Link href="/admin/links" className="font-bold text-lake underline underline-offset-2">
+            Links de acesso
+          </Link>
+          .
+        </p>
       </Cartao>
 
       <Cartao aria-labelledby="titulo-form">

@@ -7,6 +7,7 @@
  * Lógica pura, testada em tests/unit/destino-seguro.test.ts.
  */
 import { inicioDoPapel, type Papel } from "./permissoes";
+import { destinoNaArea, moduloDoCaminho, type Grupo } from "./modulos";
 
 /** Áreas do morador (todas exigem login). */
 const AREAS_MORADOR = ["/inicio", "/financeiro", "/mapa", "/contatos", "/mais", "/reservas", "/visitas", "/encomendas", "/relatorio"];
@@ -43,11 +44,15 @@ export function destinoSeguro(volta: unknown): string | null {
   return `${caminho}${url.search}${url.hash}`;
 }
 
+const AREA_DO_DESTINO: Record<string, Grupo> = { "/inicio": "morador", "/portaria": "portaria", "/admin": "gestao" };
+
 /**
  * Decide o destino final depois do login.
  * - `destinoServidor`: o que o servidor mandou (/conta/senha, /inicio, /admin ou /portaria).
  * - Senha provisória (/conta/senha) sempre vence.
- * - O ?volta= só vale se combinar com o perfil: morador volta para áreas do morador;
+ * - Link de módulo (ex.: /reservas, /sindico): vai para a versão do módulo na área da pessoa
+ *   (síndico → /admin/reservas). Módulo sem versão para ela → o início dela.
+ * - Outros caminhos só valem se combinarem com o perfil: morador volta para áreas do morador;
  *   a equipe volta para dentro da própria área (síndico/conselho também ao /relatorio).
  *   Assim ninguém cai em "sem acesso".
  */
@@ -56,6 +61,14 @@ export function destinoDepoisDoLogin(destinoServidor: string, volta: unknown): s
   const seguro = destinoSeguro(volta);
   if (!seguro) return destinoServidor;
   const caminho = seguro.split(/[?#]/)[0];
+  const area = AREA_DO_DESTINO[destinoServidor];
+  const modulo = area ? moduloDoCaminho(caminho) : null;
+  if (area && modulo) {
+    const destino = destinoNaArea(modulo, area, null, caminho);
+    if (!destino) return destinoServidor;
+    // Já é a tela certa: mantém a busca (ex.: /visitas?filtro=usadas).
+    return dentroDe(caminho, destino) ? seguro : destino;
+  }
   if (destinoServidor === "/inicio") {
     return AREAS_MORADOR.some((a) => dentroDe(caminho, a)) ? seguro : destinoServidor;
   }

@@ -6,6 +6,7 @@ import { demoAtivo } from "@/server/demo";
 import { NOME_COOKIE_SESSAO } from "@/server/sessao";
 import { inicioDoPapel, NOME_DO_PAPEL, PAPEIS } from "@/lib/permissoes";
 import { destinoDepoisDoLogin, destinoSeguro } from "@/lib/destino-seguro";
+import { moduloDoCaminho } from "@/lib/modulos";
 import { idCondominioPadrao, idDoLogin } from "@/lib/condominio-id";
 import { USUARIOS_DEMO } from "@/lib/demo";
 import { Alerta } from "@/components/ui/basicos";
@@ -34,6 +35,8 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
   // (ex.: a demonstração). Id inválido → condomínio padrão. Nunca escolhe dados:
   // esta tela não mostra nada do condomínio.
   const condominioId = idDoLogin(c, idCondominioPadrao());
+  // Veio por um link de módulo (ex.: /reservas, /portaria)? Mostra qual.
+  const modulo = volta ? moduloDoCaminho(volta.split(/[?#]/)[0]) : null;
 
   const cookieSemVinculo = Boolean((await cookies()).get(NOME_COOKIE_SESSAO));
   const demo = demoAtivo();
@@ -84,8 +87,9 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
             ) : null}
 
             {volta && !saiu ? (
-              <Alerta tipo="info" titulo="Entre para continuar">
-                O portal só abre com usuário e senha. Depois de entrar, você volta para onde estava.
+              <Alerta tipo="info" titulo={modulo ? `Entre para abrir: ${modulo.nome}` : "Entre para continuar"}>
+                O portal só abre com usuário e senha. Depois de entrar, você segue direto para{" "}
+                {modulo ? "essa parte do portal" : "onde estava"}.
               </Alerta>
             ) : null}
 
@@ -96,7 +100,7 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
             {demo ? (
               <>
                 <hr className="border-line" />
-                <EntrarDemo perfis={perfis} />
+                <EntrarDemo perfis={perfis} volta={volta} />
               </>
             ) : null}
           </div>

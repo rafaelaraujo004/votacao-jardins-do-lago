@@ -11,7 +11,7 @@
  */
 import "server-only";
 import { cache } from "react";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Firestore } from "firebase-admin/firestore";
 import { adminAuth, adminDb } from "./firebase-admin";
@@ -19,6 +19,7 @@ import { NOME_COOKIE_SESSAO } from "./sessao";
 import { calcularPermissoes, ehPapel, type Papel, type Permissao } from "@/lib/permissoes";
 import { FUSO_PADRAO } from "@/lib/formato";
 import { linkEntrar } from "@/lib/destino-seguro";
+import { CABECALHO_CAMINHO, telaEquivalente } from "@/lib/modulos";
 
 export type Contexto = {
   uid: string;
@@ -149,10 +150,38 @@ export async function exigirContexto(volta?: string): Promise<Contexto> {
   return ctx;
 }
 
-/** Para páginas: sem login → /entrar?volta=...; sem a permissão → tela "sem acesso". */
+/** Caminho da página pedida (o src/proxy.ts anota no cabeçalho). */
+async function caminhoDoPedido(): Promise<string | null> {
+  const caminho = (await headers()).get(CABECALHO_CAMINHO);
+  return caminho && caminho.startsWith("/") && !caminho.startsWith("//") ? caminho : null;
+}
+
+/**
+ * Para páginas: sem login → /entrar?volta=...; sem a permissão → a versão do mesmo módulo
+ * para o perfil da pessoa (ex.: morador abrindo /admin/reservas → /reservas) ou, se não
+ * houver, a tela "sem acesso". Veja src/lib/modulos.ts.
+ */
 export async function exigirPermissao(permissao: Permissao, volta?: string): Promise<Contexto> {
   const ctx = await exigirContexto(volta);
-  if (!ctx.permissoes.has(permissao)) redirect("/sem-acesso");
+  if (!ctx.permissoes.has(permissao)) {
+    const caminho = await caminhoDoPedido();
+    redirect((caminho && telaEquivalente(caminho, ctx.papel, ctx.permissoes)) || "/sem-acesso");
+  }
+  return ctx;
+}
+
+/**
+ * Para a moldura da área do MORADOR: a equipe que abre um link de módulo (ex.: o síndico
+ * abrindo /reservas) vai para a versão desse módulo na própria área (/admin/reservas).
+ * Telas sem versão na área da equipe (ex.: /mapa) continuam abrindo para quem tem permissão.
+ */
+export async function exigirAreaDoMorador(): Promise<Contexto> {
+  const ctx = await exigirPermissao("area.morador");
+  if (ctx.papel !== "morador") {
+    const caminho = await caminhoDoPedido();
+    const outra = caminho ? telaEquivalente(caminho, ctx.papel, ctx.permissoes) : null;
+    if (outra) redirect(outra);
+  }
   return ctx;
 }
 

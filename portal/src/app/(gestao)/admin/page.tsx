@@ -9,6 +9,7 @@ import {
   Eye,
   FolderOpen,
   Landmark,
+  Link2,
   Megaphone,
   ScrollText,
   Settings,
@@ -43,6 +44,7 @@ const ATALHOS: { titulo: string; icone: LucideIcon; tom: TomModulo; permissao: P
   { titulo: "Classificados", icone: Store, tom: "areia", permissao: "classificados.moderar", href: "/admin/classificados" },
   { titulo: "Portaria (operar)", icone: ShieldCheck, tom: "vinho", permissao: "portaria.operar", href: "/portaria" },
   { titulo: "Histórico da portaria", icone: DoorOpen, tom: "lago", permissao: "visitantes.ver_todos", href: "/admin/portaria" },
+  { titulo: "Links de acesso", icone: Link2, tom: "lago", permissao: "area.gestao", href: "/admin/links" },
   { titulo: "Informações do condomínio", icone: Settings, tom: "areia", permissao: "informacoes.gerenciar", href: "/admin/informacoes" },
   { titulo: "Auditoria", icone: ScrollText, tom: "vinho", permissao: "auditoria.ver", href: "/admin/auditoria" },
 ];

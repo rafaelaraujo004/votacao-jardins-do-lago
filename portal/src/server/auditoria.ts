@@ -5,6 +5,8 @@ import {
   type Transaction,
   type WriteBatch,
 } from "firebase-admin/firestore";
+import { marcarMudanca } from "./sinais";
+import { MODULO_DA_ACAO } from "@/lib/sincronizacao";
 
 /**
  * Registro de auditoria: quem fez, em qual condomínio, o quê e quando.
@@ -13,6 +15,8 @@ import {
  *   acontecem, ou nenhum acontece.
  * - Ninguém altera ou apaga: as regras do Firestore negam, e o servidor só
  *   usa `create` (que falha se o documento já existir).
+ * - Junto, marca o "sinal de mudança" do módulo (src/server/sinais.ts), que faz as
+ *   telas abertas das outras pessoas se atualizarem sozinhas.
  */
 export const ACOES_AUDITADAS = [
   "sessao.entrar",
@@ -110,6 +114,9 @@ export function registrarAuditoria(
     detalhes: registro.detalhes ?? {},
     criadoEm: FieldValue.serverTimestamp(),
   });
+  // Avisa as telas abertas que este módulo mudou (mesma transação: só vale se a alteração valer).
+  const modulo = MODULO_DA_ACAO[registro.acao];
+  if (modulo) marcarMudanca(db, escrita, registro.condominioId, modulo);
 }
 
 /** Atalho para ações sem outra gravação junto (ex.: entrar e sair). */
