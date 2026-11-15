@@ -7,8 +7,9 @@ import { MapaInterativo } from "./mapa-interativo";
 
 export const metadata: Metadata = { title: "Mapa das casas" };
 
+/** Mapa do morador (com login): só o desenho das quadras e números (sem nomes de moradores). */
 export default async function MapaMorador() {
-  await exigirPermissao("area.morador");
+  await exigirPermissao("mapa.ver", "/mapa");
 
   return (
     <div className="flex flex-col gap-5">

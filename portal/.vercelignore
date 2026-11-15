@@ -1,0 +1,9 @@
+# Nunca enviar para a Vercel: segredos, senhas e configuração do simulador.
+.env*
+!.env.example
+.acesso-*
+*.log
+node_modules
+.next
+tests
+firestore-debug.log

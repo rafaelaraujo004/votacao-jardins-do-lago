@@ -31,9 +31,13 @@ export function Formulario({
   const [estado, enviar] = useActionState(acao, null);
   const form = useRef<HTMLFormElement>(null);
   const { avisar } = useAvisos();
+  // Cada resposta é tratada UMA vez só. Sem isto, um "aoSalvar" novo a cada
+  // tela redesenhada repetiria o aviso e o router.refresh() sem parar.
+  const jaTratado = useRef<ResultadoAcao>(null);
 
   useEffect(() => {
-    if (!estado) return;
+    if (!estado || jaTratado.current === estado) return;
+    jaTratado.current = estado;
     if (estado.ok) {
       avisar("sucesso", estado.mensagem);
       if (limparAoSalvar) form.current?.reset();

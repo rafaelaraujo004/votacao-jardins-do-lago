@@ -8,9 +8,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   CalendarDays,
+  ChartColumn,
+  ClipboardList,
+  FolderOpen,
   LayoutGrid,
-  Map as IconeMapa,
-  Phone,
+  Store,
+  Vote,
   Wallet,
   Ellipsis,
   House,
@@ -24,6 +27,8 @@ import {
   Megaphone,
   Settings,
   ScrollText,
+  DoorOpen,
+  Package,
   type LucideIcon,
 } from "lucide-react";
 import { cx } from "@/lib/cx";
@@ -45,6 +50,12 @@ const ICONES = {
   Megaphone,
   Settings,
   ScrollText,
+  DoorOpen,
+  ClipboardList,
+  FolderOpen,
+  Vote,
+  Store,
+  ChartColumn,
 } satisfies Record<string, LucideIcon>;
 export type NomeIcone = keyof typeof ICONES;
 export type ItemMenuSerializavel = Omit<ItemMenu, "icone"> & { icone: NomeIcone };
@@ -55,17 +66,54 @@ function ativo(caminho: string, href?: string) {
   return caminho === href || caminho.startsWith(`${href}/`);
 }
 
-// ---------- Morador: barra inferior no celular, coluna no computador ----------
+// ---------- Morador (sempre com login): barra inferior no celular, coluna no computador ----------
 
+// Barra de baixo: sempre 5 itens. O resto (mapa, contatos, comunicados...) fica em "Mais" e nos atalhos do Início.
 const ITENS_MORADOR: ItemMenu[] = [
   { rotulo: "Início", icone: House, href: "/inicio" },
   { rotulo: "Contas", icone: Wallet, href: "/financeiro" },
-  { rotulo: "Mapa", icone: IconeMapa, href: "/mapa" },
-  { rotulo: "Contatos", icone: Phone, href: "/contatos" },
+  { rotulo: "Agenda", icone: CalendarDays, href: "/reservas" },
+  { rotulo: "Solicitações", icone: ClipboardList, href: "/solicitacoes" },
   { rotulo: "Mais", icone: LayoutGrid, href: "/mais" },
 ];
 
-export function NavMorador() {
+/** Itens da casa. No computador aparecem abaixo do menu. */
+const ITENS_CASA: ItemMenu[] = [
+  { rotulo: "Autorizar visita", icone: UserCheck, href: "/visitas" },
+  { rotulo: "Encomendas", icone: Package, href: "/encomendas" },
+];
+
+/** Bloco "Minha casa" (só no computador; no celular o topo mostra "Casa 12 · Sair"). */
+function BlocoCasa({ casa, caminho }: { casa: string; caminho: string }) {
+  return (
+    <div className="mt-3 hidden flex-col gap-1.5 border-t border-line pt-3 lg:flex">
+      <p className="px-3 text-[0.74rem] font-bold uppercase tracking-[0.1em] text-muted">{casa}</p>
+      <ul className="flex flex-col gap-1.5">
+        {ITENS_CASA.map(({ rotulo, icone: Icone, href = "" }) => {
+          const atual = ativo(caminho, href);
+          return (
+            <li key={rotulo}>
+              <Link
+                href={href}
+                aria-current={atual ? "page" : undefined}
+                className={cx(
+                  "flex min-h-12 items-center gap-3 rounded-2xl px-3 font-bold",
+                  atual ? "text-destaque shadow-afundado" : "text-muted hover:text-ink",
+                )}
+              >
+                <Icone aria-hidden className={cx("size-[22px]", atual && "text-pine")} />
+                {rotulo}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+/** Menu do morador. `casa`: "Casa 12" (ou o perfil, para a equipe). */
+export function NavMorador({ casa }: { casa: string }) {
   const caminho = usePathname();
   return (
     <nav
@@ -105,6 +153,7 @@ export function NavMorador() {
           );
         })}
       </ul>
+      <BlocoCasa casa={casa} caminho={caminho} />
     </nav>
   );
 }

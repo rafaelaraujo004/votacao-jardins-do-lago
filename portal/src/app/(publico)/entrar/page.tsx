@@ -5,6 +5,8 @@ import { getContexto } from "@/server/contexto";
 import { demoAtivo } from "@/server/demo";
 import { NOME_COOKIE_SESSAO } from "@/server/sessao";
 import { inicioDoPapel, NOME_DO_PAPEL, PAPEIS } from "@/lib/permissoes";
+import { destinoDepoisDoLogin, destinoSeguro } from "@/lib/destino-seguro";
+import { idCondominioPadrao, idDoLogin } from "@/lib/condominio-id";
 import { USUARIOS_DEMO } from "@/lib/demo";
 import { Alerta } from "@/components/ui/basicos";
 import { Logo, Petalas } from "@/components/ui/marca";
@@ -13,14 +15,26 @@ import { BotaoSair, classeBotaoFaixa } from "@/components/layout/faixa-topo";
 import { FaixaPetalas } from "@/components/ui/painel";
 import { ENDERECO_LINHA } from "@/lib/condominio";
 import { EntrarDemo } from "./entrar-demo";
+import { EntrarSenha } from "./entrar-senha";
 
 export const metadata: Metadata = { title: "Entrar" };
 
 export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
-  const ctx = await getContexto();
-  if (ctx) redirect(inicioDoPapel(ctx.papel));
+  const { saiu, volta: voltaBruta, c } = await searchParams;
+  const volta = destinoSeguro(Array.isArray(voltaBruta) ? voltaBruta[0] : voltaBruta);
 
-  const { saiu } = await searchParams;
+  // Já está logado: segue para onde ia (senha provisória → troca de senha).
+  const ctx = await getContexto();
+  if (ctx) {
+    if (ctx.precisaTrocarSenha) redirect(volta ? `/conta/senha?volta=${encodeURIComponent(volta)}` : "/conta/senha");
+    redirect(destinoDepoisDoLogin(inicioDoPapel(ctx.papel), volta));
+  }
+
+  // ?c= serve SÓ para montar o e-mail sintético do morador de outro condomínio
+  // (ex.: a demonstração). Id inválido → condomínio padrão. Nunca escolhe dados:
+  // esta tela não mostra nada do condomínio.
+  const condominioId = idDoLogin(c, idCondominioPadrao());
+
   const cookieSemVinculo = Boolean((await cookies()).get(NOME_COOKIE_SESSAO));
   const demo = demoAtivo();
 
@@ -51,7 +65,7 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
               <div className="flex flex-col gap-1.5">
                 <h1 className="text-[1.9rem] font-bold text-destaque">Portal do condomínio</h1>
                 <p className="text-[1.05rem] text-ink-2">
-                  Contas, visitantes, reservas e avisos do Jardins do Lago num só lugar.
+                  Visitas, encomendas e reservas da sua casa num só lugar.
                 </p>
               </div>
             </div>
@@ -69,14 +83,22 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
               </Alerta>
             ) : null}
 
-            {demo ? (
-              <EntrarDemo perfis={perfis} />
-            ) : (
-              <Alerta tipo="info" titulo="Acesso em preparação">
-                A administração do condomínio vai enviar as instruções para você entrar. Enquanto isso, qualquer
-                dúvida pode ser tirada diretamente com a portaria.
+            {volta && !saiu ? (
+              <Alerta tipo="info" titulo="Entre para continuar">
+                O portal só abre com usuário e senha. Depois de entrar, você volta para onde estava.
               </Alerta>
-            )}
+            ) : null}
+
+            {/* Morador (usuário + senha) e equipe (e-mail + senha), pelo Firebase Authentication. */}
+            <EntrarSenha condominioId={condominioId} volta={volta} />
+
+            {/* Atalhos fictícios: só no computador local, com o simulador. */}
+            {demo ? (
+              <>
+                <hr className="border-line" />
+                <EntrarDemo perfis={perfis} />
+              </>
+            ) : null}
           </div>
         </div>
       </main>

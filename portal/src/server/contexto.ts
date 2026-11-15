@@ -18,6 +18,7 @@ import { adminAuth, adminDb } from "./firebase-admin";
 import { NOME_COOKIE_SESSAO } from "./sessao";
 import { calcularPermissoes, ehPapel, type Papel, type Permissao } from "@/lib/permissoes";
 import { FUSO_PADRAO } from "@/lib/formato";
+import { linkEntrar } from "@/lib/destino-seguro";
 
 export type Contexto = {
   uid: string;
@@ -30,6 +31,8 @@ export type Contexto = {
   unidadeRotulo: string | null;
   permissoes: ReadonlySet<Permissao>;
   demo: boolean;
+  /** Equipe com senha provisória: precisa trocar antes de usar o portal. */
+  precisaTrocarSenha: boolean;
 };
 
 export class ErroDeAcesso extends Error {
@@ -93,17 +96,36 @@ export async function carregarContexto(db: Firestore, uid: string): Promise<Cont
       Array.isArray(negadas) ? negadas : [],
     ),
     demo: membro.get("demo") === true,
+    precisaTrocarSenha: membro.get("precisaTrocarSenha") === true,
   };
 }
+
+/**
+ * Rapidez entre telas: a assinatura e a validade do cookie são conferidas em
+ * TODO pedido (é local, sem rede). Já a consulta de "sessão revogada" exige
+ * uma ida ao Firebase Auth; por isso ela é refeita no máximo a cada 2 minutos
+ * por cookie, em cada servidor. Suspender alguém continua valendo na hora,
+ * porque carregarContexto confere o status do vínculo a cada pedido.
+ */
+const REVOGACAO_CONFERIDA_MS = 2 * 60 * 1000;
+const revogacaoConferidaEm = new Map<string, number>();
 
 /** uid da sessão atual, conferindo assinatura, validade e revogação do cookie. */
 export const uidDaSessao = cache(async (): Promise<string | null> => {
   const cookie = (await cookies()).get(NOME_COOKIE_SESSAO)?.value;
   if (!cookie) return null;
   try {
-    const decodificado = await adminAuth().verifySessionCookie(cookie, true);
+    const agora = Date.now();
+    const conferidoEm = revogacaoConferidaEm.get(cookie);
+    const conferirRevogacao = conferidoEm === undefined || agora - conferidoEm > REVOGACAO_CONFERIDA_MS;
+    const decodificado = await adminAuth().verifySessionCookie(cookie, conferirRevogacao);
+    if (conferirRevogacao) {
+      if (revogacaoConferidaEm.size > 5000) revogacaoConferidaEm.clear();
+      revogacaoConferidaEm.set(cookie, agora);
+    }
     return decodificado.uid;
   } catch {
+    revogacaoConferidaEm.delete(cookie);
     return null;
   }
 });
@@ -115,16 +137,21 @@ export const getContexto = cache(async (): Promise<Contexto | null> => {
   return carregarContexto(adminDb(), uid);
 });
 
-/** Para páginas: sem login → tela de entrada. */
-export async function exigirContexto(): Promise<Contexto> {
+/**
+ * Para páginas: sem login → tela de entrada; com senha provisória → troca de senha.
+ * `volta`: caminho interno para onde voltar depois de entrar (ex.: "/visitas").
+ * (A tela /conta/senha usa getContexto, e não esta função, para não ficar em laço.)
+ */
+export async function exigirContexto(volta?: string): Promise<Contexto> {
   const ctx = await getContexto();
-  if (!ctx) redirect("/entrar");
+  if (!ctx) redirect(linkEntrar(volta));
+  if (ctx.precisaTrocarSenha) redirect("/conta/senha");
   return ctx;
 }
 
-/** Para páginas: sem a permissão → tela "sem acesso". */
-export async function exigirPermissao(permissao: Permissao): Promise<Contexto> {
-  const ctx = await exigirContexto();
+/** Para páginas: sem login → /entrar?volta=...; sem a permissão → tela "sem acesso". */
+export async function exigirPermissao(permissao: Permissao, volta?: string): Promise<Contexto> {
+  const ctx = await exigirContexto(volta);
   if (!ctx.permissoes.has(permissao)) redirect("/sem-acesso");
   return ctx;
 }
@@ -132,6 +159,10 @@ export async function exigirPermissao(permissao: Permissao): Promise<Contexto> {
 /** Para ações e rotas: lança erro em vez de redirecionar. */
 export function garantirPermissao(ctx: Contexto | null, permissao: Permissao): Contexto {
   if (!ctx) throw new ErroDeAcesso("sem-sessao", "Sua sessão terminou. Entre novamente.");
+  // Senha provisória: nada é gravado até a pessoa criar a própria senha.
+  if (ctx.precisaTrocarSenha) {
+    throw new ErroDeAcesso("sem-permissao", "Troque a sua senha provisória antes de continuar.");
+  }
   if (!ctx.permissoes.has(permissao)) {
     throw new ErroDeAcesso("sem-permissao", "Seu perfil não permite fazer isso.");
   }

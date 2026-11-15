@@ -1,9 +1,11 @@
 /**
  * Faixa verde do topo: logo no selo claro, nome do condomínio, endereço curto,
  * quem está usando e os botões redondos de tema e sair.
+ * Na área do morador (sempre com login): "Casa 12" e o botão "Sair".
  */
 import type { ReactNode } from "react";
-import { LogOut } from "lucide-react";
+import Link from "next/link";
+import { House, KeyRound, LogOut } from "lucide-react";
 import { Logo, Petalas } from "@/components/ui/marca";
 import { BotaoTema } from "@/components/ui/tema";
 import { sair } from "@/server/acoes-sessao";
@@ -40,12 +42,18 @@ export function FaixaTopo({
   subtitulo,
   demo,
   largura = "max-w-5xl",
+  contaHref,
+  sessao = null,
   children,
 }: {
   titulo: string;
   subtitulo?: string;
   demo?: boolean;
   largura?: string;
+  /** Endereço da tela "Trocar senha" (só para a equipe). Sem ele, o botão não aparece. */
+  contaHref?: string;
+  /** Área do morador: quem está logado ("Casa 12"). Vira um botão para "Minha conta". */
+  sessao?: { rotulo: string } | null;
   children?: ReactNode;
 }) {
   return (
@@ -63,10 +71,35 @@ export function FaixaTopo({
           <span className="mt-0.5 truncate text-[0.8rem] text-band-muted">{ENDERECO_LINHA}</span>
           {subtitulo ? <span className="mt-0.5 truncate text-[0.84rem] font-bold text-band-fg/90">{subtitulo}</span> : null}
         </div>
+        {contaHref ? (
+          <Link href={contaHref} title="Trocar senha" className={cx("grid size-11 place-items-center rounded-full", classeBotaoFaixa)}>
+            <KeyRound aria-hidden className="size-5" />
+            <span className="sr-only">Trocar senha</span>
+          </Link>
+        ) : null}
         <BotaoTema className={classeBotaoFaixa} />
+        {sessao ? <ChipCasa rotulo={sessao.rotulo} /> : null}
         <BotaoSair redondo className={classeBotaoFaixa} />
       </div>
       {children}
     </header>
+  );
+}
+
+/** "Casa 12": mostra de quem é a sessão aberta neste aparelho. Toque → "Minha conta" (trocar senha). */
+function ChipCasa({ rotulo }: { rotulo: string }) {
+  return (
+    <Link
+      href="/conta/senha"
+      title="Minha conta (trocar senha)"
+      className={cx("flex min-h-11 min-w-0 max-w-[9.5rem] items-center gap-1.5 rounded-full px-3 text-[0.9rem] font-bold", classeBotaoFaixa)}
+    >
+      <House aria-hidden className="size-4 shrink-0 max-[380px]:hidden" />
+      <span className="truncate">
+        <span className="sr-only">Você entrou como </span>
+        {rotulo}
+        <span className="sr-only">. Abrir minha conta</span>
+      </span>
+    </Link>
   );
 }

@@ -5,7 +5,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
-import { carregarContexto } from "@/server/contexto";
+import { carregarContexto, ErroDeAcesso, garantirPermissao } from "@/server/contexto";
 import { consumirTentativa } from "@/server/rate-limit";
 import { registrarAuditoria } from "@/server/auditoria";
 
@@ -68,6 +68,17 @@ describe("carregarContexto", () => {
 
   it("pessoa sem cadastro não tem contexto", async () => {
     expect(await carregarContexto(db, "ninguem")).toBeNull();
+  });
+  it("senha provisória: o contexto avisa e nenhuma ação passa", async () => {
+    const normal = await carregarContexto(db, "u1");
+    expect(normal?.precisaTrocarSenha).toBe(false);
+    expect(() => garantirPermissao(normal, "area.morador")).not.toThrow();
+
+    await db.doc("condominiums/a/members/u1").update({ precisaTrocarSenha: true });
+    const provisoria = await carregarContexto(db, "u1");
+    expect(provisoria?.precisaTrocarSenha).toBe(true);
+    expect(() => garantirPermissao(provisoria, "area.morador")).toThrow(ErroDeAcesso);
+    expect(() => garantirPermissao(provisoria, "area.morador")).toThrow(/senha provisória/);
   });
 });
 

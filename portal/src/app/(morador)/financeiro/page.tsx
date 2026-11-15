@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { FileDown, FileText, Wallet } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
-import { lancamentosDoMes, mesesComSaldo, totaisPorCategoria } from "@/server/dados/financeiro";
+import { lancamentosPublicados, mesesPublicados } from "@/server/dados/morador";
+import { totaisPorCategoria } from "@/server/dados/financeiro";
 import { formatarMoeda } from "@/lib/formato";
 import { nomeDoMes, REGEX_MES } from "@/lib/financeiro";
 import { Cartao, EstadoVazio } from "@/components/ui/basicos";
@@ -12,10 +13,15 @@ import { GraficoSaldo } from "@/components/financeiro/grafico-saldo";
 
 export const metadata: Metadata = { title: "Prestação de contas" };
 
+/**
+ * Prestação de contas do morador (com login): só os meses publicados pela administração.
+ * Cada lançamento mostra descrição, categoria, data, valor e forma — nunca quem lançou
+ * nem casa/pessoa (veja server/dados/morador.ts).
+ */
 export default async function FinanceiroMorador({ searchParams }: PageProps<"/financeiro">) {
-  const ctx = await exigirPermissao("financeiro.ver_publicado");
-  // Para o morador, só existem os meses publicados pela administração.
-  const meses = (await mesesComSaldo(ctx)).filter((m) => m.publicado);
+  const ctx = await exigirPermissao("financeiro.ver_publicado", "/financeiro");
+  const { mes: bruto, periodo: periodoBruto } = await searchParams;
+  const meses = await mesesPublicados(ctx);
 
   const cabecalho = (
     <CabecalhoPagina sobretitulo="Contas" titulo="Prestação de contas" subtitulo="Para onde vai o dinheiro do condomínio." />
@@ -32,12 +38,11 @@ export default async function FinanceiroMorador({ searchParams }: PageProps<"/fi
     );
   }
 
-  const { mes: bruto, periodo: periodoBruto } = await searchParams;
   const ultimo = meses[meses.length - 1];
   const escolhido = typeof bruto === "string" && REGEX_MES.test(bruto) ? meses.find((m) => m.mes === bruto) : undefined;
   const atual = escolhido ?? ultimo;
   const indice = meses.indexOf(atual);
-  const lancamentos = await lancamentosDoMes(ctx, atual.mes);
+  const lancamentos = await lancamentosPublicados(ctx, atual.mes);
   const categorias = totaisPorCategoria(lancamentos.filter((l) => l.tipo === "despesa"));
   const totalCategorias = categorias.reduce((soma, c) => soma + Math.max(c.totalCentavos, 0), 0);
 

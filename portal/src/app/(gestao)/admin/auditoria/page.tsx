@@ -1,5 +1,38 @@
 import type { Metadata } from "next";
-import { LogIn, LogOut, ScrollText, Settings, type LucideIcon } from "lucide-react";
+import {
+  Archive,
+  Ban,
+  CalendarCheck,
+  CircleCheck,
+  CircleX,
+  ClipboardList,
+  FilePlus2,
+  FileX2,
+  FolderOpen,
+  Megaphone,
+  MessageSquare,
+  RefreshCw,
+  Send,
+  Store,
+  Vote,
+  CalendarPlus,
+  CalendarX2,
+  DoorClosed,
+  DoorOpen,
+  Eraser,
+  KeyRound,
+  LogIn,
+  LogOut,
+  Package,
+  PackageCheck,
+  Pencil,
+  ScrollText,
+  Settings,
+  TreePalm,
+  UserCheck,
+  UserX,
+  type LucideIcon,
+} from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { ultimosRegistrosDeAuditoria } from "@/server/dados/gestao";
 import { formatarDataHora } from "@/lib/formato";
@@ -14,6 +47,54 @@ const DESCRICAO: Record<string, { texto: string; icone: LucideIcon }> = {
   "sessao.sair": { texto: "Saiu do portal", icone: LogOut },
   "condominio.criar": { texto: "Criou o condomínio no sistema", icone: Settings },
   "membro.criar": { texto: "Cadastrou uma pessoa", icone: Settings },
+  // Acesso com senha (equipe)
+  "acesso.criar_senha": { texto: "Criou o acesso com senha de alguém da equipe", icone: KeyRound },
+  "acesso.criar_morador": { texto: "Criou o usuário e a senha de um morador", icone: KeyRound },
+  "acesso.redefinir_senha": { texto: "Gerou nova senha provisória", icone: KeyRound },
+  "acesso.trocar_senha": { texto: "Trocou a própria senha", icone: KeyRound },
+  // Portaria
+  "visitante.autorizar": { texto: "Autorizou uma visita", icone: UserCheck },
+  "visitante.cancelar": { texto: "Cancelou uma autorização de visita", icone: UserX },
+  "visitante.anonimizar": { texto: "Removeu nomes antigos de visitantes (LGPD)", icone: Eraser },
+  "acesso.entrada": { texto: "Registrou entrada na portaria", icone: DoorOpen },
+  "acesso.saida": { texto: "Registrou saída na portaria", icone: DoorClosed },
+  "encomenda.registrar": { texto: "Registrou encomenda", icone: Package },
+  "encomenda.entregar": { texto: "Entregou encomenda", icone: PackageCheck },
+  // Reservas
+  "reserva.criar": { texto: "Criou reserva", icone: CalendarPlus },
+  "reserva.aprovar": { texto: "Aprovou reserva", icone: CalendarCheck },
+  "reserva.recusar": { texto: "Recusou pedido de reserva", icone: CalendarX2 },
+  "reserva.cancelar": { texto: "Cancelou reserva", icone: CalendarX2 },
+  "reserva.bloquear": { texto: "Bloqueou horário de área", icone: Ban },
+  "area.criar": { texto: "Cadastrou área de lazer", icone: TreePalm },
+  "area.editar": { texto: "Alterou área de lazer", icone: Pencil },
+  // Configurações
+  "informacoes.alterar": { texto: "Alterou as informações do condomínio", icone: Settings },
+  // Comunicados
+  "comunicado.criar": { texto: "Criou comunicado", icone: Megaphone },
+  "comunicado.editar": { texto: "Alterou comunicado", icone: Pencil },
+  "comunicado.publicar": { texto: "Publicou comunicado", icone: Send },
+  "comunicado.arquivar": { texto: "Arquivou comunicado", icone: Archive },
+  // Solicitações
+  "solicitacao.abrir": { texto: "Abriu solicitação", icone: ClipboardList },
+  "solicitacao.comentar": { texto: "Comentou em solicitação", icone: MessageSquare },
+  "solicitacao.status": { texto: "Mudou a situação de solicitação", icone: RefreshCw },
+  "solicitacao.cancelar": { texto: "Cancelou solicitação", icone: CircleX },
+  // Documentos
+  "documento.criar": { texto: "Cadastrou documento", icone: FilePlus2 },
+  "documento.editar": { texto: "Alterou documento", icone: FolderOpen },
+  "documento.desativar": { texto: "Desativou documento", icone: FileX2 },
+  // Enquetes
+  "enquete.criar": { texto: "Criou enquete (rascunho)", icone: Vote },
+  "enquete.editar": { texto: "Editou rascunho de enquete", icone: Pencil },
+  "enquete.publicar": { texto: "Publicou enquete", icone: Send },
+  "enquete.encerrar": { texto: "Encerrou enquete antes do prazo", icone: Archive },
+  "enquete.votar": { texto: "Casa votou em enquete (opção não registrada)", icone: Vote },
+  // Classificados
+  "classificado.criar": { texto: "Enviou anúncio para aprovação", icone: Store },
+  "classificado.aprovar": { texto: "Aprovou anúncio", icone: CircleCheck },
+  "classificado.rejeitar": { texto: "Não aprovou anúncio", icone: CircleX },
+  "classificado.remover": { texto: "Removeu anúncio", icone: Archive },
 };
 
 export default async function PaginaAuditoria() {

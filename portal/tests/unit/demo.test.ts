@@ -49,3 +49,30 @@ describe("login de demonstração", () => {
     expect(resposta.status).toBe(404);
   });
 });
+
+describe("morador de demonstração", () => {
+  it("usa um usuário fixo válido (sem 0, O, 1 e I) e um e-mail sintético .invalid", async () => {
+    const { USUARIO_MORADOR_DEMO, CONDOMINIO_DEMO, INFORMACOES_DEMO } = await import("@/lib/demo");
+    const { ehUsuarioValido, emailDoMorador, ehEmailDeMorador } = await import("@/lib/usuario-morador");
+    const { normalizarTelefone } = await import("@/lib/validacao-informacoes");
+    expect(ehUsuarioValido(USUARIO_MORADOR_DEMO)).toBe(true);
+    const email = emailDoMorador(USUARIO_MORADOR_DEMO, CONDOMINIO_DEMO.id);
+    expect(email).toBe("dema22@morador.jardins-do-lago-demo.portal.invalid");
+    expect(ehEmailDeMorador(email)).toBe(true);
+    // As informações fictícias passam pela mesma validação da tela do síndico.
+    for (const t of [INFORMACOES_DEMO.telefonePortaria, INFORMACOES_DEMO.telefoneAdministracao, INFORMACOES_DEMO.whatsappAdministracao]) {
+      expect(normalizarTelefone(t)).toBe(t);
+    }
+  });
+
+  it("PIX, ronda, responsável e link da votação fictícios passam na validação", async () => {
+    const { INFORMACOES_DEMO } = await import("@/lib/demo");
+    const { normalizarChavePix, normalizarTelefone, normalizarLinkHttps, ehCelular } = await import("@/lib/validacao-informacoes");
+    expect(normalizarChavePix(INFORMACOES_DEMO.pix.tipo, INFORMACOES_DEMO.pix.chave)).toBe(INFORMACOES_DEMO.pix.chave);
+    for (const t of [INFORMACOES_DEMO.telefoneRonda, INFORMACOES_DEMO.responsavelReservas.telefone]) {
+      expect(normalizarTelefone(t)).toBe(t);
+      expect(ehCelular(t)).toBe(true);
+    }
+    expect(normalizarLinkHttps(INFORMACOES_DEMO.linkVotacao)).toBe(INFORMACOES_DEMO.linkVotacao);
+  });
+});

@@ -3,11 +3,26 @@
  * Recusa-se a rodar fora do simulador: nunca toca no Firebase real.
  *
  * Uso: npm run semear   (o "npm run dev:emu" já roda este script sozinho)
+ *
+ * A equipe demo (síndico, portaria, conselho) entra com e-mail e senha.
+ * O morador demo (Casa 12) entra com o usuário DEMA22 e senha (aba "Sou morador").
+ * A senha é nova a cada semeadura e fica em portal/.acesso-demo.txt
+ * (arquivo ignorado pelo git). Ela nunca aparece na tela.
+ * Nada do portal abre sem login (não existe área pública).
  */
+import { writeFileSync } from "node:fs";
+import path from "node:path";
 import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
-import { CONDOMINIO_DEMO, OUTRO_CONDOMINIO_DEMO, USUARIOS_DEMO } from "../src/lib/demo";
+import { CONDOMINIO_DEMO, INFORMACOES_DEMO, OUTRO_CONDOMINIO_DEMO, USUARIO_MORADOR_DEMO, USUARIOS_DEMO } from "../src/lib/demo";
+import type { Papel } from "../src/lib/permissoes";
+import { gerarSenhaProvisoria } from "../src/lib/senha";
+import { emailDoMorador } from "../src/lib/usuario-morador";
+import { hojeISO } from "../src/lib/formato";
+import { hashDoCodigo, SEGREDO_CODIGO_DESENVOLVIMENTO } from "../src/lib/portaria";
+import { somarDias } from "../src/lib/reservas";
+import { semearAreasDemo, semearModulosDemo } from "./demo-modulos";
 
 if (!process.env.FIRESTORE_EMULATOR_HOST || !process.env.FIREBASE_AUTH_EMULATOR_HOST) {
   console.error("Este script só roda com o simulador ligado (FIRESTORE_EMULATOR_HOST e FIREBASE_AUTH_EMULATOR_HOST).");
@@ -24,6 +39,15 @@ initializeApp({ projectId });
 const db = getFirestore();
 const auth = getAuth();
 
+// E-mails fictícios da equipe demo (o domínio .local não existe de verdade).
+const EMAILS_DEMO: Partial<Record<Papel, string>> = {
+  admin: "sindico@demo.jardins.local",
+  portaria: "portaria@demo.jardins.local",
+  conselheiro: "conselho@demo.jardins.local",
+};
+const ARQUIVO_DEMO = path.resolve(import.meta.dirname, "..", ".acesso-demo.txt");
+const senhaDemo = gerarSenhaProvisoria(); // nova a cada semeadura
+
 async function main() {
   const lote = db.batch();
   const agora = FieldValue.serverTimestamp();
@@ -35,6 +59,7 @@ async function main() {
       fuso: "America/Belem",
       moeda: "BRL",
       demo: true,
+      ...(c.id === CONDOMINIO_DEMO.id ? { informacoes: INFORMACOES_DEMO } : {}),
       criadoEm: agora,
     });
   }
@@ -53,7 +78,9 @@ async function main() {
 
   for (const u of Object.values(USUARIOS_DEMO)) {
     await auth.deleteUser(u.uid).catch(() => undefined);
-    await auth.createUser({ uid: u.uid, displayName: u.nome });
+    // Equipe: e-mail fictício. Morador: e-mail sintético do usuário DEMA22.
+    const email = u.papel === "morador" ? emailDoMorador(USUARIO_MORADOR_DEMO, CONDOMINIO_DEMO.id) : EMAILS_DEMO[u.papel];
+    await auth.createUser({ uid: u.uid, displayName: u.nome, ...(email ? { email, password: senhaDemo } : {}) });
 
     lote.set(db.doc(`users/${u.uid}`), {
       nome: u.nome,
@@ -68,13 +95,124 @@ async function main() {
       status: "ativo",
       permissoesExtras: [],
       permissoesNegadas: [],
+      // Na demonstração ninguém é obrigado a trocar a senha (atrapalharia os botões de entrada rápida).
+      precisaTrocarSenha: false,
+      ...(u.papel === "morador" ? { usuario: USUARIO_MORADOR_DEMO, usuarioCriadoEm: agora } : {}),
       demo: true,
       criadoEm: agora,
     });
   }
+  // Índice de unicidade do usuário do morador demo (usernames/{codigo} → uid).
+  lote.set(db.doc(`condominiums/${CONDOMINIO_DEMO.id}/usernames/${USUARIO_MORADOR_DEMO}`), {
+    uid: USUARIOS_DEMO.morador.uid,
+    criadoEm: agora,
+    criadoPor: USUARIOS_DEMO.admin.uid,
+  });
+
+  const c = `condominiums/${CONDOMINIO_DEMO.id}`;
+  const hoje = hojeISO(new Date(), "America/Belem");
+
+  // ---------- Portaria: autorizações, uma pessoa dentro e 2 encomendas aguardando ----------
+  const segredo = process.env.PORTARIA_SEGREDO_CODIGO || SEGREDO_CODIGO_DESENVOLVIMENTO;
+  const morador = USUARIOS_DEMO.morador; // casa-012
+  const porteiro = USUARIOS_DEMO.portaria;
+  const visitas = [
+    { id: "demo-visita-hoje", codigo: "K7M4PX", nome: "Maria Visitante", tipo: "visita", data: hoje, validaAte: hoje },
+    { id: "demo-visita-prestador", codigo: "PRT3ZB", nome: "João Pedreiro", tipo: "prestador", data: hoje, validaAte: somarDias(hoje, 6) },
+    { id: "demo-visita-amanha", codigo: "HGX7QW", nome: "Entrega do Mercado", tipo: "entrega", data: somarDias(hoje, 1), validaAte: somarDias(hoje, 1) },
+  ];
+  for (const v of visitas) {
+    lote.set(db.doc(`${c}/visitors/${v.id}`), {
+      unitId: morador.unitId,
+      unidadeRotulo: "Casa 12",
+      nome: v.nome,
+      tipo: v.tipo,
+      data: v.data,
+      validaAte: v.validaAte,
+      usoUnico: v.data === v.validaAte,
+      usos: 0,
+      observacao: "",
+      codigoHash: await hashDoCodigo(segredo, CONDOMINIO_DEMO.id, v.codigo),
+      status: "ativa",
+      anonimizado: false,
+      criadoPor: morador.uid,
+      criadoPorNome: morador.nome,
+      criadoEm: agora,
+      demo: true,
+    });
+  }
+  lote.set(db.doc(`${c}/accessEvents/demo-entrada-1`), {
+    tipo: "entrada",
+    origem: "sem_codigo",
+    visitorId: null,
+    unitId: "casa-045",
+    unidadeRotulo: "Casa 45",
+    nome: "Carla Diarista",
+    tipoVisita: "prestador",
+    confirmadoComMorador: true,
+    data: hoje,
+    quando: agora,
+    dentro: true,
+    saidaEm: null,
+    saidaId: null,
+    anonimizado: false,
+    registradoPor: porteiro.uid,
+    registradoPorNome: porteiro.nome,
+    demo: true,
+  });
+  const encomendas = [
+    ["demo-encomenda-1", "casa-012", "Casa 12", "Ana Demonstração", "caixa"],
+    ["demo-encomenda-2", "casa-120", "Casa 120", "Pedro Morador", "envelope"],
+  ] as const;
+  for (const [id, unitId, unidadeRotulo, destinatario, tipo] of encomendas) {
+    lote.set(db.doc(`${c}/packages/${id}`), {
+      unitId,
+      unidadeRotulo,
+      destinatario,
+      tipo,
+      observacao: "",
+      status: "aguardando",
+      dataRecebimento: hoje,
+      recebidoEm: agora,
+      recebidoPor: porteiro.uid,
+      recebidoPorNome: porteiro.nome,
+      entregueEm: null,
+      entreguePor: null,
+      entreguePorNome: null,
+      retiradoPor: null,
+      demo: true,
+    });
+  }
+
+  // ---------- Áreas (as regras reais), reservas e módulos novos (dados fictícios) ----------
+  const sindico = USUARIOS_DEMO.admin;
+  const pessoas = { hoje, adminUid: sindico.uid, adminNome: sindico.nome, moradorUid: morador.uid, moradorNome: morador.nome };
+  semearAreasDemo(db, lote, c, pessoas);
+  semearModulosDemo(db, lote, c, pessoas);
 
   await lote.commit();
-  console.log(`Dados de demonstração prontos: ${CONDOMINIO_DEMO.nome}, 5 casas e 4 perfis.`);
+
+  // Credenciais da equipe demo: só no arquivo (nunca na tela).
+  writeFileSync(
+    ARQUIVO_DEMO,
+    [
+      "CONTAS DE DEMONSTRAÇÃO (só no simulador local)",
+      "",
+      "Equipe (aba \"Sou da equipe\", e-mail + senha):",
+      ...Object.values(EMAILS_DEMO),
+      "",
+      `Morador da Casa 12 (aba \"Sou morador\"): usuário ${USUARIO_MORADOR_DEMO}`,
+      "",
+      `Senha (a mesma para todas): ${senhaDemo}`,
+      "",
+    ].join("\n"),
+    { encoding: "utf8", mode: 0o600 },
+  );
+
+  console.log(`Dados de demonstração prontos: ${CONDOMINIO_DEMO.nome}, 5 casas, 4 perfis, portaria, reservas, comunicados, solicitações, documentos, enquetes e classificados.`);
+  console.log(`Contas da equipe e do morador demo (usuário ${USUARIO_MORADOR_DEMO}): veja ${ARQUIVO_DEMO}`);
+  console.log(`Entrada do morador demo: /entrar?c=${CONDOMINIO_DEMO.id}`);
+  console.log("Códigos de visitante da demonstração: K7M-4PX (hoje, uso único), PRT-3ZB (prestador, 7 dias), HGX-7QW (amanhã).");
 }
 
 main().catch((erro) => {

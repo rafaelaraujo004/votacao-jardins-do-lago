@@ -4,11 +4,13 @@ import { Search, UserPlus, Users } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { listarPessoas } from "@/server/dados/pessoas";
 import { rotulosDasUnidades } from "@/server/dados/unidades";
+import { situacoesLoginMoradores } from "@/server/dados/acesso";
 import { ehPapel, NOME_DO_PAPEL, PAPEIS } from "@/lib/permissoes";
 import { Cartao, classeEntrada, EstadoVazio, TituloPagina } from "@/components/ui/basicos";
 import { Botao, BotaoLink } from "@/components/ui/botao";
 import { SegmentoLinks } from "@/components/ui/painel";
-import { EtiquetaSituacaoPessoa } from "./etiquetas";
+import { EtiquetaSenhaProvisoria, EtiquetaSituacaoPessoa } from "./etiquetas";
+import { EtiquetaLoginMorador } from "@/components/acesso/etiqueta-login";
 
 export const metadata: Metadata = { title: "Pessoas" };
 
@@ -16,7 +18,7 @@ const normalizar = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toL
 
 export default async function PaginaPessoas({ searchParams }: PageProps<"/admin/pessoas">) {
   const ctx = await exigirPermissao("moradores.ver");
-  const [pessoas, rotulos] = await Promise.all([listarPessoas(ctx), rotulosDasUnidades(ctx)]);
+  const [pessoas, rotulos, logins] = await Promise.all([listarPessoas(ctx), rotulosDasUnidades(ctx), situacoesLoginMoradores(ctx)]);
   const { papel: papelBruto, busca: buscaBruta } = await searchParams;
   const papel = ehPapel(papelBruto) ? papelBruto : null;
   const busca = typeof buscaBruta === "string" ? buscaBruta.trim().slice(0, 60) : "";
@@ -85,6 +87,12 @@ export default async function PaginaPessoas({ searchParams }: PageProps<"/admin/
                       {p.unitId ? ` · ${rotulos.get(p.unitId) ?? p.unitId}` : ""}
                     </p>
                   </div>
+                  {/* Morador: situação do login (Sem acesso / Senha provisória / Acesso ativo). Equipe: só a senha provisória. */}
+                  {p.papel === "morador" ? (
+                    p.status === "ativo" ? <EtiquetaLoginMorador situacao={logins.get(p.uid) ?? "sem-acesso"} /> : null
+                  ) : p.precisaTrocarSenha && p.status === "ativo" ? (
+                    <EtiquetaSenhaProvisoria />
+                  ) : null}
                   <EtiquetaSituacaoPessoa status={p.status} />
                 </Link>
               </li>

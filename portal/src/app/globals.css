@@ -164,6 +164,22 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Toque responde na hora: sem espera de "duplo toque para zoom" e sem flash cinza. */
+a, button, summary, label, input, select, textarea, [role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Esqueleto mostrado enquanto a próxima tela carrega. */
+@keyframes pulsar {
+  50% { opacity: 0.55; }
+}
+.esqueleto {
+  background: var(--line);
+  border-radius: 14px;
+  animation: pulsar 1.2s ease-in-out infinite;
+}
+
 h1, h2, h3 {
   font-family: var(--font-display);
   letter-spacing: -0.015em;
@@ -209,7 +225,7 @@ h1, h2, h3 {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 }
-.surgir { animation: surgir 0.35s ease-out both; }
+.surgir { animation: surgir 0.2s ease-out both; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -223,4 +239,39 @@ h1, h2, h3 {
 /* Relatórios impressos sempre em fundo branco. */
 @media print {
   body { background: #fff !important; color: #000; }
+}
+
+/* Gaveta do menu no celular: desliza da lateral, com fundo escurecido. */
+dialog.gaveta::backdrop { background: rgb(0 0 0 / 0.45); }
+dialog.gaveta[open] { animation: gaveta-entrar 0.18s ease-out; }
+@keyframes gaveta-entrar {
+  from { transform: translateX(100%); }
+  to { transform: none; }
+}
+
+/* Barra de progresso do topo: começa no toque, termina quando a tela chega. */
+.barra-navegacao::before {
+  content: "";
+  display: block;
+  height: 100%;
+  width: 0;
+  opacity: 0;
+  background: linear-gradient(90deg, var(--pine), var(--lake));
+  box-shadow: 0 0 8px var(--pine);
+}
+.barra-navegacao[data-estado="andando"]::before {
+  opacity: 1;
+  width: 85%;
+  transition: width 4s cubic-bezier(0.1, 0.7, 0.2, 1), opacity 0.05s;
+}
+.barra-navegacao[data-estado="terminando"]::before {
+  opacity: 0;
+  width: 100%;
+  transition: width 0.15s ease-out, opacity 0.2s ease 0.1s;
+}
+
+/* Toque com resposta visual imediata (o elemento "afunda" um pouco). */
+:where(a, button, summary):active {
+  transform: scale(0.97);
+  transition: transform 60ms ease-out;
 }

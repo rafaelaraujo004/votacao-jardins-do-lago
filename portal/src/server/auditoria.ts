@@ -17,6 +17,10 @@ import {
 export const ACOES_AUDITADAS = [
   "sessao.entrar",
   "sessao.sair",
+  "acesso.criar_senha",
+  "acesso.criar_morador",
+  "acesso.redefinir_senha",
+  "acesso.trocar_senha",
   "condominio.criar",
   "membro.criar",
   "membro.alterar",
@@ -35,8 +39,41 @@ export const ACOES_AUDITADAS = [
   "visitante.cancelar",
   "acesso.entrada",
   "acesso.saida",
+  "encomenda.registrar",
+  "encomenda.entregar",
+  "visitante.anonimizar",
   "reserva.criar",
   "reserva.cancelar",
+  "reserva.aprovar",
+  "reserva.recusar",
+  "reserva.bloquear",
+  "area.criar",
+  "area.editar",
+  // Comunicados
+  "comunicado.criar",
+  "comunicado.editar",
+  "comunicado.publicar",
+  "comunicado.arquivar",
+  // Solicitações
+  "solicitacao.abrir",
+  "solicitacao.comentar",
+  "solicitacao.status",
+  "solicitacao.cancelar",
+  // Documentos (links)
+  "documento.criar",
+  "documento.editar",
+  "documento.desativar",
+  // Enquetes
+  "enquete.criar",
+  "enquete.editar",
+  "enquete.publicar",
+  "enquete.encerrar",
+  "enquete.votar",
+  // Classificados
+  "classificado.criar",
+  "classificado.aprovar",
+  "classificado.rejeitar",
+  "classificado.remover",
   "admin.alterar",
 ] as const;
 export type AcaoAuditada = (typeof ACOES_AUDITADAS)[number];

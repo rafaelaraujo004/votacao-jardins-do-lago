@@ -4,43 +4,46 @@ import type { LucideIcon } from "lucide-react";
 import {
   CalendarDays,
   ChevronRight,
-  FileText,
+  ClipboardList,
+  FolderOpen,
+  KeyRound,
   MapPinned,
   Megaphone,
-  MessageSquareWarning,
   Package,
   Phone,
+  Store,
   UserCheck,
   Vote,
   Wallet,
 } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
+import type { Permissao } from "@/lib/permissoes";
 import { Cartao } from "@/components/ui/basicos";
 import { CabecalhoPagina, TituloSecao, type TomModulo } from "@/components/ui/painel";
-import { BotaoSair } from "@/components/layout/faixa-topo";
 import { cx } from "@/lib/cx";
 import { Preferencias } from "./preferencias";
 
 export const metadata: Metadata = { title: "Mais" };
 
-type Modulo = { icone: LucideIcon; titulo: string; descricao: string; tom: TomModulo; href?: string };
+type Modulo = { icone: LucideIcon; titulo: string; descricao: string; tom: TomModulo; href: string; permissao: Permissao };
 
-// Módulos que já funcionam (são links).
-const PRONTOS: Modulo[] = [
-  { icone: Wallet, titulo: "Prestação de contas", descricao: "Saldo, receitas e despesas", tom: "verde", href: "/financeiro" },
-  { icone: MapPinned, titulo: "Mapa das casas", descricao: "Encontre qualquer casa", tom: "lago", href: "/mapa" },
-  { icone: Phone, titulo: "Contatos úteis", descricao: "Endereço, portaria e emergência", tom: "vinho", href: "/contatos" },
+// Módulos da casa e do dia a dia.
+const DA_CASA: Modulo[] = [
+  { icone: Wallet, titulo: "Prestação de contas", descricao: "Saldo, receitas e despesas", tom: "verde", href: "/financeiro", permissao: "financeiro.ver_publicado" },
+  { icone: CalendarDays, titulo: "Agenda das áreas de lazer", descricao: "Horários livres e pedido de reserva", tom: "verde", href: "/reservas", permissao: "reservas.fazer" },
+  { icone: ClipboardList, titulo: "Solicitações", descricao: "Informe problemas e acompanhe o protocolo", tom: "vinho", href: "/solicitacoes", permissao: "solicitacoes.abrir" },
+  { icone: UserCheck, titulo: "Autorizar visita", descricao: "Código para o visitante entrar", tom: "lago", href: "/visitas", permissao: "visitantes.autorizar" },
+  { icone: Package, titulo: "Minhas encomendas", descricao: "O que chegou na portaria", tom: "areia", href: "/encomendas", permissao: "encomendas.ver_proprias" },
 ];
 
-// Módulos que ainda vão chegar (sem link: não são clicáveis).
-const EM_BREVE: Modulo[] = [
-  { icone: Megaphone, titulo: "Comunicados", descricao: "Avisos da administração", tom: "areia" },
-  { icone: CalendarDays, titulo: "Reservas de lazer", descricao: "Salão, churrasqueira e quadra", tom: "verde" },
-  { icone: UserCheck, titulo: "Autorização de visitas", descricao: "Libere visitas e entregas", tom: "lago" },
-  { icone: Package, titulo: "Encomendas", descricao: "Veja o que chegou para você", tom: "areia" },
-  { icone: MessageSquareWarning, titulo: "Solicitações", descricao: "Peça reparos e tire dúvidas", tom: "vinho" },
-  { icone: Vote, titulo: "Votações e assembleias", descricao: "Eleições e decisões do condomínio", tom: "verde" },
-  { icone: FileText, titulo: "Documentos", descricao: "Regimento, convenção e atas", tom: "lago" },
+// Comunicação e informações do condomínio.
+const DO_CONDOMINIO: Modulo[] = [
+  { icone: Megaphone, titulo: "Comunicados", descricao: "Avisos da administração", tom: "areia", href: "/comunicados", permissao: "comunicados.ver" },
+  { icone: Vote, titulo: "Enquetes", descricao: "Um voto por casa nas decisões do condomínio", tom: "vinho", href: "/enquetes", permissao: "enquetes.votar" },
+  { icone: FolderOpen, titulo: "Documentos", descricao: "Regimento, convenção, atas e prestações", tom: "lago", href: "/documentos", permissao: "documentos.ver" },
+  { icone: Store, titulo: "Classificados", descricao: "Compra, venda e serviços entre vizinhos", tom: "areia", href: "/classificados", permissao: "classificados.usar" },
+  { icone: Phone, titulo: "Contatos úteis", descricao: "Portaria, ronda, reservas e PIX da taxa", tom: "vinho", href: "/contatos", permissao: "informacoes.ver" },
+  { icone: MapPinned, titulo: "Mapa das casas", descricao: "Encontre qualquer casa", tom: "lago", href: "/mapa", permissao: "mapa.ver" },
 ];
 
 const TONS: Record<TomModulo, string> = {
@@ -50,11 +53,14 @@ const TONS: Record<TomModulo, string> = {
   areia: "bg-sand text-texto-areia",
 };
 
-/** Item largo da lista: com link é clicável; sem link mostra "Em breve". */
+/** Item largo da lista (sempre um link). */
 function ItemModulo({ m }: { m: Modulo }) {
   const Icone = m.icone;
-  const conteudo = (
-    <>
+  return (
+    <Link
+      href={m.href}
+      className="saltado flex min-h-[72px] items-center gap-3 rounded-2xl px-3.5 py-3 transition-shadow active:shadow-afundado"
+    >
       <span className={cx("grid size-12 shrink-0 place-items-center rounded-[14px]", TONS[m.tom])}>
         <Icone aria-hidden className="size-6" />
       </span>
@@ -62,60 +68,38 @@ function ItemModulo({ m }: { m: Modulo }) {
         <b className="block leading-tight text-ink">{m.titulo}</b>
         <span className="text-[0.88rem] text-muted">{m.descricao}</span>
       </span>
-      {m.href ? (
-        <ChevronRight aria-hidden className="size-5 shrink-0 text-muted" />
-      ) : (
-        <span className="shrink-0 rounded-full bg-sand px-2 py-0.5 text-[0.68rem] font-bold uppercase tracking-wide text-ink-2">
-          Em breve
-        </span>
-      )}
-    </>
+      <ChevronRight aria-hidden className="size-5 shrink-0 text-muted" />
+    </Link>
   );
-  const classes = "saltado flex min-h-[72px] items-center gap-3 rounded-2xl px-3.5 py-3";
-  if (m.href) {
-    return (
-      <Link href={m.href} className={cx(classes, "transition-shadow active:shadow-afundado")}>
-        {conteudo}
-      </Link>
-    );
-  }
+}
+
+/** Lista de módulos de uma seção (some se o perfil não puder ver nenhum). */
+function SecaoModulos({ id, titulo, modulos }: { id: string; titulo: string; modulos: Modulo[] }) {
+  if (!modulos.length) return null;
   return (
-    <div className={cx(classes, "opacity-75")} aria-disabled="true">
-      {conteudo}
-    </div>
+    <section aria-labelledby={id} className="flex flex-col gap-3">
+      <TituloSecao id={id}>{titulo}</TituloSecao>
+      <ul className="grid gap-3 sm:grid-cols-2">
+        {modulos.map((m) => (
+          <li key={m.titulo}>
+            <ItemModulo m={m} />
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
 export default async function MaisMorador() {
-  await exigirPermissao("area.morador");
+  const ctx = await exigirPermissao("area.morador", "/mais");
+  const pode = (m: Modulo) => ctx.permissoes.has(m.permissao);
 
   return (
     <div className="flex flex-col gap-6">
-      <CabecalhoPagina sobretitulo="Mais" titulo="Todos os módulos" subtitulo="Tudo o que o portal oferece, e o que ainda vem por aí." />
+      <CabecalhoPagina sobretitulo="Mais" titulo="Todos os módulos" subtitulo="Tudo o que o portal oferece para a sua casa." />
 
-      <section aria-labelledby="titulo-prontos" className="flex flex-col gap-3">
-        <TituloSecao id="titulo-prontos">Já disponíveis</TituloSecao>
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {PRONTOS.map((m) => (
-            <li key={m.titulo}>
-              <ItemModulo m={m} />
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section aria-labelledby="titulo-em-breve" className="flex flex-col gap-3">
-        <TituloSecao id="titulo-em-breve" extra="Chegam nas próximas fases">
-          Em breve
-        </TituloSecao>
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {EM_BREVE.map((m) => (
-            <li key={m.titulo}>
-              <ItemModulo m={m} />
-            </li>
-          ))}
-        </ul>
-      </section>
+      <SecaoModulos id="titulo-da-casa" titulo="Minha casa" modulos={DA_CASA.filter(pode)} />
+      <SecaoModulos id="titulo-do-condominio" titulo="Do condomínio" modulos={DO_CONDOMINIO.filter(pode)} />
 
       <section aria-labelledby="titulo-preferencias" className="flex flex-col gap-3">
         <TituloSecao id="titulo-preferencias" extra="Valem neste aparelho">
@@ -126,7 +110,12 @@ export default async function MaisMorador() {
         </Cartao>
       </section>
 
-      <BotaoSair className="saltado min-h-12 w-full justify-center text-plum active:shadow-afundado" />
+      <Link
+        href="/conta/senha"
+        className="saltado flex min-h-12 w-full items-center justify-center gap-2 rounded-full px-3 font-bold text-ink-2 active:shadow-afundado"
+      >
+        <KeyRound aria-hidden className="size-5" /> Trocar minha senha
+      </Link>
     </div>
   );
 }

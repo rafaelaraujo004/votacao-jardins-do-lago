@@ -28,8 +28,8 @@ export const COR_EVENTO: Record<TipoEvento, string> = {
 /** Legenda do calendário (uma linha por cor). */
 export const LEGENDA_AGENDA: { cor: string; texto: string }[] = [
   { cor: "bg-petala-laranja", texto: "Vencimento da taxa" },
-  { cor: "bg-petala-rosa", texto: "Reserva do salão" },
-  { cor: "bg-petala-azul", texto: "Piscina e manutenção" },
+  { cor: "bg-petala-rosa", texto: "Reservas de áreas de lazer" },
+  { cor: "bg-petala-azul", texto: "Manutenção e horários fechados" },
   { cor: "bg-petala-roxo", texto: "Assembleia e votação" },
 ];
 

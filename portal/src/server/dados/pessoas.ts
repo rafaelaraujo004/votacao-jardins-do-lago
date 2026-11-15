@@ -12,6 +12,8 @@ export type Pessoa = {
   telefone: string;
   permissoesExtras: Permissao[];
   permissoesNegadas: Permissao[];
+  /** Equipe com senha provisória ainda não trocada. */
+  precisaTrocarSenha: boolean;
 };
 
 function paraPessoa(uid: string, d: FirebaseFirestore.DocumentData): Pessoa | null {
@@ -26,6 +28,7 @@ function paraPessoa(uid: string, d: FirebaseFirestore.DocumentData): Pessoa | nu
     telefone: String(d.telefone ?? ""),
     permissoesExtras: lista(d.permissoesExtras),
     permissoesNegadas: lista(d.permissoesNegadas),
+    precisaTrocarSenha: d.precisaTrocarSenha === true,
   };
 }
 

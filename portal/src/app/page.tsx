@@ -1,9 +1,12 @@
 import { redirect } from "next/navigation";
 import { getContexto } from "@/server/contexto";
-import { inicioDoPapel } from "@/lib/permissoes";
+import { destinoDaRaiz } from "@/lib/destino-seguro";
 
-/** Endereço principal: leva cada pessoa para a sua tela inicial. */
+/**
+ * Endereço principal. Nada aqui é aberto sem login:
+ * - sem sessão → /entrar;
+ * - com sessão → início do papel (morador /inicio, síndico e conselho /admin, portaria /portaria).
+ */
 export default async function Raiz() {
-  const ctx = await getContexto();
-  redirect(ctx ? inicioDoPapel(ctx.papel) : "/entrar");
+  redirect(destinoDaRaiz(await getContexto()));
 }

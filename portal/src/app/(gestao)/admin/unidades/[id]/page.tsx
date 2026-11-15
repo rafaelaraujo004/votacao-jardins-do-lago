@@ -5,12 +5,15 @@ import { ArrowLeft, UserPlus, Users } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { obterUnidade } from "@/server/dados/unidades";
 import { moradoresDaUnidade } from "@/server/dados/pessoas";
+import { situacoesLoginMoradores } from "@/server/dados/acesso";
 import { salvarUnidade } from "@/server/acoes/unidades";
 import { idDocumento } from "@/lib/validacao";
 import { Campo, Cartao, classeEntrada, EstadoVazio, TituloPagina } from "@/components/ui/basicos";
 import { BotaoLink } from "@/components/ui/botao";
 import { BotaoEnviar, Formulario } from "@/components/ui/formulario";
 import { EtiquetaSituacaoPessoa } from "../../pessoas/etiquetas";
+import { EtiquetaLoginMorador } from "@/components/acesso/etiqueta-login";
+import { AcessoMorador } from "@/components/acesso/acesso-morador";
 
 export const metadata: Metadata = { title: "Unidade" };
 
@@ -23,7 +26,10 @@ export default async function PaginaUnidade({ params }: PageProps<"/admin/unidad
 
   const podeEditar = ctx.permissoes.has("unidades.gerenciar");
   const podeVerMoradores = ctx.permissoes.has("moradores.ver");
-  const moradores = podeVerMoradores ? await moradoresDaUnidade(ctx, id) : [];
+  const [moradores, logins] = podeVerMoradores
+    ? await Promise.all([moradoresDaUnidade(ctx, id), situacoesLoginMoradores(ctx)])
+    : [[], new Map<string, never>()];
+  const podeCriarAcesso = ctx.permissoes.has("moradores.gerenciar");
 
   return (
     <div className="flex flex-col gap-6">
@@ -80,11 +86,26 @@ export default async function PaginaUnidade({ params }: PageProps<"/admin/unidad
             ) : (
               <ul className="flex flex-col divide-y divide-line">
                 {moradores.map((p) => (
-                  <li key={p.uid}>
-                    <Link href={`/admin/pessoas/${p.uid}`} className="flex min-h-14 items-center gap-3 py-2 transition-colors hover:text-pine">
-                      <span className="flex-1 font-bold">{p.nome}</span>
-                      <EtiquetaSituacaoPessoa status={p.status} />
+                  <li key={p.uid} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2">
+                    <Link href={`/admin/pessoas/${p.uid}`} className="flex min-h-11 min-w-0 flex-1 items-center font-bold transition-colors hover:text-pine">
+                      <span className="truncate">{p.nome}</span>
                     </Link>
+                    {p.status !== "ativo" ? (
+                      <EtiquetaSituacaoPessoa status={p.status} />
+                    ) : p.papel === "morador" && podeCriarAcesso ? (
+                      // Atalho "Criar acesso" (ou a situação, se já tiver). Fica sempre montado para
+                      // o usuário e a senha continuarem na tela depois que a página atualizar.
+                      <AcessoMorador
+                        uid={p.uid}
+                        nome={p.nome}
+                        situacao={{ usuario: null, situacao: logins.get(p.uid) ?? "sem-acesso", ultimoAcesso: null }}
+                        compacto
+                      />
+                    ) : p.papel === "morador" ? (
+                      <EtiquetaLoginMorador situacao={logins.get(p.uid) ?? "sem-acesso"} />
+                    ) : (
+                      <EtiquetaSituacaoPessoa status={p.status} />
+                    )}
                   </li>
                 ))}
               </ul>

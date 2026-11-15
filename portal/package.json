@@ -8,6 +8,7 @@
     "emuladores": "node scripts/firebase.mjs emulators:start --project demo-jardins --only auth,firestore",
     "semear": "tsx scripts/semear-demo.ts",
     "criar-condominio": "tsx scripts/criar-condominio.ts",
+    "configurar-jardins": "tsx scripts/configurar-jardins-do-lago.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -41,6 +42,11 @@
     "vitest": "^5.1.0"
   },
   "engines": {
-    "node": ">=22"
+    "node": "24.x"
+  },
+  "overrides": {
+    "jwks-rsa": {
+      "jose": "^5.10.0"
+    }
   }
 }

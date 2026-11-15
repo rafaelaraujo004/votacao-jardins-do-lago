@@ -1,9 +1,11 @@
-import { Menu } from "lucide-react";
+import Link from "next/link";
+import { KeyRound } from "lucide-react";
 import { exigirPermissao, type Contexto } from "@/server/contexto";
 import { NOME_DO_PAPEL, type Permissao } from "@/lib/permissoes";
 import { NavGestao, type GrupoMenu, type ItemMenuSerializavel } from "@/components/layout/navegacao";
 import { BotaoSair, classeBotaoFaixa } from "@/components/layout/faixa-topo";
 import { Logo } from "@/components/ui/marca";
+import { GavetaMenu } from "@/components/layout/gaveta-menu";
 import { BotaoTema } from "@/components/ui/tema";
 import { FaixaPetalas } from "@/components/ui/painel";
 import { ENDERECO_LINHA } from "@/lib/condominio";
@@ -19,10 +21,31 @@ const GRUPOS: { titulo: string; itens: Item[] }[] = [
       { rotulo: "Moradores e equipe", icone: "Users", href: "/admin/pessoas", permissao: "moradores.ver" },
     ],
   },
-  { titulo: "Finanças", itens: [{ rotulo: "Prestação de contas", icone: "Landmark", href: "/admin/financeiro", permissao: "financeiro.ver" }] },
-  { titulo: "Serviços", itens: [{ rotulo: "Reservas e solicitações", icone: "Wrench", fase: "Fase 4", permissao: "reservas.ver_todas" }] },
-  { titulo: "Comunicação", itens: [{ rotulo: "Comunicados e documentos", icone: "Megaphone", fase: "Fase 4", permissao: "comunicados.ver" }] },
-  { titulo: "Configurações", itens: [{ rotulo: "Áreas, mapa e informações", icone: "Settings", fase: "Fase 4", permissao: "areas.configurar" }] },
+  { titulo: "Portaria", itens: [{ rotulo: "Histórico da portaria", icone: "DoorOpen", href: "/admin/portaria", permissao: "visitantes.ver_todos" }] },
+  {
+    titulo: "Finanças",
+    itens: [
+      { rotulo: "Prestação de contas", icone: "Landmark", href: "/admin/financeiro", permissao: "financeiro.ver" },
+      { rotulo: "Relatórios", icone: "ChartColumn", href: "/admin/relatorios", permissao: "relatorios.ver" },
+    ],
+  },
+  {
+    titulo: "Serviços",
+    itens: [
+      { rotulo: "Reservas e áreas", icone: "CalendarDays", href: "/admin/reservas", permissao: "reservas.ver_todas" },
+      { rotulo: "Solicitações", icone: "ClipboardList", href: "/admin/solicitacoes", permissao: "solicitacoes.gerenciar" },
+    ],
+  },
+  {
+    titulo: "Comunicação",
+    itens: [
+      { rotulo: "Comunicados", icone: "Megaphone", href: "/admin/comunicados", permissao: "comunicados.ver" },
+      { rotulo: "Documentos", icone: "FolderOpen", href: "/admin/documentos", permissao: "documentos.ver" },
+      { rotulo: "Enquetes", icone: "Vote", href: "/admin/enquetes", permissao: "enquetes.gerenciar" },
+      { rotulo: "Classificados", icone: "Store", href: "/admin/classificados", permissao: "classificados.moderar" },
+    ],
+  },
+  { titulo: "Configurações", itens: [{ rotulo: "Informações do condomínio", icone: "Settings", href: "/admin/informacoes", permissao: "informacoes.gerenciar" }] },
   { titulo: "Controle", itens: [{ rotulo: "Auditoria", icone: "ScrollText", href: "/admin/auditoria", permissao: "auditoria.ver" }] },
 ];
 
@@ -52,18 +75,23 @@ export default async function LayoutGestao({ children }: LayoutProps<"/">) {
             <span className="mt-0.5 truncate text-[0.84rem] font-bold text-band-fg/90">{NOME_DO_PAPEL[ctx.papel]}</span>
           </div>
           <BotaoTema className={`${classeBotaoFaixa} lg:hidden`} />
-        </div>
-
-        {/* Celular: menu recolhível (funciona até sem JavaScript). */}
-        <details className="border-t border-white/10 lg:hidden">
-          <summary className="mx-2 my-1 flex min-h-12 cursor-pointer list-none items-center gap-2 rounded-full px-3 font-bold hover:bg-white/10">
-            <Menu aria-hidden className="size-5" /> Menu
-          </summary>
-          <div className="flex flex-col gap-4 px-2 pb-4">
-            <NavGestao grupos={grupos} />
-            <BotaoSair className={`${classeBotaoFaixa} w-fit`} />
+          {/* Celular: botão sanduíche ao lado, abre a gaveta com as opções. */}
+          <div className="lg:hidden">
+            <GavetaMenu titulo="Menu" className={classeBotaoFaixa}>
+              <NavGestao grupos={grupos} />
+              <div className="mt-auto flex flex-col gap-2 border-t border-white/10 px-1 pt-4">
+                <span className="truncate px-2 text-[0.92rem] text-band-muted">{ctx.nome}</span>
+                <Link
+                  href="/conta/senha"
+                  className={`${classeBotaoFaixa} flex min-h-11 w-fit items-center gap-2 rounded-full px-3 font-bold`}
+                >
+                  <KeyRound aria-hidden className="size-5" /> Trocar senha
+                </Link>
+                <BotaoSair className={`${classeBotaoFaixa} w-fit`} />
+              </div>
+            </GavetaMenu>
           </div>
-        </details>
+        </div>
 
         <div className="hidden flex-1 px-2 pb-4 lg:block">
           <NavGestao grupos={grupos} />
@@ -71,6 +99,14 @@ export default async function LayoutGestao({ children }: LayoutProps<"/">) {
 
         <div className="hidden items-center gap-2 border-t border-white/10 p-3 lg:flex">
           <span className="min-w-0 flex-1 truncate px-1 text-[0.92rem]">{ctx.nome}</span>
+          <Link
+            href="/conta/senha"
+            title="Trocar senha"
+            className={`${classeBotaoFaixa} grid size-11 place-items-center rounded-full`}
+          >
+            <KeyRound aria-hidden className="size-5" />
+            <span className="sr-only">Trocar senha</span>
+          </Link>
           <BotaoTema className={classeBotaoFaixa} />
           <BotaoSair redondo className={classeBotaoFaixa} />
         </div>
