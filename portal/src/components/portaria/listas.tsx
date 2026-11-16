@@ -12,7 +12,7 @@ import { formatarDataHora } from "@/lib/formato";
 import { EtiquetaDentro, horaDe } from "./pecas";
 import { BotaoEntregar } from "./formularios-portaria";
 
-const classeItem = "flex flex-col gap-2 rounded-2xl border border-line bg-surface-clara p-3 sm:flex-row sm:items-center sm:justify-between";
+const classeItem = "flex flex-col gap-2 rounded-2xl border border-line bg-surface-item p-3 sm:flex-row sm:items-center sm:justify-between";
 
 export function ListaDentro({ pessoas, fuso }: { pessoas: EventoAcesso[]; fuso: string }) {
   if (!pessoas.length) {
@@ -62,7 +62,7 @@ export function ListaEsperados({ autorizacoes }: { autorizacoes: Autorizacao[] }
   return (
     <ul className="flex flex-col gap-2">
       {autorizacoes.map((a) => (
-        <li key={a.id} className="flex flex-col gap-1 rounded-2xl border border-line bg-surface-clara p-3">
+        <li key={a.id} className="flex flex-col gap-1 rounded-2xl border border-line bg-surface-item p-3">
           <p className="font-bold">{a.nome}</p>
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.92rem] text-ink-2">
             <span className="inline-flex items-center gap-1">
@@ -133,7 +133,7 @@ export function ListaReservasHoje({ reservas }: { reservas: ReservaDoDia[] | nul
   return (
     <ul className="flex flex-col gap-2">
       {reservas.map((r) => (
-        <li key={r.id} className="flex flex-col gap-1 rounded-2xl border border-line bg-surface-clara p-3">
+        <li key={r.id} className="flex flex-col gap-1 rounded-2xl border border-line bg-surface-item p-3">
           <p className="font-bold">{r.areaNome}</p>
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.92rem] text-ink-2">
             <span className="inline-flex items-center gap-1">

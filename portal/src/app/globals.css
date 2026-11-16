@@ -13,7 +13,8 @@
   --canvas: #e8ebdc;        /* fundo da página */
   --surface: #e8ebdc;       /* cartões: mesma cor do fundo, o relevo é que destaca */
   --surface-2: #dfe3d0;     /* áreas de apoio dentro dos cartões */
-  --surface-clara: #fbfaf3; /* selo claro (logo, endereço) */
+  --surface-clara: #fbfaf3; /* selo claro (logo): fica claro até no modo escuro */
+  --surface-item: #fbfaf3;  /* itens de lista dentro dos cartões (escurece no modo escuro) */
   --line: #cfd4bf;
   --line-strong: #a3a990;
   --ink: #1d2a24;           /* texto principal */
@@ -67,7 +68,7 @@
 /* Tema escuro: segue o aparelho, salvo quando a pessoa escolhe no botão. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --canvas: #1a221e; --surface: #1a221e; --surface-2: #151c18; --surface-clara: #f4f3ea; --line: #2e3a33; --line-strong: #4a5a50;
+    --canvas: #1a221e; --surface: #1a221e; --surface-2: #151c18; --surface-clara: #f4f3ea; --surface-item: #232e28; --line: #2e3a33; --line-strong: #4a5a50;
     --ink: #e6eee9; --ink-2: #bccbc1; --muted: #a2b2a8;
     --pine: #5fc79a; --pine-strong: #3fa77c; --pine-deep: #0d1f17; --on-pine: #06150f;
     --lake: #7cc0da; --lake-soft: #1c323b; --plum: #e58bb8; --plum-soft: #3a1d2d; --sand: #3b3524;
@@ -80,7 +81,7 @@
   }
 }
 :root[data-theme="dark"] {
-  --canvas: #1a221e; --surface: #1a221e; --surface-2: #151c18; --surface-clara: #f4f3ea; --line: #2e3a33; --line-strong: #4a5a50;
+  --canvas: #1a221e; --surface: #1a221e; --surface-2: #151c18; --surface-clara: #f4f3ea; --surface-item: #232e28; --line: #2e3a33; --line-strong: #4a5a50;
   --ink: #e6eee9; --ink-2: #bccbc1; --muted: #a2b2a8;
   --pine: #5fc79a; --pine-strong: #3fa77c; --pine-deep: #0d1f17; --on-pine: #06150f;
   --lake: #7cc0da; --lake-soft: #1c323b; --plum: #e58bb8; --plum-soft: #3a1d2d; --sand: #3b3524;
@@ -120,6 +121,7 @@
   --color-band-fg: var(--band-fg);
   --color-band-muted: var(--band-muted);
   --color-surface-clara: var(--surface-clara);
+  --color-surface-item: var(--surface-item);
   --color-destaque: var(--destaque);
   --color-texto-laranja: var(--texto-laranja);
   --color-texto-areia: var(--texto-areia);

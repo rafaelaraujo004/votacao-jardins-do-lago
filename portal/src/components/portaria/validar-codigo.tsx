@@ -68,7 +68,7 @@ export function ValidarCodigo() {
       ) : null}
 
       {atual?.ok ? (
-        <div className="surgir flex flex-col gap-3 rounded-[22px] border-2 border-borda-luz bg-surface-clara p-4">
+        <div className="surgir flex flex-col gap-3 rounded-[22px] border-2 border-borda-luz bg-surface-item p-4">
           <dl className="grid gap-2.5 sm:grid-cols-2">
             <Linha icone={UserRound} rotulo="Visitante" valor={atual.visita.nome} forte />
             <Linha icone={House} rotulo="Casa" valor={atual.visita.unidadeRotulo} forte />
