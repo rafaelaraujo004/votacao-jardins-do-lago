@@ -277,3 +277,9 @@ dialog.gaveta[open] { animation: gaveta-entrar 0.18s ease-out; }
   transform: scale(0.97);
   transition: transform 60ms ease-out;
 }
+
+/* Mapa: pontinhos que "andam" pela rota do Como chegar. */
+@keyframes rota-andando {
+  to { stroke-dashoffset: -18; }
+}
+.rota-andando { animation: rota-andando 0.9s linear infinite; }
