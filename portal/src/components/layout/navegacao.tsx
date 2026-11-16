@@ -7,6 +7,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  MapPinned,
   CalendarDays,
   ChartColumn,
   ClipboardList,
@@ -34,7 +35,7 @@ import {
 } from "lucide-react";
 import { cx } from "@/lib/cx";
 
-export type ItemMenu = { rotulo: string; icone: LucideIcon; href?: string; fase?: string };
+export type ItemMenu = { rotulo: string; icone: LucideIcon; href?: string; fase?: string; /** Nome curto para celulares estreitos. */ rotuloCurto?: string };
 
 /** Nomes dos ícones que o servidor pode pedir (componentes não passam do servidor para o navegador). */
 const ICONES = {
@@ -70,12 +71,14 @@ function ativo(caminho: string, href?: string) {
 
 // ---------- Morador (sempre com login): barra inferior no celular, coluna no computador ----------
 
-// Barra de baixo: sempre 5 itens. O resto (mapa, contatos, comunicados...) fica em "Mais" e nos atalhos do Início.
+// Barra de baixo: 6 itens (escolha do dono). Solicitações, contatos, comunicados...
+// ficam em "Mais" e nos atalhos do Início ("Informar problema").
 const ITENS_MORADOR: ItemMenu[] = [
   { rotulo: "Início", icone: House, href: "/inicio" },
   { rotulo: "Contas", icone: Wallet, href: "/financeiro" },
   { rotulo: "Agenda", icone: CalendarDays, href: "/reservas" },
-  { rotulo: "Solicitações", icone: ClipboardList, href: "/solicitacoes" },
+  { rotulo: "Mapa", icone: MapPinned, href: "/mapa" },
+  { rotulo: "Documentos", rotuloCurto: "Docs", icone: FolderOpen, href: "/documentos" },
   { rotulo: "Mais", icone: LayoutGrid, href: "/mais" },
 ];
 
@@ -122,15 +125,15 @@ export function NavMorador({ casa }: { casa: string }) {
       aria-label="Menu principal"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-borda-luz bg-canvas px-1.5 pb-[calc(6px+env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-8px_22px_var(--sombra)] lg:static lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none"
     >
-      <ul className="mx-auto grid max-w-xl grid-cols-5 lg:max-w-none lg:grid-cols-1 lg:gap-1.5">
-        {ITENS_MORADOR.map(({ rotulo, icone: Icone, href, fase }) => {
+      <ul className="mx-auto grid max-w-xl grid-cols-6 lg:max-w-none lg:grid-cols-1 lg:gap-1.5">
+        {ITENS_MORADOR.map(({ rotulo, rotuloCurto, icone: Icone, href, fase }) => {
           const atual = ativo(caminho, href);
           const classes = cx(
-            "group flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-0.5 text-[clamp(0.6rem,3.15vw,0.76rem)] font-bold tracking-tight lg:min-h-12 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-base",
+            "group flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-0.5 text-[clamp(0.6rem,2.85vw,0.76rem)] font-bold tracking-tight lg:min-h-12 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-base",
             atual ? "text-destaque lg:shadow-afundado" : "text-muted hover:text-ink",
           );
           const pilula = cx(
-            "grid h-[30px] w-[52px] place-items-center rounded-full transition-shadow lg:h-auto lg:w-auto",
+            "grid h-[30px] w-[46px] max-w-full place-items-center rounded-full transition-shadow lg:h-auto lg:w-auto",
             atual && "text-pine shadow-afundado lg:shadow-none",
           );
           return (
@@ -140,7 +143,16 @@ export function NavMorador({ casa }: { casa: string }) {
                   <span className={pilula}>
                     <Icone aria-hidden className="size-[22px]" />
                   </span>
-                  {rotulo}
+                  {rotuloCurto ? (
+                    <>
+                      {/* Celular estreito: nome curto (o leitor de tela sempre ouve o nome inteiro). */}
+                      <span aria-hidden className="min-[420px]:hidden lg:hidden">{rotuloCurto}</span>
+                      <span className="sr-only">{rotulo}</span>
+                      <span aria-hidden className="hidden min-[420px]:inline lg:inline">{rotulo}</span>
+                    </>
+                  ) : (
+                    rotulo
+                  )}
                 </Link>
               ) : (
                 <span className={cx(classes, "opacity-55")} aria-disabled="true" title={`Em breve (${fase})`}>
