@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:emu": "node scripts/firebase.mjs emulators:exec --project demo-jardins --only auth,firestore --ui \"npm run semear && next dev\"",
-    "emuladores": "node scripts/firebase.mjs emulators:start --project demo-jardins --only auth,firestore",
+    "dev:emu": "node scripts/firebase.mjs emulators:exec --project demo-jardins --only auth,firestore,storage --ui \"npm run semear && next dev\"",
+    "emuladores": "node scripts/firebase.mjs emulators:start --project demo-jardins --only auth,firestore,storage",
     "semear": "tsx scripts/semear-demo.ts",
     "criar-condominio": "tsx scripts/criar-condominio.ts",
     "configurar-jardins": "tsx scripts/configurar-jardins-do-lago.ts",
@@ -14,7 +14,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --project unit",
-    "test:emu": "node scripts/firebase.mjs emulators:exec --project demo-jardins --only auth,firestore \"vitest run --project emulador\"",
+    "test:emu": "node scripts/firebase.mjs emulators:exec --project demo-jardins --only auth,firestore,storage \"vitest run --project emulador\"",
     "test:tudo": "npm run lint && npm run typecheck && npm test && npm run test:emu"
   },
   "dependencies": {

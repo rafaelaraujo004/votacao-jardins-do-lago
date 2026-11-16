@@ -11,7 +11,16 @@ import {
   podeVerDocumento,
   servicoDoLink,
 } from "@/lib/documentos";
-import { esquemaDocumento, esquemaSituacaoDocumento } from "@/lib/validacao-documentos";
+import { esquemaDocumento, esquemaEnvioArquivo, esquemaSituacaoDocumento } from "@/lib/validacao-documentos";
+import {
+  caminhoArquivoValido,
+  descreverArquivo,
+  nomeArquivoSeguro,
+  pastaArquivosDocumentos,
+  tipoArquivoAceito,
+  TAMANHO_MAXIMO_ARQUIVO,
+} from "@/lib/documentos";
+import { lerArquivo, paraDocumento } from "@/server/dados/documentos";
 
 describe("linkSeguro", () => {
   it("aceita links https comuns", () => {
@@ -122,5 +131,75 @@ describe("esquemaDocumento", () => {
   it("situação: só sim/não e id válido", () => {
     expect(esquemaSituacaoDocumento.parse({ id: "abc", ativo: "nao" })).toEqual({ id: "abc", ativo: false });
     expect(esquemaSituacaoDocumento.safeParse({ id: "abc", ativo: "talvez" }).success).toBe(false);
+  });
+});
+
+describe("arquivo enviado ao portal", () => {
+  it("nome seguro: sem acentos, barras nem espaços, com a extensão", () => {
+    expect(nomeArquivoSeguro("Ata de Março/2026.PDF")).toBe("Ata-de-Marco-2026.pdf");
+    expect(nomeArquivoSeguro("../../segredo.pdf")).toBe("segredo.pdf");
+    expect(nomeArquivoSeguro("   .pdf")).toBe("documento.pdf");
+    expect(nomeArquivoSeguro("regimento")).toBe("regimento");
+    expect(nomeArquivoSeguro(`${"a".repeat(300)}.pdf`)).toHaveLength(84);
+  });
+
+  it("caminho só vale dentro da pasta do PRÓPRIO condomínio", () => {
+    const ok = `${pastaArquivosDocumentos("condo-a")}0f1e2d3c-4b5a-6978-8a9b-0c1d2e3f4a5b/Ata.pdf`;
+    expect(caminhoArquivoValido(ok, "condo-a")).toBe(true);
+    expect(caminhoArquivoValido(ok, "condo-b")).toBe(false);
+    for (const ruim of [
+      "condominiums/condo-a/documents/Ata.pdf",
+      "condominiums/condo-a/documents/0f1e2d3c-4b5a/../Ata.pdf",
+      "condominiums/condo-a/documents/0f1e2d3c-4b5a/sub/Ata.pdf",
+      "condominiums/condo-a/documents/0f1e2d3c-4b5a/.oculto",
+      "condominiums/condo-a/units/0f1e2d3c-4b5a/Ata.pdf",
+      "",
+    ]) {
+      expect(caminhoArquivoValido(ruim, "condo-a"), ruim).toBe(false);
+    }
+  });
+
+  it("tipos aceitos e descrição para o morador", () => {
+    expect(tipoArquivoAceito("application/pdf")).toBe(true);
+    expect(tipoArquivoAceito("image/jpeg")).toBe(true);
+    expect(tipoArquivoAceito("text/html")).toBe(false);
+    expect(tipoArquivoAceito("application/x-msdownload")).toBe(false);
+    expect(tipoArquivoAceito("toString")).toBe(false);
+    expect(descreverArquivo({ tipo: "application/pdf", tamanho: 1_258_291 })).toBe("PDF · 1,2 MB");
+    expect(descreverArquivo({ tipo: "image/png", tamanho: 300 })).toBe("Imagem · 1 KB");
+  });
+
+  it("pedido de envio: tipo, tamanho e arquivo vazio", () => {
+    const base = { nome: "ata.pdf", tipo: "application/pdf", tamanho: 1000 };
+    expect(esquemaEnvioArquivo.safeParse(base).success).toBe(true);
+    expect(esquemaEnvioArquivo.safeParse({ ...base, tipo: "text/html" }).success).toBe(false);
+    expect(esquemaEnvioArquivo.safeParse({ ...base, tamanho: 0 }).success).toBe(false);
+    expect(esquemaEnvioArquivo.safeParse({ ...base, tamanho: TAMANHO_MAXIMO_ARQUIVO + 1 }).success).toBe(false);
+  });
+
+  it("formulário com arquivo: novo exige arquivo; edição sem arquivo novo mantém o atual", () => {
+    const base = { titulo: "Regimento interno", categoria: "regimento", visivelPara: "morador", origem: "arquivo" };
+    expect(esquemaDocumento.safeParse(base).success).toBe(false);
+    const caminho = "condominiums/c/documents/0f1e2d3c-4b5a/Ata.pdf";
+    expect(esquemaDocumento.parse({ ...base, arquivoCaminho: caminho, arquivoNome: "Ata ç.pdf" }).fonte).toEqual({
+      origem: "arquivo",
+      caminho,
+      nome: "Ata-c.pdf",
+    });
+    expect(esquemaDocumento.parse({ ...base, id: "doc_1" }).fonte).toEqual({ origem: "arquivo", caminho: null, nome: "documento" });
+    expect(esquemaDocumento.safeParse({ ...base, origem: "outra" }).success).toBe(false);
+  });
+
+  it("no banco: arquivo vira o endereço protegido do portal (nunca o caminho interno)", () => {
+    const arquivo = { caminho: "condominiums/c/documents/x1234567/Ata.pdf", nome: "Ata.pdf", tipo: "application/pdf", tamanho: 2048 };
+    const doc = paraDocumento("doc_1", { titulo: "Ata", categoria: "ata", arquivo, visivelPara: ["admin", "morador"] });
+    expect(doc?.url).toBe("/api/documentos/doc_1/arquivo");
+    expect(doc?.arquivo).toEqual({ tipo: "application/pdf", tamanho: 2048 });
+    expect(JSON.stringify(doc)).not.toContain(arquivo.caminho);
+    // Arquivo estragado e sem link: o documento nem aparece.
+    expect(paraDocumento("x", { titulo: "?", arquivo: { caminho: "a", tipo: "text/html", tamanho: 1 } })).toBeNull();
+    expect(lerArquivo({ caminho: "a", tipo: "application/pdf", tamanho: -1 })).toBeNull();
+    // Link continua funcionando como antes.
+    expect(paraDocumento("y", { titulo: "Link", url: "https://drive.google.com/x" })?.url).toBe("https://drive.google.com/x");
   });
 });

@@ -1,8 +1,28 @@
 rules_version = '2';
-// Fase 1: nenhum arquivo pode ser lido ou gravado pelo navegador.
-// Documentos (Fase 4) terão regras próprias, por condomínio e por perfil.
+// Arquivos do portal (Firebase Storage).
+//
+// - Ninguém LÊ pelo navegador: o morador abre o arquivo pelo portal
+//   (/api/documentos/{id}/arquivo), que confere o login e o "Quem pode ver"
+//   e entrega um link temporário de 5 minutos.
+// - Só dá para CRIAR o arquivo de documento que o servidor autorizou:
+//   o síndico recebe uma autorização de uso único (token com "envioDoc")
+//   que vale para UM caminho exato. Nada de sobrescrever nem apagar daqui.
+// - Tipo e tamanho são conferidos aqui e de novo no servidor ao salvar.
 service firebase.storage {
   match /b/{bucket}/o {
+    match /condominiums/{condominio}/documents/{envio}/{nome} {
+      allow create: if request.auth != null
+        && resource == null
+        && 'envioDoc' in request.auth.token
+        && request.auth.token.envioDoc == ('condominiums/' + condominio + '/documents/' + envio + '/' + nome)
+        && request.resource.size > 0
+        && request.resource.size <= 20 * 1024 * 1024
+        && request.resource.contentType.matches(
+          'application/pdf|image/(jpeg|png|webp)|application/msword|application/vnd[.]ms-excel|application/vnd[.]openxmlformats-officedocument[.](wordprocessingml[.]document|spreadsheetml[.]sheet)'
+        );
+    }
+
+    // Todo o resto: fechado.
     match /{caminho=**} {
       allow read, write: if false;
     }

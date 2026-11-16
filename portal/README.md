@@ -4,7 +4,7 @@ Portal do condomínio (moradores, portaria, síndico e conselho): contas, visita
 
 **Tecnologia:** Next.js 16 + TypeScript + Tailwind CSS 4 · Firebase (Authentication, Firestore, App Check) · hospedagem na Vercel.
 
-**Fase atual:** Fases 1 a 5 entregues — portaria, reservas com as regras reais, solicitações com protocolo, comunicados, documentos por link, enquetes (1 voto por casa), classificados com aprovação, relatórios e informações reais (PIX, ronda, responsável pelas reservas). Falta só o **mapa real** (depende da planta). A Fase 6 não será feita por enquanto (veja [docs/FASES.md](docs/FASES.md)). **Tudo exige login.**
+**Fase atual:** Fases 1 a 5 entregues — portaria, reservas com as regras reais, solicitações com protocolo, comunicados, documentos (arquivo enviado ao portal ou link), enquetes (1 voto por casa), classificados com aprovação, relatórios e informações reais (PIX, ronda, responsável pelas reservas). O **mapa real** (225 lotes) já está no portal. A Fase 6 não será feita por enquanto (veja [docs/FASES.md](docs/FASES.md)). **Tudo exige login.**
 
 | Documento | Conteúdo |
 |---|---|

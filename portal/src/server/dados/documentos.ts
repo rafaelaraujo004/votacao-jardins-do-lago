@@ -8,13 +8,16 @@ import {
   ehCategoria,
   linkSeguro,
   podeVerDocumento,
+  tipoArquivoAceito,
   type CategoriaDocumento,
 } from "@/lib/documentos";
 
 /**
  * Dados dos documentos do condomínio (documents/{id}).
  *
- * - Cada documento é um LINK (Google Drive etc.), nunca um arquivo guardado aqui.
+ * - Cada documento é um ARQUIVO guardado no Storage (campo "arquivo") ou um
+ *   LINK (Google Drive etc.). O arquivo nunca vai direto para o navegador: a
+ *   tela recebe o endereço /api/documentos/{id}/arquivo, que confere o login.
  * - Nada é apagado: o síndico desativa e o documento some para os moradores.
  * - As telas recebem uma LISTA FECHADA de campos (nunca o documento inteiro):
  *   quem cadastrou (uid) não sai daqui.
@@ -29,10 +32,33 @@ export type DocumentoVisivel = {
   titulo: string;
   descricao: string;
   categoria: CategoriaDocumento;
-  /** Já conferido: só https. Documento com link estragado nem aparece. */
+  /**
+   * Para onde o botão "Abrir" leva: o endereço protegido do portal (arquivo)
+   * ou o link já conferido (só https). Documento sem nenhum dos dois nem aparece.
+   */
   url: string;
+  /** Preenchido quando é arquivo enviado ao portal (sem o caminho interno). */
+  arquivo: { tipo: string; tamanho: number } | null;
   atualizadoEm: Date | null;
 };
+
+/** Arquivo guardado no Storage, como está no banco. */
+export type ArquivoGuardado = { caminho: string; nome: string; tipo: string; tamanho: number };
+
+/** Lê o campo "arquivo" do banco. null se não houver ou estiver estragado. */
+export function lerArquivo(v: unknown): ArquivoGuardado | null {
+  if (!v || typeof v !== "object") return null;
+  const a = v as Record<string, unknown>;
+  if (typeof a.caminho !== "string" || !a.caminho) return null;
+  if (typeof a.tipo !== "string" || !tipoArquivoAceito(a.tipo)) return null;
+  if (typeof a.tamanho !== "number" || !(a.tamanho > 0)) return null;
+  return { caminho: a.caminho, nome: typeof a.nome === "string" && a.nome ? a.nome : "documento", tipo: a.tipo, tamanho: a.tamanho };
+}
+
+/** Endereço do portal que entrega o arquivo de um documento (confere o login). */
+export function enderecoDoArquivo(id: string): string {
+  return `/api/documentos/${id}/arquivo`;
+}
 
 /** O que a administração recebe (inclui quem vê e se está ativo). */
 export type DocumentoGestao = DocumentoVisivel & {
@@ -48,11 +74,13 @@ function data(v: unknown): Date | null {
   return (v as Timestamp | undefined)?.toDate?.() ?? null;
 }
 
-/** Converte o documento do banco. Devolve null se o link não for seguro (ex.: lixo no banco). */
+/** Converte o documento do banco. Devolve null se não houver arquivo nem link seguro (ex.: lixo no banco). */
 export function paraDocumento(id: string, d: DocumentData | undefined): DocumentoGestao | null {
-  const url = linkSeguro(texto(d?.url));
+  const arquivo = lerArquivo(d?.arquivo);
+  const url = arquivo ? enderecoDoArquivo(id) : linkSeguro(texto(d?.url));
   if (!url) return null;
   return {
+    arquivo: arquivo ? { tipo: arquivo.tipo, tamanho: arquivo.tamanho } : null,
     id,
     titulo: texto(d?.titulo) || "Documento",
     descricao: texto(d?.descricao),
@@ -72,6 +100,7 @@ function paraVisivel(doc: DocumentoGestao): DocumentoVisivel {
     descricao: doc.descricao,
     categoria: doc.categoria,
     url: doc.url,
+    arquivo: doc.arquivo,
     atualizadoEm: doc.atualizadoEm,
   };
 }

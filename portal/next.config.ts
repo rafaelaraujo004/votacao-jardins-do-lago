@@ -5,7 +5,8 @@ const emDesenvolvimento = process.env.NODE_ENV !== "production";
 // Endereços externos que o navegador pode acessar. Tudo o mais é bloqueado.
 // - googleapis: login do Firebase (Auth) e App Check
 // - google.com / gstatic: reCAPTCHA usado pelo App Check
-// - 127.0.0.1:9099: simulador de login (só no computador local)
+// - firebasestorage: envio dos arquivos dos documentos
+// - 127.0.0.1:9099 / 9199: simuladores de login e de arquivos (só no computador local)
 const conexoes = [
   "'self'",
   "https://identitytoolkit.googleapis.com",
@@ -13,7 +14,9 @@ const conexoes = [
   "https://firebaseappcheck.googleapis.com",
   "https://content-firebaseappcheck.googleapis.com",
   "https://www.google.com",
-  ...(emDesenvolvimento ? ["http://127.0.0.1:9099", "ws://localhost:*", "ws://127.0.0.1:*"] : []),
+  // Envio de arquivos dos documentos (Firebase Storage)
+  "https://firebasestorage.googleapis.com",
+  ...(emDesenvolvimento ? ["http://127.0.0.1:9099", "http://127.0.0.1:9199", "ws://localhost:*", "ws://127.0.0.1:*"] : []),
 ];
 
 const scripts = [

@@ -7,7 +7,7 @@ Uma fase só é "concluída" com: tela funcionando, validação, integração re
 | **1 — Fundação** | Projeto, identidade visual, Firebase, sessão, multi-condomínio, permissões, regras + testes, auditoria, documentação | **Concluída** |
 | **2 — Portal** | Login da equipe e dos moradores (nada abre sem login), início do morador, painel admin, unidades e moradores, financeiro (lançar, estornar, resumo mensal, PDF/Excel), contatos e informações do condomínio | **Entregue** (login dos moradores: aguardando teste no Firebase real) |
 | **3 — Portaria** | Visitantes com código de validade e uso único, entradas e saídas, encomendas, retenção LGPD | **Entregue** (aguardando sua validação no navegador) |
-| **4 — Serviços** | Reservas com as regras reais, solicitações com protocolo, comunicados, documentos por link, informações reais (PIX, ronda, responsável pelas reservas) | **Entregue** (aguardando sua validação no navegador) |
+| **4 — Serviços** | Reservas com as regras reais, solicitações com protocolo, comunicados, documentos (arquivo ou link), informações reais (PIX, ronda, responsável pelas reservas) | **Entregue** (aguardando sua validação no navegador) |
 | **5 — Experiência** | Enquetes (1 voto por casa), classificados com aprovação, relatórios do síndico | **Entregue**, exceto o **mapa real**, que depende da planta do condomínio |
 | 6 — Produção | Testes de segurança e concorrência, CSP com nonce, importação da planilha, treinamento, deploy definitivo | **Não implementada** (decisão do dono: parar na Fase 5) |
 
@@ -68,7 +68,9 @@ Uma fase só é "concluída" com: tela funcionando, validação, integração re
 
 - **Solicitações** (`/solicitacoes` e `/admin/solicitacoes`): protocolo `AAAA-NNNN` por ano (transação), situação aberta → em andamento → resolvida/cancelada, linha do tempo com **notas internas** que o morador não vê. "Pedidos" no menu de baixo do morador.
 - **Comunicados** (`/comunicados` e `/admin/comunicados`): rascunho, publicar, fixar, urgente, arquivar (nada é apagado); pré-visualização e texto pronto para o WhatsApp. Os mais recentes aparecem no topo do Início.
-- **Documentos por link** (`/documentos` e `/admin/documentos`): regimento, convenção, atas, prestações — o arquivo fica no Google Drive (link "qualquer pessoa com o link"); o portal guarda só o link https e quem pode ver. Não depende do plano Blaze.
+- **Documentos** (`/documentos` e `/admin/documentos`): regimento, convenção, atas, prestações. Dois jeitos:
+  - **Arquivo enviado ao portal** (PDF, foto, Word, Excel, até 20 MB), guardado no **Firebase Storage** (exige o plano **Blaze**). O navegador do síndico envia direto ao Storage com uma autorização de uso único (token com `envioDoc` = caminho exato); o servidor confere tipo e tamanho antes de salvar. O morador abre por `/api/documentos/{id}/arquivo`, que confere login e "Quem pode ver" e entrega um link temporário de 5 minutos. Regras em `storage.rules` (testadas em `tests/regras/storage.test.ts`).
+  - **Link** https (Google Drive etc.), como antes. Atenção: quem tiver o link abre sem login.
 
 ## Fase 5 — Enquetes, classificados e relatórios (entregue)
 
@@ -89,6 +91,6 @@ Uma fase só é "concluída" com: tela funcionando, validação, integração re
 ## Decisões em aberto
 
 1. **Método de login**: **decidido (14/11/2026).** Equipe: e-mail e senha. Moradores: usuário (código gerado pelo portal) + senha provisória enviada pelo WhatsApp; o morador escolhe a própria senha no primeiro acesso. Informações gerais continuam abertas pelo link.
-2. **Plano Blaze** (arquivos, backup automático, SMS). Hoje o projeto está no **Spark** (gratuito): documentos são links do Google Drive e não há política de expiração automática (TTL) no banco.
+2. **Plano Blaze** (arquivos, backup automático, SMS). Os arquivos dos documentos já usam o Storage (exige Blaze). Sem Blaze não há política de expiração automática (TTL) no banco.
 3. **Retenção LGPD** de visitantes: implementada com 90 dias — confirmar o prazo com o síndico.
 4. **Planta** do condomínio para o mapa.

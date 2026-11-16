@@ -1,9 +1,10 @@
 /**
  * Regras dos documentos do condomínio (sem banco).
  *
- * Por enquanto o portal NÃO guarda arquivos: o síndico cadastra um LINK
- * (Google Drive, OneDrive, Dropbox...) e o morador abre esse link.
- * Guardar arquivos no próprio portal exige o plano pago do Firebase (fica para depois).
+ * O síndico cadastra um documento de dois jeitos:
+ * - ARQUIVO enviado ao portal (PDF, foto, Word, Excel), guardado no Firebase
+ *   Storage; o morador abre pelo portal, que confere o login antes de entregar;
+ * - LINK (Google Drive, OneDrive, Dropbox...), como era antes.
  */
 import type { Papel } from "./permissoes";
 
@@ -107,6 +108,80 @@ export function servicoDoLink(link: string): string | null {
   if (termina("onedrive.live.com") || termina("1drv.ms") || termina("sharepoint.com")) return "OneDrive";
   if (termina("dropbox.com")) return "Dropbox";
   return null;
+}
+
+// ---------- Arquivo enviado ao portal ----------
+
+/** Tamanho máximo de um arquivo (20 MB): cabe uma ata escaneada ou o regimento em PDF. */
+export const TAMANHO_MAXIMO_ARQUIVO = 20 * 1024 * 1024;
+
+/** Tipos aceitos e o nome que o morador vê. As regras do Storage repetem esta lista. */
+export const TIPOS_ARQUIVO: Record<string, string> = {
+  "application/pdf": "PDF",
+  "image/jpeg": "Foto",
+  "image/png": "Imagem",
+  "image/webp": "Imagem",
+  "application/msword": "Word",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "Word",
+  "application/vnd.ms-excel": "Excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "Excel",
+};
+
+/** Para o seletor de arquivo do navegador. */
+export const ACEITA_ARQUIVO = ".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx";
+
+export function tipoArquivoAceito(tipo: string): boolean {
+  return Object.hasOwn(TIPOS_ARQUIVO, tipo);
+}
+
+/** "PDF · 1,2 MB" */
+export function descreverArquivo(arquivo: { tipo: string; tamanho: number }): string {
+  const nome = TIPOS_ARQUIVO[arquivo.tipo] ?? "Arquivo";
+  const kb = arquivo.tamanho / 1024;
+  const tamanho =
+    kb < 1024
+      ? `${Math.max(1, Math.round(kb))} KB`
+      : `${(kb / 1024).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} MB`;
+  return `${nome} · ${tamanho}`;
+}
+
+/**
+ * Nome do arquivo para guardar: sem acentos, sem barras nem caracteres estranhos,
+ * no máximo 80 letras, mantendo a extensão. Ex.: "Ata de Março/2026.pdf" → "Ata-de-Marco-2026.pdf".
+ */
+export function nomeArquivoSeguro(nome: string): string {
+  const semAcento = nome.normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const ponto = semAcento.lastIndexOf(".");
+  const base = ponto > 0 ? semAcento.slice(0, ponto) : semAcento;
+  const ext = ponto > 0 ? semAcento.slice(ponto + 1).toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) : "";
+  const limpo =
+    base
+      .replace(/[^A-Za-z0-9._-]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^[-.]+|[-.]+$/g, "")
+      .slice(0, 80) || "documento";
+  return ext ? `${limpo}.${ext}` : limpo;
+}
+
+/** Pasta dos arquivos de documentos de um condomínio no Storage. */
+export function pastaArquivosDocumentos(condominioId: string): string {
+  return `condominiums/${condominioId}/documents/`;
+}
+
+/**
+ * O caminho enviado pelo navegador é mesmo um arquivo de documento DESTE condomínio?
+ * Formato: condominiums/{condominio}/documents/{envio}/{nome}
+ */
+export function caminhoArquivoValido(caminho: string, condominioId: string): boolean {
+  const pasta = pastaArquivosDocumentos(condominioId);
+  if (!caminho.startsWith(pasta) || caminho.length > 300) return false;
+  const resto = caminho.slice(pasta.length).split("/");
+  return (
+    resto.length === 2 &&
+    /^[A-Za-z0-9-]{8,64}$/.test(resto[0]) &&
+    /^[A-Za-z0-9._-]{1,90}$/.test(resto[1]) &&
+    !resto[1].startsWith(".")
+  );
 }
 
 // ---------- Agrupar para a lista ----------

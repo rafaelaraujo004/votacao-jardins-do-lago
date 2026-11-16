@@ -40,7 +40,7 @@
         "--project",
         "demo-jardins",
         "--only",
-        "auth,firestore",
+        "auth,firestore,storage",
         "--ui",
         "npm run semear && npx next dev"
       ],

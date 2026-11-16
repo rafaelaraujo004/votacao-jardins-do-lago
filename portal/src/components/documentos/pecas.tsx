@@ -5,7 +5,7 @@
 import { BookOpen, ExternalLink, FileText, Landmark, ScrollText, Scale, type LucideIcon } from "lucide-react";
 import { Alerta, Etiqueta } from "@/components/ui/basicos";
 import { formatarData } from "@/lib/formato";
-import { NOME_CATEGORIA_CURTO, servicoDoLink, type CategoriaDocumento } from "@/lib/documentos";
+import { descreverArquivo, NOME_CATEGORIA_CURTO, servicoDoLink, type CategoriaDocumento } from "@/lib/documentos";
 
 export const ICONE_CATEGORIA: Record<CategoriaDocumento, LucideIcon> = {
   regimento: BookOpen,
@@ -31,11 +31,19 @@ export function LinkDocumento({
   doc,
   fuso,
 }: {
-  doc: { titulo: string; descricao: string; categoria: CategoriaDocumento; url: string; atualizadoEm: Date | null };
+  doc: {
+    titulo: string;
+    descricao: string;
+    categoria: CategoriaDocumento;
+    url: string;
+    arquivo?: { tipo: string; tamanho: number } | null;
+    atualizadoEm: Date | null;
+  };
   fuso: string;
 }) {
   const Icone = ICONE_CATEGORIA[doc.categoria];
-  const servico = servicoDoLink(doc.url);
+  // Arquivo do portal: "PDF · 1,2 MB". Link: "Google Drive" (se reconhecer).
+  const origem = doc.arquivo ? descreverArquivo(doc.arquivo) : servicoDoLink(doc.url);
   return (
     <a
       href={doc.url}
@@ -51,7 +59,7 @@ export function LinkDocumento({
         <span className="font-bold leading-tight text-ink">{doc.titulo}</span>
         {doc.descricao ? <span className="mt-0.5 text-[0.9rem] text-ink-2">{doc.descricao}</span> : null}
         <span className="mt-0.5 text-[0.8rem] text-muted">
-          {[servico, doc.atualizadoEm ? `atualizado em ${formatarData(doc.atualizadoEm, fuso)}` : null].filter(Boolean).join(" · ")}
+          {[origem, doc.atualizadoEm ? `atualizado em ${formatarData(doc.atualizadoEm, fuso)}` : null].filter(Boolean).join(" · ")}
         </span>
       </span>
       <span className="flex shrink-0 flex-col items-center gap-0.5 text-pine">
@@ -62,20 +70,18 @@ export function LinkDocumento({
   );
 }
 
-/** Explica ao síndico como deixar o arquivo acessível e por que o portal usa links. */
+/** Explica ao síndico os dois jeitos de cadastrar um documento. */
 export function AvisoComoCompartilhar() {
   return (
     <Alerta tipo="info" titulo="Como cadastrar um documento">
-      <ol className="mt-1 flex list-decimal flex-col gap-1 pl-5">
-        <li>Guarde o arquivo no Google Drive (ou OneDrive, Dropbox).</li>
-        <li>
-          Em <b>Compartilhar</b>, escolha <b>&ldquo;Qualquer pessoa com o link&rdquo;</b> e <b>Leitor</b> (pode ver, não pode editar).
-        </li>
-        <li>Copie o link e cole aqui. Ele precisa começar com https://</li>
-      </ol>
-      <p className="mt-2 text-[0.9rem]">
-        Guardar os arquivos dentro do próprio portal exige um plano pago do serviço de hospedagem. Por enquanto, usamos links
-        (isso pode mudar depois).
+      <p className="mt-1">
+        <b>Enviar arquivo</b> (recomendado): escolha o PDF, a foto, o Word ou o Excel no celular ou no computador (até 20 MB). O
+        arquivo fica guardado no portal e só abre para quem entrou com login e pode ver o documento.
+      </p>
+      <p className="mt-2">
+        <b>Colar link</b>: se o arquivo já está no Google Drive (ou OneDrive, Dropbox), em <b>Compartilhar</b> escolha{" "}
+        <b>&ldquo;Qualquer pessoa com o link&rdquo;</b> e <b>Leitor</b>, copie o link e cole aqui (começa com https://). Atenção:
+        quem tiver esse link abre o arquivo mesmo sem login.
       </p>
     </Alerta>
   );

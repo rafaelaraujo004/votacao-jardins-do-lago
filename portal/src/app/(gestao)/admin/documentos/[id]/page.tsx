@@ -36,7 +36,9 @@ export default async function EditarDocumento({ params }: { params: Promise<{ id
             titulo: doc.titulo,
             descricao: doc.descricao,
             categoria: doc.categoria,
-            url: doc.url,
+            // Link só quando é link: o endereço interno do arquivo não vai para o campo.
+            url: doc.arquivo ? "" : doc.url,
+            arquivo: doc.arquivo,
             visivelPara: doc.visivelPara,
             ativo: doc.ativo,
           }}
