@@ -74,13 +74,15 @@ const ARVORES: [number, number][] = [
 ];
 
 /** Espaço interno da caixa: a busca (em cima) e o cartão (embaixo) não tapam o desenho. */
-const RESPIRO = { cima: 68, baixo: 96, lados: 6 };
+const RESPIRO = { cima: 68, baixo: 128, lados: 6 };
 
 export function MapaInterativo() {
   const [busca, setBusca] = useState("");
   const [erro, setErro] = useState("");
   const [selecionado, setSelecionado] = useState<number | null>(null);
   const [comoChegar, setComoChegar] = useState(false);
+  // Passo a passo da rota: começa recolhido para não tapar o mapa.
+  const [passosAbertos, setPassosAbertos] = useState(false);
 
   // null = a pessoa ainda não mexeu no zoom: no celular começa aproximado,
   // porque a planta inteira fica pequena demais numa tela estreita.
@@ -193,6 +195,8 @@ export function MapaInterativo() {
 
   function aoApertar(e: EventoPonteiro<HTMLDivElement>) {
     if (e.pointerType === "mouse" && e.button !== 0) return;
+    // Mexeu no mapa: recolhe o passo a passo para a rota aparecer inteira.
+    setPassosAbertos(false);
     ponteiros.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (ponteiros.current.size === 1) {
       comecarArraste(e.clientX, e.clientY);
@@ -319,7 +323,7 @@ export function MapaInterativo() {
     const caixa = refCaixa.current;
     const pxPorUnidade = base / vw;
     const cabeX = (caixa.clientWidth * 0.8) / ((x1 - x0 + 40) * pxPorUnidade);
-    const cabeY = ((caixa.clientHeight - RESPIRO.cima - RESPIRO.baixo) * 0.9) / ((y1 - y0 + 40) * pxPorUnidade);
+    const cabeY = ((caixa.clientHeight - RESPIRO.cima - RESPIRO.baixo) * 0.82) / ((y1 - y0 + 60) * pxPorUnidade);
     setEscalaEscolhida(limitar(Math.min(cabeX, cabeY, 3)));
     const id = requestAnimationFrame(() => requestAnimationFrame(() => centralizar((x0 + x1) / 2, (y0 + y1) / 2)));
     return () => cancelAnimationFrame(id);
@@ -409,7 +413,14 @@ export function MapaInterativo() {
             "absolute inset-0 touch-none overflow-auto overscroll-contain select-none [scrollbar-width:thin]",
             arrastando ? "cursor-grabbing" : "cursor-grab",
           )}
-          style={{ padding: `${RESPIRO.cima}px ${RESPIRO.lados}px ${RESPIRO.baixo}px` }}
+          // Com a rota ligada, sobra espaço embaixo e em cima do desenho: assim dá para
+          // rolar a rota (que costuma terminar perto da portaria, no pé do desenho) para
+          // longe do cartão e da busca.
+          style={{
+            padding: rota
+              ? `max(${RESPIRO.cima}px, 22vh) ${RESPIRO.lados}px max(${RESPIRO.baixo}px, 45vh)`
+              : `${RESPIRO.cima}px ${RESPIRO.lados}px ${RESPIRO.baixo}px`,
+          }}
         >
           <svg
             ref={refSvg}
@@ -484,24 +495,28 @@ export function MapaInterativo() {
           Tamanho do mapa: {Math.round(escala * 100)}%
         </p>
 
-        {/* Casa escolhida (cartão por cima, embaixo do mapa) */}
-        <div aria-live="polite" className="absolute inset-x-2 bottom-2 z-10">
+        {/* Casa escolhida: cartão baixo por cima do mapa. O passo a passo fica recolhido
+            (abre só quando a pessoa pede) para nunca tapar a rota. */}
+        <div aria-live="polite" className="pointer-events-none absolute inset-x-2 bottom-2 z-10">
           {lote ? (
-            <div className="surgir flex flex-col gap-2 rounded-[var(--radius-card)] border border-borda-luz border-l-[6px] border-l-plum bg-surface/95 p-3 shadow-card backdrop-blur">
-              <div className="flex items-center gap-3">
-                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-plum-soft text-plum">
-                  <MapPin aria-hidden className="size-6" />
+            <div className="surgir pointer-events-auto flex flex-col rounded-[var(--radius-card)] border border-borda-luz border-l-[6px] border-l-plum bg-surface/95 px-2.5 py-2 shadow-card backdrop-blur">
+              <div className="flex items-center gap-2">
+                <span className="hidden size-9 shrink-0 place-items-center rounded-full bg-plum-soft text-plum min-[400px]:grid">
+                  <MapPin aria-hidden className="size-5" />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="font-display text-[1.2rem] font-bold leading-tight text-destaque">Casa {lote.numero}</p>
-                  <p className="truncate text-[0.88rem] text-muted">{lote.trecho}</p>
+                  <p className="font-display text-[1.1rem] font-bold leading-tight text-destaque">Casa {lote.numero}</p>
+                  <p className="truncate text-[0.82rem] text-muted">{lote.trecho}</p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setComoChegar((v) => !v)}
+                  onClick={() => {
+                    setComoChegar((v) => !v);
+                    setPassosAbertos(false);
+                  }}
                   aria-pressed={comoChegar}
                   className={cx(
-                    "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[0.92rem] font-bold active:shadow-afundado",
+                    "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-[0.9rem] font-bold active:shadow-afundado",
                     comoChegar ? "botao-verde" : "saltado text-pine",
                   )}
                 >
@@ -518,11 +533,31 @@ export function MapaInterativo() {
                 </button>
               </div>
               {rota ? (
-                <ol className="max-h-32 list-decimal overflow-y-auto pl-6 text-[0.9rem] leading-snug text-ink-2" aria-label={`Como chegar à casa ${lote.numero}`}>
-                  {rota.passos.map((passo, i) => (
-                    <li key={i}>{passo}</li>
-                  ))}
-                </ol>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setPassosAbertos((v) => !v)}
+                    aria-expanded={passosAbertos}
+                    aria-controls="passos-rota"
+                    className="mt-1 flex min-h-9 items-center justify-between gap-2 rounded-full px-1 text-left text-[0.88rem] font-bold text-pine"
+                  >
+                    <span>
+                      {passosAbertos ? "Esconder o passo a passo" : `Passo a passo (${rota.passos.length})`}
+                    </span>
+                    <ChevronDown aria-hidden className={cx("size-4 transition-transform", passosAbertos && "rotate-180")} />
+                  </button>
+                  {passosAbertos ? (
+                    <ol
+                      id="passos-rota"
+                      className="max-h-[30vh] list-decimal overflow-y-auto pb-1 pl-6 pr-1 text-[0.9rem] leading-snug text-ink-2"
+                      aria-label={`Como chegar à casa ${lote.numero}`}
+                    >
+                      {rota.passos.map((passo, i) => (
+                        <li key={i}>{passo}</li>
+                      ))}
+                    </ol>
+                  ) : null}
+                </>
               ) : null}
             </div>
           ) : null}
