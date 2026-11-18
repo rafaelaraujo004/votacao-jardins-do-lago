@@ -44,6 +44,86 @@ describe("ruas do condomínio", () => {
   });
 });
 
+/** Pode andar de A para B? (mão única só no sentido da lista; mão dupla nos dois) */
+function permitido(a: string, b: string): boolean {
+  return RUAS.TRECHOS.some(([x, y, mao]) => (x === a && y === b) || (mao === "dupla" && x === b && y === a));
+}
+
+describe("mão das ruas (projeto de sinalização viária)", () => {
+  it("nenhuma rota anda na contramão", () => {
+    for (let n = 1; n <= TOTAL_LOTES; n++) {
+      const rota = rotaAte(n)!;
+      const [ta, tb] = rota.frente.trecho;
+      for (let i = 1; i < rota.caminho.length; i++) {
+        const [a, b] = [rota.caminho[i - 1], rota.caminho[i]];
+        // Entrando no trecho da casa: precisa vir pela ponta de onde o trânsito vem.
+        const ok =
+          b === "frente"
+            ? a === ta || (rota.frente.mao === "dupla" && a === tb)
+            : a === "frente"
+              ? b === tb || (rota.frente.mao === "dupla" && b === ta)
+              : permitido(a, b);
+        expect(ok, `casa ${n}: ${a} → ${b} é contramão`).toBe(true);
+      }
+    }
+  });
+
+  it("sentidos conferidos no PDF", () => {
+    // Rua de baixo: só para a direita (afastando-se da portaria).
+    expect(permitido("b296", "b420")).toBe(true);
+    expect(permitido("b420", "b296")).toBe(false);
+    // Ruas entre as quadras à direita da avenida: sobem.
+    expect(permitido("b764", "d764")).toBe(true);
+    expect(permitido("d764", "b764")).toBe(false);
+    // Diagonal volta para a esquerda; rua em frente ao parque também.
+    expect(permitido("d1236", "d1120")).toBe(true);
+    expect(permitido("c420", "c296")).toBe(true);
+    expect(permitido("c296", "c420")).toBe(false);
+    // Avenida entre as quadras desce até a portaria; entre a APP e o parque é mão dupla.
+    expect(permitido("c296", "b296")).toBe(true);
+    expect(permitido("b296", "c296")).toBe(false);
+    expect(permitido("t296", "c296") && permitido("c296", "t296")).toBe(true);
+    // Rua do muro desce.
+    expect(permitido("t168alto", "t168baixo")).toBe(true);
+    expect(permitido("t168baixo", "t168alto")).toBe(false);
+  });
+
+  it("casa da rua da avenida (q. 54–71) é alcançada descendo, pelo circuito", () => {
+    const rota = rotaAte(60)!;
+    // Não dá para subir a rua das casas 54–62 vindo da rua de baixo: o caminho chega por cima.
+    expect(rota.caminho).toContain("c172");
+    expect(rota.caminho.indexOf("c172")).toBeLessThan(rota.caminho.indexOf("frente"));
+  });
+});
+
+describe("passo a passo contando ruas e casas", () => {
+  const passos = (n: number) => rotaAte(n)!.passos;
+
+  it("rua de baixo: casas contadas à direita a partir da esquina da portaria", () => {
+    expect(passos(6)).toEqual([expect.stringMatching(/portaria/), "Ao chegar na rua de baixo, vire à direita.", "A casa 6 é a 1ª casa à direita."]);
+    expect(passos(20).at(-1)).toBe("A casa 20 é a 15ª casa à direita."); // 6, 7, ..., 20
+    expect(passos(43).at(-1)).toBe("A casa 43 é a 38ª casa à direita.");
+  });
+
+  it("conta as ruas do lado da curva e as casas do lado da casa", () => {
+    expect(passos(140)).toContain("Pegue a 4ª rua à esquerda (rua entre as quadras).");
+    expect(passos(140).at(-1)).toBe("A casa 140 é a 2ª casa à esquerda."); // a 139 vem antes
+    expect(passos(152).at(-1)).toBe("A casa 152 é a 11ª casa à direita."); // de 162 subindo até 152
+  });
+
+  it("rua do muro (mão única descendo): conta de cima para baixo", () => {
+    expect(passos(206).at(-1)).toBe("A casa 206 é a 1ª casa à direita.");
+    expect(passos(200).at(-1)).toBe("A casa 200 é a 7ª casa à direita.");
+    expect(passos(200)).toContain("No fim da rua, vire à esquerda (rua junto ao muro).");
+  });
+
+  it("toda casa termina com a posição dela na rua", () => {
+    for (let n = 1; n <= TOTAL_LOTES; n++) {
+      expect(passos(n).at(-1), `casa ${n}`).toMatch(new RegExp(`^A casa ${n} é a [0-9]+ª casa à (direita|esquerda)[.]$`));
+    }
+  });
+});
+
 describe("como chegar (da portaria até a casa)", () => {
   it("toda casa de 1 a 225 tem caminho saindo da portaria", () => {
     for (let n = 1; n <= TOTAL_LOTES; n++) {

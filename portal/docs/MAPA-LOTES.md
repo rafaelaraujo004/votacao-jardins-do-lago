@@ -32,3 +32,31 @@ A votação considera 220 casas: a diferença provavelmente são lotes ainda
 sem casa (a confirmar com o síndico, se fizer diferença no mapa).
 
 Recortes ampliados usados na conferência: `planta-quadras-*.png` nesta pasta.
+
+## Sentido das ruas ("Como chegar")
+
+As rotas do mapa respeitam a mão de cada rua, conferida seta por seta no
+projeto oficial de sinalização viária: `sinalizacao-viaria-rv00.pdf` (nesta
+pasta). O PDF está girado 180° em relação ao nosso desenho (lá a portaria
+fica no alto, à direita).
+
+Resumo, na orientação do nosso mapa (portaria embaixo, à esquerda):
+
+| Rua | Mão |
+|---|---|
+| Entrada da portaria | faixa da direita de quem entra ("ENTRADA") |
+| Rua de baixo (casas 01–43) | única, da esquerda para a direita |
+| Ruas entre as quadras, à direita da avenida | única, subindo |
+| Rua da diagonal | única, para a esquerda |
+| Rua ao lado do parque (meio) | única, descendo |
+| Rua em frente ao parque | única, para a esquerda |
+| Avenida da portaria, entre as quadras | única, descendo até a portaria (saída) |
+| Avenida entre a APP e o parque | dupla |
+| Avenida ao lado do parquinho | única, subindo |
+| Contorno da quadra do topo e rua do muro (194–206) | única, descendo |
+| Rua acima da APP | dupla |
+| Rua entre as casas 44–53 e 54–71 | única, descendo |
+
+Em volta do parquinho e dos quiosques só há trilhas de pedestre (não é rua
+de carro). Tudo isso está em `src/lib/rotas.ts` e é testado em
+`tests/unit/rotas.test.ts` (nenhuma das 225 rotas anda na contramão).
