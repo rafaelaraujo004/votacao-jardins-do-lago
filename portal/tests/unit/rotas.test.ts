@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { QUADRAS, TOTAL_LOTES, loteDoNumero } from "@/lib/planta";
-import { RUAS, frenteDaCasa, rotaAte } from "@/lib/rotas";
+import { RUAS, frenteDaCasa, rotaAte, rotaSaida } from "@/lib/rotas";
 
 type Ponto = [number, number];
 
@@ -70,8 +70,13 @@ describe("mão das ruas (projeto de sinalização viária)", () => {
 
   it("sentidos conferidos no PDF", () => {
     // Rua de baixo: só para a direita (afastando-se da portaria).
-    expect(permitido("b296", "b420")).toBe(true);
-    expect(permitido("b420", "b296")).toBe(false);
+    expect(permitido("b296", "entradaRua") && permitido("entradaRua", "b420")).toBe(true);
+    expect(permitido("b420", "entradaRua")).toBe(false);
+    // Portaria: entra pela faixa da direita do canteiro e sai pela do outro lado.
+    expect(permitido("canteiroEntrada", "entradaRua")).toBe(true);
+    expect(permitido("saidaRua", "canteiroSaida")).toBe(true);
+    expect(RUAS.PONTOS.canteiroEntrada[0]).toBeGreaterThan(296);
+    expect(RUAS.PONTOS.canteiroSaida[0]).toBeLessThan(296);
     // Ruas entre as quadras à direita da avenida: sobem.
     expect(permitido("b764", "d764")).toBe(true);
     expect(permitido("d764", "b764")).toBe(false);
@@ -93,6 +98,38 @@ describe("mão das ruas (projeto de sinalização viária)", () => {
     // Não dá para subir a rua das casas 54–62 vindo da rua de baixo: o caminho chega por cima.
     expect(rota.caminho).toContain("c172");
     expect(rota.caminho.indexOf("c172")).toBeLessThan(rota.caminho.indexOf("frente"));
+  });
+});
+
+describe("sair do condomínio (da casa até a saída da portaria)", () => {
+  it("toda casa tem caminho até a saída, sem contramão", () => {
+    for (let n = 1; n <= TOTAL_LOTES; n++) {
+      const rota = rotaSaida(n);
+      expect(rota, `casa ${n}`).not.toBeNull();
+      expect(rota!.tipo).toBe("sair");
+      expect(rota!.caminho[0]).toBe("frente");
+      expect(rota!.caminho.at(-1)).toBe("portaoSaida");
+      const [ta, tb] = rota!.frente.trecho;
+      for (let i = 1; i < rota!.caminho.length; i++) {
+        const [a, b] = [rota!.caminho[i - 1], rota!.caminho[i]];
+        const ok =
+          a === "frente" ? b === tb || (rota!.frente.mao === "dupla" && b === ta) : b === "frente" ? false : permitido(a, b);
+        expect(ok, `saída da casa ${n}: ${a} → ${b} é contramão`).toBe(true);
+      }
+      expect(rota!.passos.at(-1)).toMatch(/Saída/);
+    }
+  });
+
+  it("sai pela faixa do outro lado do canteiro, em linha reta", () => {
+    const fim = rotaSaida(72)!.pontos.slice(-3);
+    expect(fim.every((p) => p[0] === RUAS.PONTOS.portaoSaida[0])).toBe(true);
+    // Da avenida, segue reto até a portaria (o degrau dentro do cruzamento não é "curva").
+    expect(rotaSaida(72)!.passos).toHaveLength(2);
+  });
+
+  it("entra em linha reta pela faixa da direita do canteiro", () => {
+    const inicio = rotaAte(20)!.pontos.slice(0, 4);
+    expect(inicio.every((p) => p[0] === RUAS.PONTOS.portao[0])).toBe(true);
   });
 });
 

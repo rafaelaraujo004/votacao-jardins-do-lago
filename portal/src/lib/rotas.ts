@@ -16,10 +16,16 @@ type Ponto = [number, number];
 
 /** Cruzamentos e curvas das ruas (centro da rua). */
 const PONTOS: Record<string, Ponto> = {
-  // Entrada
-  portao: [296, 965],
-  guarita: [296, 905],
-  rotatoria: [296, 858],
+  // Portaria: no meio há um canteiro. Quem ENTRA sobe RETO pela faixa da direita
+  // (x = 324); quem SAI desce RETO pela faixa do outro lado (x = 268).
+  portao: [324, 965],
+  guarita: [324, 905],
+  canteiroEntrada: [324, 858],
+  entradaRua: [324, 799],
+  saidaRua: [268, 799],
+  canteiroSaida: [268, 858],
+  guaritaSaida: [268, 905],
+  portaoSaida: [268, 965],
 
   // Rua de baixo (passa em frente às casas 01 a 43). Não há rua junto ao muro da esquerda:
   // a coluna 44–53 dá para a rua da direita dela.
@@ -62,6 +68,9 @@ const PONTOS: Record<string, Ponto> = {
   t296parque: [296, 209],
 };
 
+/** Pontos das faixas da guarita (contornam o canteiro): não são esquina nem frente de casa. */
+const DA_PORTARIA = new Set(["portao", "guarita", "canteiroEntrada", "canteiroSaida", "guaritaSaida", "portaoSaida"]);
+
 /** "unica": só se anda de A para B. "dupla": nos dois sentidos. */
 type Mao = "unica" | "dupla";
 
@@ -73,14 +82,22 @@ type Mao = "unica" | "dupla";
  * avenida até a portaria (saída).
  */
 const TRECHOS: [string, string, Mao][] = [
-  // entrada: faixa da direita de quem entra ("ENTRADA"), até a rua de baixo
+  // entrada: faixa da direita de quem entra ("ENTRADA"), contornando o canteiro, até a rua de baixo
   ["portao", "guarita", "unica"],
-  ["guarita", "rotatoria", "unica"],
-  ["rotatoria", "b296", "unica"],
+  ["guarita", "canteiroEntrada", "unica"],
+  ["canteiroEntrada", "entradaRua", "unica"],
+  // saída: da rua de baixo, desce reto pela faixa do outro lado do canteiro ("SAÍDA").
+  // Quem vem descendo a avenida (x = 296) entra na faixa de saída dentro do próprio cruzamento.
+  ["saidaRua", "canteiroSaida", "unica"],
+  ["b296", "saidaRua", "unica"],
+  ["canteiroSaida", "guaritaSaida", "unica"],
+  ["guaritaSaida", "portaoSaida", "unica"],
   // rua de baixo: mão única para a direita (o pedacinho junto ao muro é mão dupla)
   ["b100", "b172", "dupla"],
-  ["b172", "b296", "unica"],
-  ["b296", "b420", "unica"],
+  ["b172", "saidaRua", "unica"],
+  ["saidaRua", "b296", "unica"],
+  ["b296", "entradaRua", "unica"],
+  ["entradaRua", "b420", "unica"],
   ["b420", "b538", "unica"],
   ["b538", "b652", "unica"],
   ["b652", "b764", "unica"],
@@ -139,6 +156,7 @@ export function frenteDaCasa(lote: Lote): { ponto: Ponto; trecho: [string, strin
   const centro: Ponto = [lote.x + lote.w / 2, lote.y + lote.h / 2];
   let melhor: { ponto: Ponto; dist: number; trecho: [string, string]; mao: Mao } | null = null;
   for (const [a, b, mao] of TRECHOS) {
+    if (DA_PORTARIA.has(a) || DA_PORTARIA.has(b)) continue; // faixas da guarita: nenhuma casa dá de frente para elas
     const r = projetar(centro, PONTOS[a], PONTOS[b]);
     if (!melhor || r.dist < melhor.dist) melhor = { ...r, trecho: [a, b], mao };
   }
@@ -174,9 +192,11 @@ function menorCaminho(vizinhos: Map<string, { para: string; custo: number }[]>, 
 }
 
 export type Rota = {
-  /** Pontos do caminho, da portaria até a frente da casa. */
+  /** "chegar": da portaria até a casa. "sair": da casa até a saída da portaria. */
+  tipo: "chegar" | "sair";
+  /** Pontos do caminho pelas ruas (na ordem em que se anda). */
   pontos: Ponto[];
-  /** Centro da casa (para a última perninha, tracejada). */
+  /** Centro da casa (para a perninha tracejada entre a casa e a rua). */
   casa: Ponto;
   /** Passo a passo em palavras simples. */
   passos: string[];
@@ -197,6 +217,8 @@ function sentidoDaCurva(a: Ponto, b: Ponto, c: Ponto): "direita" | "esquerda" | 
 
 /** Nome da rua de um trecho, para o passo a passo ("rua de baixo"). */
 function nomeDaRua(a: string, b: string): string {
+  if ([a, b].some((n) => n.endsWith("Saida") || n === "portaoSaida")) return "saída da portaria";
+  if ([a, b].includes("entradaRua") || [a, b].includes("saidaRua")) return "rua de baixo";
   const [pa, pb] = [a[0], b[0]];
   if (pa === "b" && pb === "b") return "rua de baixo";
   if (pa === "c" && pb === "c") return "rua em frente ao parque";
@@ -299,13 +321,8 @@ function posicaoNaRua(numero: number, pernaOriginal: Ponto[], lado: Lado): numbe
 /** Até que distância do meio da rua a borda de uma casa ainda "encosta" nela (meia rua + calçada). */
 const ENCOSTADA_NA_RUA = 28;
 
-/** Caminho da portaria até a casa. null se o número não existir. */
-export function rotaAte(numero: number): Rota | null {
-  const lote = loteDoNumero(numero);
-  if (!lote) return null;
-  const frente = frenteDaCasa(lote);
-
-  // Grafo das ruas (só no sentido permitido) + o ponto "frente" da casa no meio do trecho dela.
+/** Grafo das ruas (só no sentido permitido) com o ponto "frente" da casa no meio do trecho dela. */
+function grafoComCasa(frente: ReturnType<typeof frenteDaCasa>) {
   const vizinhos = new Map<string, { para: string; custo: number }[]>();
   const ligar = (a: string, b: string, pa: Ponto, pb: Ponto, mao: Mao) => {
     const c = distancia(pa, pb);
@@ -317,22 +334,25 @@ export function rotaAte(numero: number): Rota | null {
     if (a === ta && b === tb) continue;
     ligar(a, b, PONTOS[a], PONTOS[b], mao);
   }
-  const posicao = (n: string) => (n === "frente" ? frente.ponto : PONTOS[n]);
   ligar(ta, "frente", PONTOS[ta], frente.ponto, frente.mao);
   ligar("frente", tb, frente.ponto, PONTOS[tb], frente.mao);
+  return vizinhos;
+}
 
-  const nomes = menorCaminho(vizinhos, "portao", "frente");
-  if (!nomes.length) return null;
-  const pontos = nomes.map(posicao);
-  const casa: Ponto = [lote.x + lote.w / 2, lote.y + lote.h / 2];
-
-  // Passo a passo como se explica para alguém: "pegue a 3ª rua à direita",
-  // "no fim da rua, vire à esquerda", "é a 6ª casa à direita".
-  const passos = ['Entre pela portaria (faixa da direita, "Entrada") e siga em frente.'];
+/**
+ * Curvas do caminho em palavras: "Ao chegar na rua de baixo, vire à direita",
+ * "Pegue a 3ª rua à esquerda", "No fim da rua, vire à esquerda".
+ * Devolve também onde começa a última rua (para contar as casas nela).
+ */
+function descreverCurvas(nomes: string[], pontos: Ponto[], frente: ReturnType<typeof frenteDaCasa>) {
+  const passos: string[] = [];
   const trechoDe = (i: number): [string, string] =>
-    nomes[i] === "frente" ? frente.trecho : nomes[i + 1] === "frente" ? frente.trecho : [nomes[i], nomes[i + 1]];
+    nomes[i] === "frente" || nomes[i + 1] === "frente" ? frente.trecho : [nomes[i], nomes[i + 1]];
   let inicioDaRua = 0; // índice do ponto onde a pessoa entrou na rua atual
   for (let i = 1; i < pontos.length - 1; i++) {
+    if (DA_PORTARIA.has(nomes[i])) continue; // contornar o canteiro da guarita não é "virar"
+    // Quem desce a avenida passa para a faixa de saída dentro do próprio cruzamento: segue em frente.
+    if ((nomes[i] === "b296" && nomes[i + 1] === "saidaRua") || (nomes[i] === "saidaRua" && nomes[i - 1] === "b296")) continue;
     const g = angulo(vetor(pontos[i - 1], pontos[i]), vetor(pontos[i], pontos[i + 1]));
     if (Math.abs(g) < 25) continue; // segue em frente
     const lado: Lado = g > 0 ? "direita" : "esquerda";
@@ -355,13 +375,46 @@ export function rotaAte(numero: number): Rota | null {
     );
     inicioDaRua = i;
   }
+  return { passos, inicioDaRua };
+}
 
-  // Última rua: em que lado fica a casa e qual é a posição dela.
-  const perna = pontos.slice(inicioDaRua);
+/** Caminho da portaria até a casa. null se o número não existir. */
+export function rotaAte(numero: number): Rota | null {
+  const lote = loteDoNumero(numero);
+  if (!lote) return null;
+  const frente = frenteDaCasa(lote);
+  const nomes = menorCaminho(grafoComCasa(frente), "portao", "frente");
+  if (!nomes.length) return null;
+  const pontos = nomes.map((n) => (n === "frente" ? frente.ponto : PONTOS[n]));
+  const casa: Ponto = [lote.x + lote.w / 2, lote.y + lote.h / 2];
+
+  // Passo a passo como se explica para alguém, terminando com "é a 6ª casa à direita".
+  const curvas = descreverCurvas(nomes, pontos, frente);
+  const passos = ['Entre pela portaria (faixa da direita, "Entrada") e siga em frente.', ...curvas.passos];
+  const perna = pontos.slice(curvas.inicioDaRua);
   const ladoCasa = sentidoDaCurva(pontos.at(-2) ?? pontos[0], pontos.at(-1)!, casa) ?? "direita";
-  const ordemDaCasa = posicaoNaRua(numero, perna, ladoCasa);
-  passos.push(`A casa ${numero} é a ${ordemDaCasa}ª casa à ${ladoCasa}.`);
-  return { pontos, casa, passos, caminho: nomes, frente: { trecho: frente.trecho, mao: frente.mao } };
+  passos.push(`A casa ${numero} é a ${posicaoNaRua(numero, perna, ladoCasa)}ª casa à ${ladoCasa}.`);
+  return { tipo: "chegar", pontos, casa, passos, caminho: nomes, frente: { trecho: frente.trecho, mao: frente.mao } };
+}
+
+/** Caminho da casa até a SAÍDA da portaria (respeitando a mão das ruas). null se o número não existir. */
+export function rotaSaida(numero: number): Rota | null {
+  const lote = loteDoNumero(numero);
+  if (!lote) return null;
+  const frente = frenteDaCasa(lote);
+  const nomes = menorCaminho(grafoComCasa(frente), "frente", "portaoSaida");
+  if (!nomes.length) return null;
+  const pontos = nomes.map((n) => (n === "frente" ? frente.ponto : PONTOS[n]));
+  const casa: Ponto = [lote.x + lote.w / 2, lote.y + lote.h / 2];
+
+  const ruaDaCasa = nomeDaRua(...frente.trecho);
+  const curvas = descreverCurvas(nomes, pontos, frente);
+  const passos = [
+    `Saindo da casa ${numero}, siga pela ${ruaDaCasa}${frente.mao === "unica" ? ", no sentido do trânsito (é mão única)" : ""}.`,
+    ...curvas.passos,
+    'Siga até a portaria e saia pela faixa da direita ("Saída").',
+  ];
+  return { tipo: "sair", pontos, casa, passos, caminho: nomes, frente: { trecho: frente.trecho, mao: frente.mao } };
 }
 
 /** Para os testes e para desenhar as ruas, se preciso. */

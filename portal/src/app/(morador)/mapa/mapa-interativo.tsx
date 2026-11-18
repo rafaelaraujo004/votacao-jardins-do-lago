@@ -3,8 +3,9 @@
 /**
  * Mapa das casas — PLANTA REAL do condomínio (225 lotes, dados em src/lib/planta.ts).
  * - Digite o número da casa (ou toque nela) para destacá-la.
- * - "Como chegar": desenha o caminho pelas ruas desde a PORTARIA (embaixo, à
- *   esquerda) até a casa, com o passo a passo (src/lib/rotas.ts).
+ * - "Chegar": caminho pelas ruas desde a PORTARIA (embaixo, à esquerda) até a casa.
+ * - "Sair": caminho da casa até a saída da portaria. Os dois respeitam a mão das
+ *   ruas e têm passo a passo (src/lib/rotas.ts).
  * - Pinça com dois dedos para aproximar/afastar; um dedo (ou o mouse) arrasta.
  *   No computador: Ctrl + roda do mouse ou a pinça do touchpad.
  * - Botões +, − e "ver o condomínio inteiro".
@@ -24,10 +25,10 @@ import {
   type ReactNode,
 } from "react";
 import { flushSync } from "react-dom";
-import { ChevronDown, MapPin, Maximize, Navigation, Search, X, ZoomIn, ZoomOut } from "lucide-react";
+import { ChevronDown, LogOut, MapPin, Maximize, Navigation, Search, X, ZoomIn, ZoomOut } from "lucide-react";
 import { cx } from "@/lib/cx";
 import { AREA_DESENHO, CONTORNO_TERRENO, LOTES, QUADRAS, TOTAL_LOTES, loteDoNumero, type Lote } from "@/lib/planta";
-import { rotaAte, type Rota } from "@/lib/rotas";
+import { rotaAte, rotaSaida, type Rota } from "@/lib/rotas";
 
 /** 1 = a planta inteira cabe na moldura. Até 6x (números grandes no celular). */
 const ESCALA_MIN = 1;
@@ -48,6 +49,7 @@ const COR = {
   achada: "var(--plum)",
   achadaTexto: "var(--canvas)",
   rota: "var(--plum)",
+  saida: "var(--lake)",
   lago: "var(--petala-azul)",
   verde: "var(--pine)",
   arvore: "var(--petala-verde)",
@@ -74,13 +76,17 @@ const ARVORES: [number, number][] = [
 ];
 
 /** Espaço interno da caixa: a busca (em cima) e o cartão (embaixo) não tapam o desenho. */
-const RESPIRO = { cima: 68, baixo: 128, lados: 6 };
+const RESPIRO = { cima: 64, baixo: 128, lados: 6 };
 
 export function MapaInterativo() {
   const [busca, setBusca] = useState("");
   const [erro, setErro] = useState("");
   const [selecionado, setSelecionado] = useState<number | null>(null);
-  const [comoChegar, setComoChegar] = useState(false);
+  // Rota ligada: "chegar" (portaria → casa) ou "sair" (casa → saída da portaria).
+  const [modo, setModo] = useState<null | "chegar" | "sair">(null);
+  // Tocou em "Sair" sem casa escolhida: a próxima casa escolhida já mostra a saída.
+  const [querSair, setQuerSair] = useState(false);
+  const refBusca = useRef<HTMLInputElement>(null);
   // Passo a passo da rota: começa recolhido para não tapar o mapa.
   const [passosAbertos, setPassosAbertos] = useState(false);
 
@@ -287,7 +293,10 @@ export function MapaInterativo() {
   // ---------- Casa escolhida e rota ----------
 
   const lote = selecionado ? loteDoNumero(selecionado) : null;
-  const rota = useMemo(() => (comoChegar && selecionado ? rotaAte(selecionado) : null), [comoChegar, selecionado]);
+  const rota = useMemo(
+    () => (!selecionado ? null : modo === "chegar" ? rotaAte(selecionado) : modo === "sair" ? rotaSaida(selecionado) : null),
+    [modo, selecionado],
+  );
 
   /** Centraliza na caixa um retângulo do desenho (coordenadas da planta). */
   const centralizar = useCallback(
@@ -339,7 +348,12 @@ export function MapaInterativo() {
 
   function escolher(n: number) {
     setSelecionado(n);
-    if (escala < ESCALA_AO_ACHAR && !comoChegar) setEscalaEscolhida(ESCALA_AO_ACHAR); // aproxima para a casa aparecer bem
+    if (querSair) {
+      setModo("sair");
+      setQuerSair(false);
+      return;
+    }
+    if (escala < ESCALA_AO_ACHAR && !modo) setEscalaEscolhida(ESCALA_AO_ACHAR); // aproxima para a casa aparecer bem
   }
 
   // A casa tocada no desenho chega aqui (função estável: o desenho não é refeito à toa).
@@ -384,7 +398,8 @@ export function MapaInterativo() {
 
   function limpar() {
     setSelecionado(null);
-    setComoChegar(false);
+    setModo(null);
+    setQuerSair(false);
     setBusca("");
     setErro("");
   }
@@ -434,48 +449,69 @@ export function MapaInterativo() {
           </svg>
         </div>
 
-        {/* Busca (por cima do mapa) */}
+        {/* Busca (compacta, por cima do mapa) e o botão "Sair do condomínio" */}
         <form
           onSubmit={aoBuscar}
           role="search"
           aria-label="Encontre uma casa"
-          className="pointer-events-none absolute inset-x-2 top-2 z-10 flex flex-col items-start gap-1.5"
+          className="pointer-events-none absolute left-2 right-16 top-2 z-10 flex flex-col items-start gap-1.5"
         >
           <label htmlFor="busca-casa" className="sr-only">
             Encontre uma casa pelo número
           </label>
-          <div className="pointer-events-auto flex w-full gap-1.5 rounded-full border border-borda-luz bg-surface/95 p-1 shadow-card backdrop-blur">
-            <div className="relative min-w-0 flex-1">
-              <Search aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 size-5 -translate-y-1/2 text-muted" />
-              <input
-                id="busca-casa"
-                type="text"
-                inputMode="numeric"
-                autoComplete="off"
-                placeholder="Nº da casa (ex.: 57)"
-                value={busca}
-                onChange={(e) => aoDigitar(e.target.value)}
-                aria-invalid={erro ? true : undefined}
-                aria-describedby="busca-erro"
-                className="min-h-12 w-full rounded-full border-2 border-transparent bg-transparent pl-11 pr-3 text-[1.05rem] text-ink placeholder:text-muted focus:border-pine focus:outline-none"
-              />
+          <div className="flex w-full items-center gap-1.5">
+            <div className="pointer-events-auto flex w-full max-w-[16rem] gap-1 rounded-full border border-borda-luz bg-surface/95 p-1 shadow-card backdrop-blur">
+              <div className="relative min-w-0 flex-1">
+                <Search aria-hidden className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+                <input
+                  ref={refBusca}
+                  id="busca-casa"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="Nº da casa"
+                  value={busca}
+                  onChange={(e) => aoDigitar(e.target.value)}
+                  aria-invalid={erro ? true : undefined}
+                  aria-describedby="busca-erro"
+                  className="min-h-10 w-full rounded-full border-2 border-transparent bg-transparent pl-9 pr-2 text-[1rem] text-ink placeholder:text-muted focus:border-pine focus:outline-none"
+                />
+              </div>
+              <button
+                type="submit"
+                className="botao-verde inline-flex min-h-10 shrink-0 items-center justify-center rounded-full px-3.5 text-[0.92rem] font-bold active:shadow-afundado"
+              >
+                Achar
+              </button>
             </div>
             <button
-              type="submit"
-              className="botao-verde inline-flex min-h-12 shrink-0 items-center justify-center rounded-full px-5 font-bold active:shadow-afundado"
+              type="button"
+              onClick={() => {
+                setPassosAbertos(false);
+                if (lote) {
+                  setModo("sair");
+                  return;
+                }
+                setQuerSair(true);
+                setErro("");
+                refBusca.current?.focus();
+              }}
+              className="pointer-events-auto inline-flex min-h-12 shrink-0 items-center gap-1.5 rounded-full border border-borda-luz bg-surface/95 px-3 text-[0.9rem] font-bold text-lake shadow-card backdrop-blur active:shadow-afundado"
             >
-              Achar
+              <LogOut aria-hidden className="size-4" />
+              Sair<span className="sr-only"> do condomínio</span>
             </button>
           </div>
           <p
             id="busca-erro"
             role="status"
             className={cx(
-              "pointer-events-auto rounded-full bg-surface/95 px-3 py-1 text-[0.9rem] font-bold text-plum shadow-card",
-              !erro && "sr-only",
+              "pointer-events-auto rounded-full bg-surface/95 px-3 py-1 text-[0.88rem] font-bold shadow-card",
+              erro ? "text-plum" : "text-lake",
+              !erro && !querSair && "sr-only",
             )}
           >
-            {erro}
+            {erro || (querSair ? "De qual casa você vai sair? Digite o número ou toque nela." : "")}
           </p>
         </form>
 
@@ -508,21 +544,30 @@ export function MapaInterativo() {
                   <p className="font-display text-[1.1rem] font-bold leading-tight text-destaque">Casa {lote.numero}</p>
                   <p className="truncate text-[0.82rem] text-muted">{lote.trecho}</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setComoChegar((v) => !v);
-                    setPassosAbertos(false);
-                  }}
-                  aria-pressed={comoChegar}
-                  className={cx(
-                    "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-[0.9rem] font-bold active:shadow-afundado",
-                    comoChegar ? "botao-verde" : "saltado text-pine",
-                  )}
-                >
-                  <Navigation aria-hidden className="size-4" />
-                  {comoChegar ? "Rota ligada" : "Como chegar"}
-                </button>
+                {(
+                  [
+                    ["chegar", "Chegar", Navigation, "text-pine"],
+                    ["sair", "Sair", LogOut, "text-lake"],
+                  ] as const
+                ).map(([valor, rotulo, Icone, cor]) => (
+                  <button
+                    key={valor}
+                    type="button"
+                    onClick={() => {
+                      setModo((m) => (m === valor ? null : valor));
+                      setPassosAbertos(false);
+                    }}
+                    aria-pressed={modo === valor}
+                    title={valor === "chegar" ? "Como chegar da portaria até a casa" : "Como sair da casa até a portaria"}
+                    className={cx(
+                      "inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full px-2.5 text-[0.88rem] font-bold active:shadow-afundado",
+                      modo === valor ? (valor === "sair" ? "bg-lake text-canvas shadow-card" : "botao-verde") : `saltado ${cor}`,
+                    )}
+                  >
+                    <Icone aria-hidden className="size-4" />
+                    {rotulo}
+                  </button>
+                ))}
                 <button
                   type="button"
                   onClick={limpar}
@@ -689,15 +734,22 @@ const Desenho = memo(function Desenho({
       ))}
 
       {/* Portaria e entrada */}
-      <rect x={268} y={895} width={56} height={100} fill={COR.rua} />
-      <circle cx={296} cy={858} r={30} fill={COR.rua} />
+      {/* Pista da portaria: duas faixas (entrada à direita, saída à esquerda) com o canteiro no meio. */}
+      <rect x={254} y={820} width={84} height={175} fill={COR.rua} />
       <circle cx={296} cy={858} r={17} fill={COR.arvore} opacity={0.85} />
 
       {/* Rota: da portaria até a frente da casa (contorno claro por baixo, para aparecer sobre qualquer cor). */}
       {rota ? (
         <g pointerEvents="none">
           <polyline points={pontos(rota.pontos)} fill="none" stroke={COR.sobreVerde} strokeWidth={13} strokeLinejoin="round" strokeLinecap="round" />
-          <polyline points={pontos(rota.pontos)} fill="none" stroke={COR.rota} strokeWidth={7} strokeLinejoin="round" strokeLinecap="round" />
+          <polyline
+            points={pontos(rota.pontos)}
+            fill="none"
+            stroke={rota.tipo === "sair" ? COR.saida : COR.rota}
+            strokeWidth={7}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
           <polyline
             points={pontos(rota.pontos)}
             fill="none"
@@ -707,12 +759,13 @@ const Desenho = memo(function Desenho({
             strokeLinecap="round"
             className="rota-andando"
           />
+          {/* perninha tracejada entre a casa e a rua (no fim ao chegar, no começo ao sair) */}
           <line
-            x1={rota.pontos.at(-1)![0]}
-            y1={rota.pontos.at(-1)![1]}
+            x1={(rota.tipo === "sair" ? rota.pontos[0] : rota.pontos.at(-1)!)[0]}
+            y1={(rota.tipo === "sair" ? rota.pontos[0] : rota.pontos.at(-1)!)[1]}
             x2={rota.casa[0]}
             y2={rota.casa[1]}
-            stroke={COR.rota}
+            stroke={rota.tipo === "sair" ? COR.saida : COR.rota}
             strokeWidth={4}
             strokeDasharray="5 5"
             strokeLinecap="round"
@@ -720,13 +773,17 @@ const Desenho = memo(function Desenho({
         </g>
       ) : null}
 
-      <rect x={272} y={918} width={48} height={26} rx={6} fill={COR.verde} />
-      <text x={296} y={935} textAnchor="middle" fontSize={11} fontWeight={700} fill={COR.sobreVerde} className="font-display">
+      <rect x={278} y={920} width={36} height={22} rx={5} fill={COR.verde} />
+      <text x={296} y={934} textAnchor="middle" fontSize={8} fontWeight={700} fill={COR.sobreVerde} className="font-display">
         Portaria
       </text>
-      {rota ? (
-        <text x={330} y={960} fontSize={12} fontWeight={700} fill={COR.rota}>
+      {rota?.tipo === "chegar" ? (
+        <text x={344} y={960} fontSize={12} fontWeight={700} fill={COR.rota}>
           Entrada
+        </text>
+      ) : rota?.tipo === "sair" ? (
+        <text x={248} y={960} textAnchor="end" fontSize={12} fontWeight={700} fill={COR.saida}>
+          Saída
         </text>
       ) : null}
       <text x={366} y={985} textAnchor="middle" fontSize={12} fill={COR.suave}>
