@@ -49,7 +49,15 @@ export default async function VotacaoGestao({
 
   const conta = (s: SituacaoEleicao) =>
     eleicoes.filter((e) => e.situacao === s).length;
-  const filtro = FILTROS.find((f) => f.id === params.ver) ?? FILTROS[0];
+  // Sem filtro escolhido: abre onde há votação (em andamento → rascunhos → todas),
+  // para a comissão nunca cair numa lista vazia tendo eleição cadastrada.
+  const padrao =
+    FILTROS.find((f) =>
+      eleicoes.some((e) =>
+        (f.situacoes as readonly SituacaoEleicao[]).includes(e.situacao),
+      ),
+    ) ?? FILTROS[0];
+  const filtro = FILTROS.find((f) => f.id === params.ver) ?? padrao;
   const lista = eleicoes.filter((e) =>
     (filtro.situacoes as readonly SituacaoEleicao[]).includes(e.situacao),
   );
