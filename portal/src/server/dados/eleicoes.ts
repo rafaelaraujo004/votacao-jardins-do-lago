@@ -70,7 +70,8 @@ export type AcaoEleicao =
   | "eleicao.votar"
   | "eleicao.bloqueio"
   | "eleicao.links"
-  | "eleicao.contatos";
+  | "eleicao.contatos"
+  | "eleicao.foto";
 export function acaoEleicao(a: AcaoEleicao): AcaoAuditada {
   return a;
 }
@@ -282,6 +283,8 @@ export type EleicaoGestao = {
   casasAptas: number;
   votaram: number;
   casasBloqueadas: string[];
+  /** Fotos dos integrantes (id do candidato → imagem). */
+  fotos: Record<string, string>;
   criadoPorNome: string;
   /** Só depois do encerramento. */
   apuracao: ResultadoApuracao | null;
@@ -304,6 +307,7 @@ export async function listarEleicoesGestao(
       ...resumoGestao(e, agora),
       casasAptas: e.casasAptas ?? aptasAgora,
       votaram: e.status === "publicada" ? await contarVotantes(ctx, e.id) : 0,
+      fotos: {},
       apuracao: null,
     })),
   );
@@ -338,7 +342,7 @@ export async function obterEleicaoGestao(
   const doc = await eleicoesDe(ctx).doc(id).get();
   if (!doc.exists) return null;
   const e = paraEleicao(doc.id, doc.data());
-  const [aptasAgora, votaram, apuracao] = await Promise.all([
+  const [aptasAgora, votaram, apuracao, fotos] = await Promise.all([
     e.casasAptas === null
       ? contarCasasAptas(ctx, adminDb(), e.casasBloqueadas)
       : Promise.resolve(e.casasAptas),
@@ -346,11 +350,13 @@ export async function obterEleicaoGestao(
     apuracaoLiberada(e, agora)
       ? lerApuracao(ctx, e, agora)
       : Promise.resolve(null),
+    fotosDaEleicao(ctx.condominioId, e.id),
   ]);
   return {
     ...resumoGestao(e, agora),
     casasAptas: aptasAgora,
     votaram,
+    fotos,
     apuracao,
   };
 }
@@ -419,6 +425,19 @@ export async function gravarEleicao(
           "Esta eleição já foi publicada: regras e candidatos não mudam mais.",
         );
       }
+      // As fotos acompanham a PESSOA (pelo nome): se a ordem mudou, a foto muda de id;
+      // se a pessoa saiu da chapa, a foto sai junto.
+      const fotos = await tx.get(ref.collection("fotos"));
+      const antigos = new Map(paraEleicao(atual.id, atual.data()).candidatos.map((c) => [c.id, c.nome.toLocaleLowerCase("pt-BR")]));
+      const novoId = new Map(v.candidatos.map((c) => [c.nome.toLocaleLowerCase("pt-BR"), c.id]));
+      const destinos = new Map<string, FirebaseFirestore.DocumentData>();
+      for (const f of fotos.docs) {
+        const nome = antigos.get(f.id);
+        const destino = nome ? novoId.get(nome) : undefined;
+        if (destino) destinos.set(destino, f.data());
+      }
+      for (const f of fotos.docs) if (!destinos.has(f.id)) tx.delete(f.ref);
+      for (const [destino, dados] of destinos) tx.set(ref.collection("fotos").doc(destino), dados);
       tx.update(ref, campos);
     } else {
       tx.create(ref, {
@@ -552,6 +571,8 @@ export type EleicaoMorador = {
   casaVotou: boolean;
   /** A comissão bloqueou esta casa de votar nesta eleição. */
   casaBloqueada: boolean;
+  /** Fotos dos integrantes (id do candidato → imagem). */
+  fotos: Record<string, string>;
   /** Participação e resultado: só depois do encerramento. */
   resultado: {
     apuracao: ResultadoApuracao;
@@ -588,7 +609,7 @@ async function paraMorador(
   agora: Date,
 ): Promise<EleicaoMorador> {
   const situacao = situacaoEleicao(e, agora);
-  const [votoCasa, resultado] = await Promise.all([
+  const [votoCasa, resultado, fotos] = await Promise.all([
     casaVotou(ctx, e.id),
     apuracaoLiberada(e, agora)
       ? Promise.all([
@@ -600,6 +621,7 @@ async function paraMorador(
           casasAptas: e.casasAptas ?? votaram,
         }))
       : Promise.resolve(null),
+    fotosDaEleicao(ctx.condominioId, e.id),
   ]);
   return {
     id: e.id,
@@ -618,6 +640,7 @@ async function paraMorador(
     casaVotouEm: votoCasa.em,
     casaVotou: votoCasa.votou,
     casaBloqueada: !!ctx.unitId && e.casasBloqueadas.includes(ctx.unitId),
+    fotos,
     resultado,
   };
 }
@@ -976,5 +999,57 @@ export async function salvarBloqueios(
       },
     });
     return { bloqueadas: lista.length, casasAptas: aptas };
+  });
+}
+
+// ---------- Fotos dos integrantes ----------
+
+const REGEX_FOTO = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/;
+
+/**
+ * Fotos dos integrantes (elections/{id}/fotos/{candidatoId} → { imagem }).
+ * Imagem pequena (já reduzida no navegador), guardada como "data URL".
+ * A chapa é pública para quem vota, então as fotos aparecem na cédula e no link.
+ */
+export async function fotosDaEleicao(condominioId: string, id: string, db: Firestore = adminDb()): Promise<Record<string, string>> {
+  const snap = await eleicoesDe({ condominioId }, db).doc(id).collection("fotos").get();
+  const fotos: Record<string, string> = {};
+  for (const d of snap.docs) {
+    const img = d.get("imagem");
+    if (typeof img === "string" && REGEX_FOTO.test(img)) fotos[d.id] = img;
+  }
+  return fotos;
+}
+
+/** Põe, troca ou tira (imagem vazia) a foto de um integrante. Pode mudar a qualquer momento: é só a foto. */
+export async function salvarFotoCandidato(
+  db: Firestore,
+  ctx: Contexto,
+  id: string,
+  candidatoId: string,
+  imagem: string,
+): Promise<{ nome: string }> {
+  garantirPermissao(ctx, "eleicoes.gerenciar");
+  if (imagem && !REGEX_FOTO.test(imagem)) throw new ErroDeNegocio("Arquivo de foto inválido.");
+  const ref = eleicoesDe(ctx, db).doc(id);
+  const fotoRef = ref.collection("fotos").doc(candidatoId);
+  return db.runTransaction(async (tx) => {
+    const doc = await tx.get(ref);
+    if (!doc.exists) throw new ErroDeNegocio("Eleição não encontrada. Atualize a página.");
+    const e = paraEleicao(doc.id, doc.data());
+    const c = e.candidatos.find((x) => x.id === candidatoId);
+    if (!c) throw new ErroDeNegocio("Integrante não encontrado. Atualize a página.");
+    if (imagem) tx.set(fotoRef, { imagem, atualizadoEm: FieldValue.serverTimestamp(), atualizadoPor: ctx.uid });
+    else tx.delete(fotoRef);
+    registrarAuditoria(db, tx, {
+      condominioId: ctx.condominioId,
+      uid: ctx.uid,
+      nome: ctx.nome,
+      papel: ctx.papel,
+      acao: acaoEleicao("eleicao.foto"),
+      alvo: `elections/${id}`,
+      detalhes: { integrante: c.nome, acao: imagem ? "trocou" : "tirou" },
+    });
+    return { nome: c.nome };
   });
 }

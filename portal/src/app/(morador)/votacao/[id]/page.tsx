@@ -17,6 +17,7 @@ import {
   ResultadoEleicao,
 } from "@/components/eleicoes/pecas";
 import { Cedula } from "@/components/eleicoes/cedula";
+import { ArvoreChapa } from "@/components/eleicoes/arvore-chapa";
 
 export const metadata: Metadata = { title: "Votação oficial" };
 
@@ -96,6 +97,7 @@ export default async function EleicaoMoradorPagina({
             candidatos={e.candidatos}
             escolhasPorCasa={e.escolhasPorCasa}
             permiteBranco={e.permiteBranco}
+            fotos={e.fotos}
           />
         </Cartao>
       ) : e.situacao === "aberta" && !e.casaVotou && !ctx.unitId ? (
@@ -138,7 +140,9 @@ export default async function EleicaoMoradorPagina({
           <TituloSecao id="titulo-integrantes">
             Integrantes da chapa
           </TituloSecao>
-          <ListaCandidatos candidatos={e.candidatos} numerado={false} />
+          <Cartao>
+            <ArvoreChapa candidatos={e.candidatos} fotos={e.fotos} />
+          </Cartao>
         </section>
       ) : null}
 
@@ -155,10 +159,13 @@ export default async function EleicaoMoradorPagina({
               >
                 {e.modo === "chapa" ? "Integrantes da chapa" : "Candidatos"}
               </TituloSecao>
-              <ListaCandidatos
-                candidatos={e.candidatos}
-                numerado={e.modo !== "chapa"}
-              />
+              {e.modo === "chapa" ? (
+                <Cartao>
+                  <ArvoreChapa candidatos={e.candidatos} fotos={e.fotos} />
+                </Cartao>
+              ) : (
+                <ListaCandidatos candidatos={e.candidatos} />
+              )}
             </section>
           ) : null}
           <Cartao className="flex items-start gap-3 text-ink-2">

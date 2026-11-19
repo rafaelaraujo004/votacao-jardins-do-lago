@@ -283,3 +283,14 @@ dialog.gaveta[open] { animation: gaveta-entrar 0.18s ease-out; }
   to { stroke-dashoffset: -18; }
 }
 .rota-andando { animation: rota-andando 0.9s linear infinite; }
+
+/* ---------- Árvore da chapa (votação oficial): galhos crescem e as pessoas aparecem ---------- */
+@keyframes arvore-surge { from { opacity: 0; transform: translateY(10px) scale(0.85); } to { opacity: 1; transform: none; } }
+@keyframes arvore-cresce-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes arvore-cresce-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.arvore-surge { animation: arvore-surge 520ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both; animation-delay: var(--atraso, 0ms); }
+.arvore-cresce-y { transform-origin: top center; animation: arvore-cresce-y 360ms ease-out both; animation-delay: var(--atraso, 0ms); }
+.arvore-cresce-x { transform-origin: center; animation: arvore-cresce-x 380ms ease-out both; animation-delay: var(--atraso, 0ms); }
+@media (prefers-reduced-motion: reduce) {
+  .arvore-surge, .arvore-cresce-y, .arvore-cresce-x { animation: none; }
+}

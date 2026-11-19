@@ -31,6 +31,7 @@ import {
 } from "@/lib/eleicoes";
 import { cx } from "@/lib/cx";
 import { FuncaoCandidato } from "./pecas";
+import { ArvoreChapa } from "./arvore-chapa";
 
 const classeOpcao = cx(
   "flex min-h-16 cursor-pointer items-start gap-3 rounded-2xl border-2 border-borda-luz bg-surface px-4 py-3 shadow-relevo",
@@ -54,6 +55,8 @@ type Props = {
   acao?: typeof votarEleicao;
   /** Campos escondidos extras (ex.: o código do link). */
   campos?: Record<string, string>;
+  /** Fotos dos integrantes (id → imagem), para a árvore da chapa. */
+  fotos?: Record<string, string>;
   modo: ModoEleicao;
   candidatos: Candidato[];
   escolhasPorCasa: number;
@@ -113,6 +116,7 @@ export function Cedula(props: Props) {
       {chapa ? (
         <CedulaChapa
           candidatos={props.candidatos}
+          fotos={props.fotos ?? {}}
           voto={voto}
           setVoto={setVoto}
         />
@@ -210,32 +214,22 @@ export function Cedula(props: Props) {
 
 function CedulaChapa({
   candidatos,
+  fotos,
   voto,
   setVoto,
 }: {
   candidatos: Candidato[];
+  fotos: Record<string, string>;
   voto: VotoChapa | null;
   setVoto: (v: VotoChapa) => void;
 }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="rounded-2xl border border-line bg-surface-item p-3.5">
-        <p className="mb-2 text-[0.82rem] font-bold uppercase tracking-wide text-muted">
+        <p className="mb-3 text-center text-[0.82rem] font-bold uppercase tracking-wide text-muted">
           Integrantes da chapa
         </p>
-        <ul className="flex flex-col gap-2">
-          {candidatos.map((c) => (
-            <li key={c.id}>
-              <p className="break-words font-bold leading-tight">{c.nome}</p>
-              <FuncaoCandidato funcao={c.funcao} casa={c.casa} />
-              {c.apresentacao ? (
-                <p className="mt-0.5 break-words text-[0.88rem] text-ink-2">
-                  {c.apresentacao}
-                </p>
-              ) : null}
-            </li>
-          ))}
-        </ul>
+        <ArvoreChapa candidatos={candidatos} fotos={fotos} />
       </div>
       <fieldset className="flex flex-col gap-2.5">
         <legend className="mb-1.5 text-[1.05rem] font-bold">

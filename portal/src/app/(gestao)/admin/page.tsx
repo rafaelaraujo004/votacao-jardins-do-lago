@@ -1,24 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  Building2,
-  CalendarDays,
-  ChartColumn,
-  ClipboardList,
-  DoorOpen,
-  Eye,
-  FolderOpen,
-  Landmark,
-  Link2,
-  Megaphone,
-  ScrollText,
-  Settings,
-  ShieldCheck,
-  Store,
-  Users,
-  Vote,
-  type LucideIcon,
-} from "lucide-react";
+import { Eye } from "lucide-react";
 import { exigirPermissao, type Contexto } from "@/server/contexto";
 import { resumoDoCondominio } from "@/server/dados/gestao";
 import { numerosDasSolicitacoes } from "@/server/dados/solicitacoes";
@@ -26,27 +8,32 @@ import { numerosClassificados } from "@/server/dados/classificados";
 import { numerosDaAgenda } from "@/server/dados/reservas";
 import type { Permissao } from "@/lib/permissoes";
 import { Etiqueta, TituloPagina } from "@/components/ui/basicos";
-import { AtalhoModulo, BlocoNumero, TituloSecao, type TomModulo } from "@/components/ui/painel";
+import { BlocoNumero, TituloSecao, type TomModulo } from "@/components/ui/painel";
+import { AtalhoComAjuda } from "@/components/ui/atalho-com-ajuda";
+import type { NomeIconeAtalho } from "@/components/ui/icones-atalho";
 
 export const metadata: Metadata = { title: "Painel" };
 
-/** Atalhos do painel (só aparecem os que o perfil pode usar). */
-const ATALHOS: { titulo: string; icone: LucideIcon; tom: TomModulo; permissao: Permissao; href: string }[] = [
-  { titulo: "Unidades", icone: Building2, tom: "verde", permissao: "unidades.ver", href: "/admin/unidades" },
-  { titulo: "Moradores e equipe", icone: Users, tom: "lago", permissao: "moradores.ver", href: "/admin/pessoas" },
-  { titulo: "Prestação de contas", icone: Landmark, tom: "areia", permissao: "financeiro.ver", href: "/admin/financeiro" },
-  { titulo: "Relatórios", icone: ChartColumn, tom: "lago", permissao: "relatorios.ver", href: "/admin/relatorios" },
-  { titulo: "Reservas e áreas", icone: CalendarDays, tom: "verde", permissao: "reservas.ver_todas", href: "/admin/reservas" },
-  { titulo: "Solicitações", icone: ClipboardList, tom: "vinho", permissao: "solicitacoes.gerenciar", href: "/admin/solicitacoes" },
-  { titulo: "Comunicados", icone: Megaphone, tom: "areia", permissao: "comunicados.ver", href: "/admin/comunicados" },
-  { titulo: "Documentos", icone: FolderOpen, tom: "lago", permissao: "documentos.ver", href: "/admin/documentos" },
-  { titulo: "Enquetes", icone: Vote, tom: "vinho", permissao: "enquetes.gerenciar", href: "/admin/enquetes" },
-  { titulo: "Classificados", icone: Store, tom: "areia", permissao: "classificados.moderar", href: "/admin/classificados" },
-  { titulo: "Portaria (operar)", icone: ShieldCheck, tom: "vinho", permissao: "portaria.operar", href: "/portaria" },
-  { titulo: "Histórico da portaria", icone: DoorOpen, tom: "lago", permissao: "visitantes.ver_todos", href: "/admin/portaria" },
-  { titulo: "Links de acesso", icone: Link2, tom: "lago", permissao: "area.gestao", href: "/admin/links" },
-  { titulo: "Informações do condomínio", icone: Settings, tom: "areia", permissao: "informacoes.gerenciar", href: "/admin/informacoes" },
-  { titulo: "Auditoria", icone: ScrollText, tom: "vinho", permissao: "auditoria.ver", href: "/admin/auditoria" },
+/** Atalhos do painel (só aparecem os que o perfil pode usar). Cada um tem um "i" com a explicação. */
+const ATALHOS: { titulo: string; icone: NomeIconeAtalho; tom: TomModulo; permissao: Permissao; alemDe?: Permissao; href: string; ajuda: string }[] = [
+  { titulo: "Votação oficial", icone: "Award", tom: "vinho", permissao: "eleicoes.gerenciar", href: "/admin/votacao", ajuda: "Eleição do condomínio com voto secreto. Aqui a comissão cria a votação, cadastra a chapa, publica, envia os links de voto pelo WhatsApp, bloqueia casas e acompanha no mapa quem já votou. O resultado aparece só depois do encerramento." },
+  { titulo: "Unidades", icone: "Building2", tom: "verde", permissao: "unidades.ver", href: "/admin/unidades", ajuda: "Lista das casas do condomínio (número, quadra e se está ativa). É a base para moradores, votação, portaria e cobranças." },
+  { titulo: "Moradores e equipe", icone: "Users", tom: "lago", permissao: "moradores.ver", href: "/admin/pessoas", ajuda: "Quem tem acesso ao portal: moradores de cada casa, portaria, conselho e administração. Aqui você cria acessos, gera senha nova e ajusta permissões." },
+  { titulo: "Lançar no caixa", icone: "ReceiptText", tom: "areia", permissao: "financeiro.lancar", href: "/admin/financeiro/novo", ajuda: "Atalho para registrar uma receita ou despesa do condomínio agora mesmo (taxa recebida, conta paga, compra)." },
+  { titulo: "Prestação de contas", icone: "Landmark", tom: "areia", permissao: "financeiro.ver", href: "/admin/financeiro", ajuda: "Entradas e saídas de cada mês, saldo e categorias. Quando o mês estiver conferido, publique para os moradores verem." },
+  { titulo: "Relatórios", icone: "ChartColumn", tom: "lago", permissao: "relatorios.ver", href: "/admin/relatorios", ajuda: "Gráficos e números do condomínio: financeiro, solicitações, reservas e portaria. Dá para baixar planilha." },
+  { titulo: "Reservas e áreas", icone: "CalendarDays", tom: "verde", permissao: "reservas.ver_todas", href: "/admin/reservas", ajuda: "Pedidos de reserva da área de lazer e dos equipamentos. Aprove ou recuse e configure as regras de cada área." },
+  { titulo: "Solicitações", icone: "ClipboardList", tom: "vinho", permissao: "solicitacoes.gerenciar", href: "/admin/solicitacoes", ajuda: "Pedidos e reclamações dos moradores (lâmpada, vazamento, barulho…). Responda e acompanhe até resolver." },
+  { titulo: "Novo comunicado", icone: "SquarePen", tom: "areia", permissao: "comunicados.publicar", href: "/admin/comunicados/novo", ajuda: "Atalho para escrever um aviso agora. Ele aparece no Início de todos os moradores e pode ser compartilhado no WhatsApp." },
+  { titulo: "Comunicados", icone: "Megaphone", tom: "areia", permissao: "comunicados.ver", href: "/admin/comunicados", ajuda: "Todos os avisos do condomínio: publicados, rascunhos e arquivados." },
+  { titulo: "Documentos", icone: "FolderOpen", tom: "lago", permissao: "documentos.ver", href: "/admin/documentos", ajuda: "Regimento, atas, convenção e outros arquivos. Escolha quem pode ver cada documento." },
+  { titulo: "Enquetes", icone: "Vote", tom: "vinho", permissao: "enquetes.gerenciar", href: "/admin/enquetes", ajuda: "Perguntas rápidas para os moradores opinarem (um voto por casa). Diferente da votação oficial: serve para consultas do dia a dia." },
+  { titulo: "Classificados", icone: "Store", tom: "areia", permissao: "classificados.moderar", href: "/admin/classificados", ajuda: "Anúncios de compra, venda e serviços entre vizinhos. Aprove ou recuse antes de aparecerem para todos." },
+  { titulo: "Portaria", icone: "ShieldCheck", tom: "vinho", permissao: "portaria.operar", alemDe: "area.portaria", href: "/portaria", ajuda: "Tela de trabalho da portaria: conferir o código de visitas autorizadas, registrar entrada e saída e receber encomendas." },
+  { titulo: "Histórico da portaria", icone: "DoorOpen", tom: "lago", permissao: "visitantes.ver_todos", href: "/admin/portaria", ajuda: "Quem entrou e saiu, visitas autorizadas e encomendas. Também faz a limpeza dos dados antigos (LGPD)." },
+  { titulo: "Links de acesso", icone: "Link2", tom: "lago", permissao: "area.gestao", href: "/admin/links", ajuda: "Links prontos para mandar aos moradores e à equipe entrarem no portal." },
+  { titulo: "Informações do condomínio", icone: "Settings", tom: "areia", permissao: "informacoes.gerenciar", href: "/admin/informacoes", ajuda: "PIX da taxa, telefone da ronda, responsável pelas reservas e outros dados que aparecem para os moradores." },
+  { titulo: "Auditoria", icone: "ScrollText", tom: "vinho", permissao: "auditoria.ver", href: "/admin/auditoria", ajuda: "Registro de tudo que foi feito no portal: quem fez, o quê e quando. Na votação, registra que a casa votou — nunca em quem." },
 ];
 
 type Pendencia = { rotulo: string; valor: number; detalhe: string; href: string };
@@ -96,7 +83,7 @@ export default async function PainelGestao() {
   const [resumo, pendencias] = await Promise.all([resumoDoCondominio(ctx), pendenciasDo(ctx)]);
   const somenteConsulta = !ctx.permissoes.has("unidades.gerenciar");
   // Só mostra os atalhos que o perfil pode usar.
-  const atalhos = ATALHOS.filter((a) => ctx.permissoes.has(a.permissao));
+  const atalhos = ATALHOS.filter((a) => ctx.permissoes.has(a.permissao) && (!a.alemDe || ctx.permissoes.has(a.alemDe)));
   const gestao = resumo.pessoasPorPapel.admin + resumo.pessoasPorPapel.conselheiro;
 
   return (
@@ -148,7 +135,7 @@ export default async function PainelGestao() {
           <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 xl:grid-cols-7">
             {atalhos.map((a) => (
               <li key={a.titulo}>
-                <AtalhoModulo icone={a.icone} titulo={a.titulo} href={a.href} tom={a.tom} />
+                <AtalhoComAjuda icone={a.icone} titulo={a.titulo} href={a.href} tom={a.tom} ajuda={a.ajuda} />
               </li>
             ))}
           </ul>

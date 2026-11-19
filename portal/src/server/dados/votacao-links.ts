@@ -11,6 +11,7 @@ import {
   apuracaoLiberada,
   base,
   comprovanteDaCasa,
+  fotosDaEleicao,
   contarVotantes,
   data,
   eleicoesDe,
@@ -400,6 +401,8 @@ export type VotacaoPorLink = {
   casaVotou: boolean;
   casaVotouEm: Date | null;
   casaBloqueada: boolean;
+  /** Fotos dos integrantes (id do candidato → imagem). */
+  fotos: Record<string, string>;
   resultado: {
     apuracao: ResultadoApuracao;
     votaram: number;
@@ -488,6 +491,7 @@ export async function votacaoPorCodigo(
     casaVotou: votante.exists,
     casaVotouEm: votante.exists ? data(votante.get("votouEm")) : null,
     casaBloqueada: e.casasBloqueadas.includes(alvo.unitId),
+    fotos: await fotosDaEleicao(alvo.condominioId, e.id, db),
     resultado,
     senhaOk: !!opcoes.senhaHash && mesmoHash(opcoes.senhaHash, alvo.senhaHash),
   };

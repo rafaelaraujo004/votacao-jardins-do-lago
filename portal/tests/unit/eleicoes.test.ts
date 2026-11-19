@@ -288,3 +288,16 @@ describe("esquemaBloqueio", () => {
     expect(esquemaBloqueio.safeParse({ id: "e1", adicionar: "a/b" }).success).toBe(false);
   });
 });
+
+describe("esquemaFotoCandidato", () => {
+  it("aceita foto pequena em data URL ou vazio (tirar); recusa outra coisa", async () => {
+    const { esquemaFotoCandidato } = await import("@/lib/validacao-eleicoes");
+    const ok = { id: "e1", candidato: "c1", foto: "data:image/jpeg;base64,/9j/4AAQSkZJRg==" };
+    expect(esquemaFotoCandidato.safeParse(ok).success).toBe(true);
+    expect(esquemaFotoCandidato.safeParse({ ...ok, foto: "" }).success).toBe(true);
+    expect(esquemaFotoCandidato.safeParse({ ...ok, foto: "https://x.com/a.jpg" }).success).toBe(false);
+    expect(esquemaFotoCandidato.safeParse({ ...ok, foto: "data:image/svg+xml;base64,PHN2Zz4=" }).success).toBe(false);
+    expect(esquemaFotoCandidato.safeParse({ ...ok, foto: `data:image/png;base64,${"A".repeat(300_001)}` }).success).toBe(false);
+    expect(esquemaFotoCandidato.safeParse({ ...ok, candidato: "../x" }).success).toBe(false);
+  });
+});

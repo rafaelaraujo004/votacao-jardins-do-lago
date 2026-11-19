@@ -10,7 +10,9 @@
  *  3. Eleição: cria, como RASCUNHO, a "Eleição do síndico e conselho 2026/2027" — chapa
  *     única (Sim ou Não), dia 29/11/2026, das 7h às 17h (horário do condomínio).
  *     Se já existir uma eleição com esse título, não cria outra.
- *  4. Registra tudo na auditoria (sem telefones).
+ *  4. Fotos da chapa (recortadas do cartaz): põe a foto de cada integrante que ainda
+ *     não tem foto. A comissão pode trocar depois no portal (Votação oficial → Fotos da chapa).
+ *  5. Registra tudo na auditoria (sem telefones).
  * NÃO publica e NÃO gera os links: isso a comissão faz no portal (Votação oficial →
  * conferir → Publicar → Links de voto e WhatsApp → Gerar links).
  *
@@ -57,11 +59,11 @@ const ELEICAO = {
   abre: "2026-11-29T07:00",
   fecha: "2026-11-29T17:00",
   chapa: [
-    { nome: "José Amaral", funcao: "Síndico" },
-    { nome: "Iza Rabelo", funcao: "Vice-síndica" },
-    { nome: "Aliny", funcao: "Tesoureira" },
-    { nome: "Bruno", funcao: "Fiscal" },
-    { nome: "Andrey", funcao: "Fiscal" },
+    { nome: "José Amaral", funcao: "Síndico", foto: "c1-jose.jpg" },
+    { nome: "Iza Rabelo", funcao: "Vice-síndica", foto: "c2-iza.jpg" },
+    { nome: "Aliny", funcao: "Tesoureira", foto: "c3-aliny.jpg" },
+    { nome: "Bruno", funcao: "Fiscal", foto: "c4-bruno.jpg" },
+    { nome: "Andrey", funcao: "Fiscal", foto: "c5-andrey.jpg" },
   ],
 };
 
@@ -95,7 +97,7 @@ if (SIMULADOR) {
   });
 }
 
-const montada = montarCandidatos(ELEICAO.chapa.map((c) => ({ ...c, casa: "", apresentacao: "", nascimento: "" })));
+const montada = montarCandidatos(ELEICAO.chapa.map((c) => ({ nome: c.nome, funcao: c.funcao, casa: "", apresentacao: "", nascimento: "" })));
 if (typeof montada === "string") falhar(`Chapa com problema: ${montada}`);
 const candidatos: Candidato[] = montada;
 
@@ -153,6 +155,12 @@ async function main() {
   const eleicoes = await refCond.collection("elections").where("titulo", "==", ELEICAO.titulo).get();
   const jaExiste = !eleicoes.empty;
 
+  // ---------- 4. Fotos ----------
+  const PASTA_FOTOS = path.resolve(import.meta.dirname, "dados-votacao", "fotos-chapa");
+  const fotosArquivo = new Map(
+    ELEICAO.chapa.map((c) => [c.nome, path.join(PASTA_FOTOS, c.foto)] as const).filter(([, arq]) => existsSync(arq)),
+  );
+
   // ---------- Resumo ----------
   const fmt = (d: Date) => d.toLocaleString("pt-BR", { timeZone: fuso, dateStyle: "short", timeStyle: "short" });
   console.log(`\nCondomínio: ${cond.get("nome")} (${ID}) · projeto ${projectId}${SIMULADOR ? " · SIMULADOR" : ""}`);
@@ -167,6 +175,7 @@ async function main() {
     `\n3. Eleição: ${jaExiste ? `já existe ("${ELEICAO.titulo}") — não vou criar outra.` : `vou criar como RASCUNHO "${ELEICAO.titulo}", ${fmt(abreEm)} até ${fmt(fechaEm)}.`}`,
   );
   console.log(`   Chapa: ${candidatos.map((c) => `${c.nome} (${c.funcao})`).join(", ")}.`);
+  console.log(`\n4. Fotos: ${fotosArquivo.size} de ${candidatos.length} integrantes têm foto pronta (só grava em quem ainda não tem foto).`);
 
   if (SO_CONFERIR) {
     console.log("\n(--conferir: nada foi gravado. Rode de novo sem --conferir para gravar.)\n");
@@ -248,6 +257,24 @@ async function main() {
       auditoria("eleicao.criar", `elections/${ref.id}`, { titulo: ELEICAO.titulo, candidatos: candidatos.length, origem: "script" }),
     );
     await lote.commit();
+  }
+  // Fotos (só em quem ainda não tem)
+  const eleicaoRef = jaExiste
+    ? eleicoes.docs[0].ref
+    : (await refCond.collection("elections").where("titulo", "==", ELEICAO.titulo).get()).docs[0]?.ref;
+  if (eleicaoRef) {
+    const cands = ((await eleicaoRef.get()).get("candidatos") ?? []) as { id: string; nome: string }[];
+    const existentes = new Set((await eleicaoRef.collection("fotos").get()).docs.map((d) => d.id));
+    let postas = 0;
+    for (const c of cands) {
+      const arq = fotosArquivo.get(c.nome);
+      if (!arq || existentes.has(c.id)) continue;
+      const imagem = `data:image/jpeg;base64,${readFileSync(arq).toString("base64")}`;
+      await eleicaoRef.collection("fotos").doc(c.id).set({ imagem, atualizadoEm: agora, atualizadoPor: "script:cadastrar-votacao" });
+      postas++;
+    }
+    if (postas) await refCond.collection("auditLogs").add(auditoria("eleicao.foto", `elections/${eleicaoRef.id}`, { fotos: postas, origem: "script" }));
+    console.log(`   Fotos postas: ${postas}.`);
   }
   console.log("\n✔ Gravado. Agora, no portal: Votação oficial → abra a eleição → confira → Publicar → Links de voto e WhatsApp → Gerar links.\n");
 }

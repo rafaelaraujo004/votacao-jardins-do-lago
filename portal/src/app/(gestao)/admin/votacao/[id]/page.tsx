@@ -31,6 +31,8 @@ import {
   ResultadoEleicao,
 } from "@/components/eleicoes/pecas";
 import { BloqueioCasas } from "@/components/eleicoes/bloqueio-casas";
+import { ArvoreChapa } from "@/components/eleicoes/arvore-chapa";
+import { FotosChapa } from "@/components/eleicoes/fotos-chapa";
 import {
   MapaVotacao,
   type SituacaoCasaMapa,
@@ -206,11 +208,27 @@ export default async function EleicaoGestaoPagina({
         <TituloSecao id="titulo-candidatos" extra={`${e.candidatos.length}`}>
           {e.modo === "chapa" ? "Integrantes da chapa" : "Candidatos"}
         </TituloSecao>
-        <ListaCandidatos
-          candidatos={e.candidatos}
-          numerado={e.modo !== "chapa"}
-        />
+        {e.modo === "chapa" ? (
+          <Cartao>
+            <ArvoreChapa candidatos={e.candidatos} fotos={e.fotos} />
+          </Cartao>
+        ) : (
+          <ListaCandidatos candidatos={e.candidatos} />
+        )}
       </section>
+
+      {e.modo === "chapa" ? (
+        <section aria-labelledby="titulo-fotos" className="flex flex-col gap-3">
+          <TituloSecao id="titulo-fotos">Fotos da chapa</TituloSecao>
+          <Cartao>
+            <FotosChapa
+              eleicaoId={e.id}
+              candidatos={e.candidatos}
+              fotos={e.fotos}
+            />
+          </Cartao>
+        </section>
+      ) : null}
 
       {!rascunho ? (
         <section

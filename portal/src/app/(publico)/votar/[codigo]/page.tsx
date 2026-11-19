@@ -25,6 +25,7 @@ import { BotaoTema } from "@/components/ui/tema";
 import { classeBotaoFaixa } from "@/components/layout/faixa-topo";
 import { FaixaPetalas } from "@/components/ui/painel";
 import { Cedula } from "@/components/eleicoes/cedula";
+import { ArvoreChapa } from "@/components/eleicoes/arvore-chapa";
 import { SenhaLink } from "@/components/eleicoes/senha-link";
 import {
   EtiquetaEleicao,
@@ -181,13 +182,14 @@ export default async function VotarPorLink({
           candidatos={v.candidatos}
           escolhasPorCasa={v.escolhasPorCasa}
           permiteBranco={v.permiteBranco}
+          fotos={v.fotos}
         />
       ) : v.resultado ? (
         <div className="flex flex-col gap-3">
           <h2 className="font-bold">Resultado final</h2>
           <ResultadoEleicao apuracao={v.resultado.apuracao} vagas={v.vagas} />
           {v.modo === "chapa" ? (
-            <ListaCandidatos candidatos={v.candidatos} numerado={false} />
+            <ArvoreChapa candidatos={v.candidatos} fotos={v.fotos} />
           ) : null}
         </div>
       ) : (
@@ -195,10 +197,11 @@ export default async function VotarPorLink({
           <h2 className="font-bold">
             {v.modo === "chapa" ? "Integrantes da chapa" : "Candidatos"}
           </h2>
-          <ListaCandidatos
-            candidatos={v.candidatos}
-            numerado={v.modo !== "chapa"}
-          />
+          {v.modo === "chapa" ? (
+            <ArvoreChapa candidatos={v.candidatos} fotos={v.fotos} />
+          ) : (
+            <ListaCandidatos candidatos={v.candidatos} />
+          )}
         </div>
       )}
 

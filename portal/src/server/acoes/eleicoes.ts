@@ -16,6 +16,7 @@ import {
   mudarStatusEleicao,
   registrarVotoEleicao,
   salvarBloqueios,
+  salvarFotoCandidato,
 } from "../dados/eleicoes";
 import {
   ErroDeNegocio,
@@ -29,6 +30,7 @@ import {
   esquemaBloqueio,
   esquemaCedula,
   esquemaEleicao,
+  esquemaFotoCandidato,
   esquemaIdEleicao,
 } from "@/lib/validacao-eleicoes";
 
@@ -148,5 +150,17 @@ export async function salvarBloqueiosEleicao(
     return r.bloqueadas === 0
       ? "Nenhuma casa bloqueada: todas as casas ativas podem votar."
       : `${r.bloqueadas} ${r.bloqueadas === 1 ? "casa bloqueada" : "casas bloqueadas"}. ${r.casasAptas} podem votar.`;
+  });
+}
+
+/** Põe, troca ou tira a foto de um integrante da chapa (a foto vem já reduzida pelo navegador). */
+export async function salvarFotoIntegrante(_: Resultado, dados: FormData): Promise<Resultado> {
+  return executar(async () => {
+    const ctx = garantirPermissao(await getContexto(), "eleicoes.gerenciar");
+    const v = lerFormulario(esquemaFotoCandidato, dados);
+    const r = await salvarFotoCandidato(adminDb(), ctx, v.id, v.candidato, v.foto);
+    revalidar(v.id);
+    revalidatePath("/votar/[codigo]", "page");
+    return v.foto ? `Foto de ${r.nome} atualizada.` : `Foto de ${r.nome} retirada.`;
   });
 }

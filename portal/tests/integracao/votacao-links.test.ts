@@ -7,7 +7,7 @@ import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import type { Contexto } from "@/server/contexto";
-import { gravarEleicao, mudarStatusEleicao, registrarVotoEleicao, salvarBloqueios } from "@/server/dados/eleicoes";
+import { fotosDaEleicao, gravarEleicao, mudarStatusEleicao, registrarVotoEleicao, salvarBloqueios, salvarFotoCandidato } from "@/server/dados/eleicoes";
 import {
   REGEX_CODIGO,
   comprovantePorCodigo,
@@ -305,5 +305,45 @@ describe("senha do link e comprovante", () => {
     expect(c).toMatchObject({ casa: "Casa 1", codigo: r.comprovante, titulo: "Eleição do síndico e conselho 2026/2027" });
     expect(JSON.stringify(c)).not.toMatch(/"(sim|nao)"/);
     expect(await comprovantePorCodigo(codigo, null, db)).toBeNull();
+  });
+});
+
+describe("fotos da chapa", () => {
+  const FOTO = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ==";
+  it("comissão põe, troca e tira a foto; aparece no link; morador não mexe", async () => {
+    const id = await chapaAberta();
+    await gerarLinksFaltantes(db, comissao, id);
+    expect(await salvarFotoCandidato(db, comissao, id, "c1", FOTO)).toEqual({ nome: "Integrante 1" });
+    expect(await fotosDaEleicao("a", id, db)).toEqual({ c1: FOTO });
+    const codigo = await codigoDa(id, "casa-001");
+    expect((await votacaoPorCodigo(codigo, { db }))?.fotos).toEqual({ c1: FOTO });
+    await salvarFotoCandidato(db, comissao, id, "c1", "");
+    expect(await fotosDaEleicao("a", id, db)).toEqual({});
+    await expect(salvarFotoCandidato(db, comissao, id, "c9", FOTO)).rejects.toThrow(/não encontrado/);
+    await expect(salvarFotoCandidato(db, comissao, id, "c1", "javascript:alert(1)")).rejects.toThrow(/inválido/);
+    await expect(salvarFotoCandidato(db, contexto("m1", "casa-001", "morador"), id, "c1", FOTO)).rejects.toThrow();
+    const logs = await db.collection("condominiums/a/auditLogs").where("acao", "==", "eleicao.foto").get();
+    expect(logs.size).toBe(2);
+  });
+});
+
+describe("fotos acompanham a pessoa ao editar o rascunho", () => {
+  it("mudou a ordem: a foto vai junto; saiu da chapa: a foto sai", async () => {
+    const id = await gravarEleicao(db, comissao, {
+      id: null, titulo: "Rascunho com fotos", cargo: "Chapa", modo: "chapa", vagas: 2, escolhasPorCasa: 1,
+      permiteBranco: false, regraDesempate: "comissao", abreEm: new Date(Date.now() + HORA), fechaEm: new Date(Date.now() + 9 * HORA),
+      candidatos: [cand(1), cand(2)],
+    });
+    await salvarFotoCandidato(db, comissao, id, "c1", "data:image/jpeg;base64,AAAA");
+    await salvarFotoCandidato(db, comissao, id, "c2", "data:image/jpeg;base64,BBBB");
+    // Nova ordem: o Integrante 2 vira o 1º e o Integrante 1 sai; entra um novo.
+    const novo = { ...cand(2), id: "c1", numero: 1 };
+    const outro = { ...cand(3), id: "c2", numero: 2, nome: "Pessoa Nova" };
+    await gravarEleicao(db, comissao, {
+      id, titulo: "Rascunho com fotos", cargo: "Chapa", modo: "chapa", vagas: 2, escolhasPorCasa: 1,
+      permiteBranco: false, regraDesempate: "comissao", abreEm: new Date(Date.now() + HORA), fechaEm: new Date(Date.now() + 9 * HORA),
+      candidatos: [novo, outro],
+    });
+    expect(await fotosDaEleicao("a", id, db)).toEqual({ c1: "data:image/jpeg;base64,BBBB" });
   });
 });

@@ -201,3 +201,16 @@ export const esquemaVotoLink = z.object({
     ),
   escolha: esquemaCedula.shape.escolha,
 });
+
+/** Tamanho máximo da foto de um integrante (já reduzida no navegador para ~320px). */
+export const MAX_FOTO_DATAURL = 300_000;
+
+/** Foto de um integrante da chapa: imagem pequena em "data URL" (JPEG/PNG/WebP). Vazia = tirar a foto. */
+export const esquemaFotoCandidato = z.object({
+  id: idDocumento,
+  candidato: z.string().regex(/^c\d{1,2}$/, "Integrante inválido."),
+  foto: z
+    .string()
+    .max(MAX_FOTO_DATAURL, "A foto ficou grande demais. Escolha outra.")
+    .regex(/^(data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2})?$/, "Arquivo de foto inválido."),
+});

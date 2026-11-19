@@ -82,6 +82,7 @@ export const ACOES_AUDITADAS = [
   "eleicao.bloqueio",
   "eleicao.links",
   "eleicao.contatos",
+  "eleicao.foto",
   // Classificados
   "classificado.criar",
   "classificado.aprovar",
