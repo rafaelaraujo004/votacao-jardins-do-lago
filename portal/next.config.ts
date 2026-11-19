@@ -60,6 +60,8 @@ const nextConfig: NextConfig = {
     // Voltar a uma tela visitada há pouco é instantâneo (sem ir ao servidor de novo).
     // Qualquer gravação (Server Action com revalidatePath) limpa essa memória na hora.
     staleTimes: { dynamic: 30, static: 180 },
+    // Lista do Word dos contatos (até 4 MB; a Vercel aceita no máximo 4,5 MB por envio).
+    serverActions: { bodySizeLimit: "4mb" },
   },
   turbopack: {
     rules: {

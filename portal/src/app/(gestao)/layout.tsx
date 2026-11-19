@@ -44,6 +44,7 @@ const GRUPOS: { titulo: string; itens: Item[] }[] = [
       { rotulo: "Comunicados", icone: "Megaphone", href: "/admin/comunicados", permissao: "comunicados.ver" },
       { rotulo: "Documentos", icone: "FolderOpen", href: "/admin/documentos", permissao: "documentos.ver" },
       { rotulo: "Enquetes", icone: "Vote", href: "/admin/enquetes", permissao: "enquetes.gerenciar" },
+      { rotulo: "Votação oficial", icone: "Award", href: "/admin/votacao", permissao: "eleicoes.gerenciar" },
       { rotulo: "Classificados", icone: "Store", href: "/admin/classificados", permissao: "classificados.moderar" },
     ],
   },

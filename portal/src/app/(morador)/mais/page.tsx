@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import {
+  Award,
   CalendarDays,
   ChevronRight,
   ClipboardList,
@@ -40,6 +41,7 @@ const DA_CASA: Modulo[] = [
 const DO_CONDOMINIO: Modulo[] = [
   { icone: Megaphone, titulo: "Comunicados", descricao: "Avisos da administração", tom: "areia", href: "/comunicados", permissao: "comunicados.ver" },
   { icone: Vote, titulo: "Enquetes", descricao: "Um voto por casa nas decisões do condomínio", tom: "vinho", href: "/enquetes", permissao: "enquetes.votar" },
+  { icone: Award, titulo: "Votação oficial", descricao: "Eleições do condomínio com voto secreto", tom: "vinho", href: "/votacao", permissao: "eleicoes.votar" },
   { icone: FolderOpen, titulo: "Documentos", descricao: "Regimento, convenção, atas e prestações", tom: "lago", href: "/documentos", permissao: "documentos.ver" },
   { icone: Store, titulo: "Classificados", descricao: "Compra, venda e serviços entre vizinhos", tom: "areia", href: "/classificados", permissao: "classificados.usar" },
   { icone: Phone, titulo: "Contatos úteis", descricao: "Portaria, ronda, reservas e PIX da taxa", tom: "vinho", href: "/contatos", permissao: "informacoes.ver" },

@@ -58,6 +58,10 @@ Não existe área pública. Todas as páginas, ações e exportações exigem se
 | `/admin/documentos` | `documentos.ver` = consulta; `documentos.gerenciar` = cadastrar, editar, desativar |
 | `/enquetes`, `/enquetes/[id]` (morador) | `enquetes.votar` (1 voto por casa, sem troca) |
 | `/admin/enquetes` | `enquetes.gerenciar` (vê só totais, nunca o voto de cada casa) |
+| `/votacao`, `/votacao/[id]` (morador) | `eleicoes.votar` (1 voto por casa, secreto, sem troca) |
+| `/admin/votacao`, `/relatorio/votacao/[id]` | `eleicoes.gerenciar` (participação e, só no encerramento, a apuração) |
+| `/admin/votacao/[id]/links` | `eleicoes.gerenciar` (contatos, links, senhas e WhatsApp) |
+| `/votar/[código]` (público) | sem login: o código do link + a senha de 6 números da casa |
 | `/classificados` (morador) | `classificados.usar` (anúncios aprovados: só primeiro nome e o WhatsApp escolhido pelo autor) |
 | `/classificados/moderar` (morador com extra) | `classificados.moderar` |
 | `/admin/classificados` | `classificados.moderar` (vê a casa do autor) |
@@ -73,4 +77,5 @@ Não existe área pública. Todas as páginas, ações e exportações exigem se
 - `tests/integracao/usuario-morador.test.ts` — login do morador no simulador (e-mail sintético, usuário em minúsculas, senha errada, suspenso).
 - `tests/unit/destino-seguro.test.ts` — o `?volta=` só aceita caminhos internos e que combinam com o perfil.
 - `tests/integracao/enquetes.test.ts` — 1 voto por casa (inclusive dois ao mesmo tempo), casa inativa, auditoria sem a opção.
+- `tests/integracao/eleicoes.test.ts` — votação oficial: 1 voto por casa (inclusive simultâneo), nenhuma cédula guardada, auditoria sem a escolha, publicada imutável.
 - `tests/integracao/demo-modulos.test.ts` — os dados de demonstração são lidos certo e o morador só vê o que pode.

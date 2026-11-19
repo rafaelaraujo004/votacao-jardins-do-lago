@@ -3,7 +3,7 @@
  *
  * Cada parte do portal tem um link curto e fácil de mandar pelo WhatsApp:
  *   /sindico  /conselho  /portaria  /morador  /reservas  /visitas  /encomendas
- *   /financeiro  /comunicados  /solicitacoes  /documentos  /enquetes  /classificados
+ *   /financeiro  /comunicados  /solicitacoes  /documentos  /enquetes  /votacao  /classificados
  *   /mapa  /contatos
  *
  * O MESMO link serve para todo mundo: cada pessoa cai na versão do módulo do SEU perfil.
@@ -188,6 +188,19 @@ export const MODULOS: readonly Modulo[] = [
     destinos: {
       morador: { href: "/enquetes", permissao: "enquetes.votar" },
       gestao: { href: "/admin/enquetes", permissao: "enquetes.gerenciar" },
+    },
+    detalhe: true,
+  },
+  {
+    chave: "votacao",
+    nome: "Votação oficial",
+    link: "/votacao",
+    descricao: "Eleição do condomínio com voto secreto (um voto por casa).",
+    para: "moradores",
+    icone: "Vote",
+    destinos: {
+      morador: { href: "/votacao", permissao: "eleicoes.votar" },
+      gestao: { href: "/admin/votacao", permissao: "eleicoes.gerenciar" },
     },
     detalhe: true,
   },

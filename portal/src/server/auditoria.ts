@@ -73,6 +73,15 @@ export const ACOES_AUDITADAS = [
   "enquete.publicar",
   "enquete.encerrar",
   "enquete.votar",
+  // Votação oficial (o voto é registrado SEM a escolha)
+  "eleicao.criar",
+  "eleicao.editar",
+  "eleicao.publicar",
+  "eleicao.rascunho",
+  "eleicao.votar",
+  "eleicao.bloqueio",
+  "eleicao.links",
+  "eleicao.contatos",
   // Classificados
   "classificado.criar",
   "classificado.aprovar",

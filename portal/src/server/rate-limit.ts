@@ -40,3 +40,20 @@ export async function consumirTentativa(
     return { permitido: true, restantes: limite - contagem - 1 };
   });
 }
+
+/**
+ * Só CONSULTA se a chave já passou do limite (não conta uma tentativa).
+ * Use com consumirTentativa chamado só nas tentativas ERRADAS: assim acertar não gasta tentativas.
+ */
+export async function limiteEstourado(
+  db: Firestore,
+  acao: string,
+  identificador: string,
+  limite: number,
+  janelaSegundos: number,
+): Promise<boolean> {
+  const chave = createHash("sha256").update(`${acao}:${identificador}`).digest("hex");
+  const dados = (await db.collection("rateLimits").doc(chave).get()).data() as { inicio?: number; contagem?: number } | undefined;
+  if (dados?.inicio === undefined || Date.now() - dados.inicio >= janelaSegundos * 1000) return false;
+  return (dados.contagem ?? 0) >= limite;
+}

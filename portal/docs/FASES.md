@@ -75,6 +75,8 @@ Uma fase só é "concluída" com: tela funcionando, validação, integração re
 ## Fase 5 — Enquetes, classificados e relatórios (entregue)
 
 - **Enquetes** (`/enquetes` e `/admin/enquetes`): **1 voto por casa**, sem troca; resultado "sempre" ou "só depois de encerrar"; o síndico vê só totais (nunca o voto de cada casa).
+- **Votação oficial** (`/votacao` e `/admin/votacao`, 19/11/2026): a eleição é **dentro do portal**, com **voto secreto** — nenhuma cédula é guardada, só "a casa votou" e a soma dos votos, na mesma transação. Padrão do Jardins do Lago: **chapa única, Sim ou Não**, eleita com **metade mais 1 dos votos** (mandato 2026/2027); também há o modo "escolher entre candidatos". 1 voto por casa; publicada não muda; sem parcial; **bloqueio de casas** pela comissão (casa que já votou não pode ser bloqueada); **mapa** de quem votou e quem falta.
+- **Link de voto por casa** (`/votar/{código}`, sem login) + **senha de 6 números** na mesma mensagem do WhatsApp (passo a passo). Senha errada 5× trava o link por 15 min. A comissão importa os contatos da **lista do Word** (CASA, NOME, CONTATOS; DDD padrão 94), gera os links e envia pelo WhatsApp (1º e 2º contato) em `/admin/votacao/[id]/links`; "Trocar link" invalida o antigo. Depois do voto: **comprovante em PDF** (casa, data/hora e código — nunca o voto). Ata para imprimir em `/relatorio/votacao/[id]`.
 - **Classificados** (`/classificados` e `/admin/classificados`): anúncio nasce "aguardando aprovação"; aprovado fica 30 dias no ar; mostra só o **primeiro nome** e o WhatsApp que o próprio autor quis mostrar (nunca a casa). Morador com a permissão extra `classificados.moderar` modera em `/classificados/moderar`.
 - **Relatórios** (`/admin/relatorios`): financeiro, reservas, portaria e solicitações por ano, com gráfico e **CSV para o Excel**. Só totais, sem dados pessoais.
 - **Mapa real**: continua o mapa provisório; o interativo depende da planta do condomínio.
@@ -84,7 +86,7 @@ Uma fase só é "concluída" com: tela funcionando, validação, integração re
 - **Login dos moradores**: pronto no código; falta testar no Firebase real com um morador de teste (o simulador já aceitou o e-mail sintético `.invalid`).
 - **"Esqueci minha senha" sozinho**: hoje o morador pede uma senha nova ao síndico (o portal mostra o WhatsApp da administração).
 - **Mapa real** (Fase 5): depende da planta do condomínio.
-- **Link da votação oficial**: o síndico cola em `/admin/informacoes` quando houver.
+- **Link da votação oficial** (`/admin/informacoes`): ficou opcional — a votação agora é nativa em `/admin/votacao`.
 - **Limpeza LGPD automática**: hoje é pelo botão em `/admin/portaria`; falta a tarefa agendada (Vercel Cron) chamar `limparVisitantesAntigos`.
 - **Fase 6** não foi implementada (decisão do dono).
 

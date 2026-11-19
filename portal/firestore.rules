@@ -199,6 +199,16 @@ service cloud.firestore {
         }
       }
 
+      // Votação oficial: NADA pelo navegador. Tudo passa pelo servidor, que confere
+      // login, casa e horário. Os contadores (urna) só são lidos depois do encerramento
+      // e "quem votou" (votantes) nunca guarda a escolha. Ninguém lê nem grava daqui.
+      match /elections/{id} {
+        allow read, write: if false;
+        match /{sub=**} {
+          allow read, write: if false;
+        }
+      }
+
       // Classificados: só pelo servidor (o documento tem autorUid e unitId,
       // que os outros moradores não podem ver).
       match /classifieds/{id} {

@@ -57,6 +57,15 @@ condominiums/{c}                     nome, status, fuso, moeda, (portalPublico: 
                                      resultado (sempre/apos_encerrar), totais{opcaoId: n}, totalVotos, criadoPor, criadoPorNome,
                                      criadoEm, atualizadoEm, publicadoEm, encerradaEm, encerradaPor
     votes/{unitId}                   opcaoId, uid, votadoEm — 1 voto por CASA, criado em transação; sem troca
+  elections/{id}                     titulo, cargo, vagas, escolhasPorCasa, permiteBranco, regraDesempate (idade/comissao),
+                                     modo (chapa/candidatos), abreEm, fechaEm, status (rascunho/publicada), casasBloqueadas[], candidatos[{id,numero,nome,funcao,casa,apresentacao,
+                                     nascimento}], casasAptas, criadoPor, criadoPorNome, criadoEm, publicadaEm — nunca apagada
+    votantes/{unitId}                votouEm, unidadeRotulo — SÓ que a casa votou (nunca a escolha nem a pessoa); create em transação
+    votantes/{unitId}                (também) comprovante — código sorteado do comprovante, sem ligação com o voto
+    urna/contagem                    cedulas, sim, nao (chapa) ou brancos, votos{candidatoId: n} — só contadores; lida 2 min depois de fechaEm
+    links/{unitId}                   codigo, senha, hash, enviadoEm, envios — link de voto da casa (só servidor; comissão reenvia)
+  contatosVotacao/{unitId}           casa, nome, telefones[] (55DDNNNNNNNNN) — importado da lista do Word; só servidor
+votoCodigos/{sha256(código)}         condominioId, eleicaoId, unitId, senhaHash — índice do link de voto (só servidor)
   classifieds/{id}                   titulo, texto, categoria (venda/servico/doacao/procura/outro), preco (centavos)|null,
                                      contatoWhatsapp (só dígitos, com 55)|null, autorUid, autorPrimeiroNome, unitId,
                                      status (pendente/aprovado/rejeitado/removido/expirado), motivo, criadoEm, decididoEm,

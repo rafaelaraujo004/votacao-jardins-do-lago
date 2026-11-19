@@ -22,6 +22,7 @@ import { exigirPermissao, type Contexto } from "@/server/contexto";
 import type { Permissao } from "@/lib/permissoes";
 import { WidgetComunicados } from "@/components/comunicados/widget-inicio";
 import { WidgetEnquetes } from "@/components/enquetes/widget-inicio";
+import { WidgetEleicao } from "@/components/eleicoes/widget-inicio";
 import { WidgetSolicitacoes } from "@/components/solicitacoes/widget-inicio";
 import { WidgetInformacoesInicio } from "@/components/informacoes/widget-inicio";
 import { WidgetDocumentos } from "@/components/documentos/widget-inicio";
@@ -223,6 +224,11 @@ export default async function InicioMorador() {
       {/* Comunicados recentes (o urgente aparece cedo) */}
       <Suspense fallback={<BlocoCarregando altura="h-28" />}>
         <WidgetComunicados ctx={ctx} />
+      </Suspense>
+
+      {/* Votação oficial (aberta, agendada ou resultado recente) */}
+      <Suspense fallback={null}>
+        <WidgetEleicao ctx={ctx} />
       </Suspense>
 
       {/* Resumo do último mês publicado */}

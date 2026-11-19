@@ -76,6 +76,12 @@ beforeEach(async () => {
     await setDoc(doc(db, `condominiums/${C}/polls/p1`), { status: "aberta", resultado: "apos_encerrar", totais: { o1: 3 } });
     await setDoc(doc(db, `condominiums/${C}/polls/p1/votes/casa-1`), { opcaoId: "o1", uid: "morador1" });
     await setDoc(doc(db, `condominiums/${C}/polls/p1/votes/casa-2`), { opcaoId: "o1", uid: "morador2" });
+    await setDoc(doc(db, `condominiums/${C}/elections/e1`), { status: "publicada", titulo: "Eleição" });
+    await setDoc(doc(db, `condominiums/${C}/elections/e1/votantes/casa-1`), { unidadeRotulo: "Casa 1" });
+    await setDoc(doc(db, `condominiums/${C}/elections/e1/urna/contagem`), { cedulas: 1, votos: { c1: 1 } });
+    await setDoc(doc(db, `condominiums/${C}/elections/e1/links/casa-1`), { codigo: "ABCDEFGHJK" });
+    await setDoc(doc(db, `condominiums/${C}/contatosVotacao/casa-1`), { nome: "M1", telefones: ["5594991234567"] });
+    await setDoc(doc(db, "votoCodigos/hash1"), { condominioId: C, eleicaoId: "e1", unitId: "casa-1" });
     await setDoc(doc(db, `condominiums/${C}/classifieds/c1`), { status: "aprovado", autorUid: "morador1", unitId: "casa-1" });
     await setDoc(doc(db, `condominiums/${C}/counters/solicitacoes-2026`), { ultimo: 2, ano: 2026 });
     await setDoc(doc(db, `condominiums/${OUTRO}/tickets/tb`), { unitId: "casa-1" });
@@ -222,6 +228,34 @@ describe("documentos desativados", () => {
   it("somem para o morador; a gestão continua vendo", async () => {
     await assertFails(getDoc(doc(como("morador1"), `condominiums/${C}/documents/d3`)));
     await assertSucceeds(getDoc(doc(como("sindico"), `condominiums/${C}/documents/d3`)));
+  });
+});
+
+describe("votação oficial", () => {
+  it("ninguém lê nada direto do navegador (nem a urna, nem quem votou), nem o síndico", async () => {
+    for (const uid of ["morador1", "sindico", "conselheiro", "porteiro"]) {
+      await assertFails(getDoc(doc(como(uid), `condominiums/${C}/elections/e1`)));
+      await assertFails(getDoc(doc(como(uid), `condominiums/${C}/elections/e1/urna/contagem`)));
+      await assertFails(getDoc(doc(como(uid), `condominiums/${C}/elections/e1/votantes/casa-1`)));
+      await assertFails(getDocs(collection(como(uid), `condominiums/${C}/elections`)));
+    }
+  });
+
+  it("links de voto, códigos e contatos: ninguém lê nem grava pelo navegador", async () => {
+    for (const quem of [como("morador1"), como("sindico"), anonimo()]) {
+      await assertFails(getDoc(doc(quem, `condominiums/${C}/elections/e1/links/casa-1`)));
+      await assertFails(getDoc(doc(quem, `condominiums/${C}/contatosVotacao/casa-1`)));
+      await assertFails(getDoc(doc(quem, "votoCodigos/hash1")));
+      await assertFails(getDocs(collection(quem, "votoCodigos")));
+      await assertFails(setDoc(doc(quem, "votoCodigos/hash2"), { unitId: "casa-2" }));
+    }
+  });
+
+  it("ninguém grava direto (voto falso, mexer na urna ou criar eleição)", async () => {
+    await assertFails(setDoc(doc(como("morador1"), `condominiums/${C}/elections/e1/votantes/casa-2`), { unidadeRotulo: "Casa 2" }));
+    await assertFails(updateDoc(doc(como("sindico"), `condominiums/${C}/elections/e1/urna/contagem`), { cedulas: 99 }));
+    await assertFails(setDoc(doc(como("sindico"), `condominiums/${C}/elections/e2`), { status: "publicada" }));
+    await assertFails(deleteDoc(doc(como("sindico"), `condominiums/${C}/elections/e1/votantes/casa-1`)));
   });
 });
 
