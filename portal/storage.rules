@@ -38,6 +38,19 @@ service firebase.storage {
         && request.resource.contentType.matches('image/(jpeg|png|webp)');
     }
 
+    // Comprovantes dos lançamentos do caixa (síndico/tesouraria): mesma ideia, com a
+    // autorização "envioComprovante" para UM caminho exato. PDF ou foto de até 20 MB.
+    // Quem lê é a rota /api/financeiro/comprovantes/..., que confere quem pode ver o lançamento.
+    match /condominiums/{condominio}/finance/{envio}/{nome} {
+      allow create: if request.auth != null
+        && resource == null
+        && 'envioComprovante' in request.auth.token
+        && request.auth.token.envioComprovante == ('condominiums/' + condominio + '/finance/' + envio + '/' + nome)
+        && request.resource.size > 0
+        && request.resource.size <= 20 * 1024 * 1024
+        && request.resource.contentType.matches('application/pdf|image/(jpeg|png|webp)');
+    }
+
     // Todo o resto: fechado.
     match /{caminho=**} {
       allow read, write: if false;

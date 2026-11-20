@@ -12,6 +12,7 @@ import {
   CircleCheck,
   Clock,
   House,
+  Paperclip,
   RotateCcw,
   TrendingDown,
   TrendingUp,
@@ -23,6 +24,8 @@ import { agruparPorCategoria, CAMPOS_QUADRO, FORMAS_PAGAMENTO, nomeDoMes, nomeDo
 import { Etiqueta } from "@/components/ui/basicos";
 import { BlocoNumero, type CorNumero } from "@/components/ui/painel";
 import type { Lancamento } from "@/server/dados/financeiro";
+import { descreverComprovante } from "@/lib/comprovantes";
+import { AnexarComprovante, RemoverComprovante } from "./comprovantes-lancamento";
 
 /** Junta o caminho com ?mes=... e outros parâmetros extras (ex.: "periodo=12"). */
 function linkDoMes(caminho: string, mes: string, consulta?: string) {
@@ -213,18 +216,39 @@ export function SituacaoMes({ publicado }: { publicado: boolean }) {
 
 // ---------- Lista de lançamentos ----------
 
-/** Lista de lançamentos. `acao` permite pôr um botão (ex.: Estornar) em cada linha. */
-export function ListaLancamentos({ lancamentos, acao }: { lancamentos: Lancamento[]; acao?: (l: Lancamento) => ReactNode }) {
+/**
+ * Lista de lançamentos. `acao` permite pôr um botão (ex.: Estornar) em cada linha.
+ * `gerenciarComprovantes`: mostra "Anexar comprovante" e o botão de remover (tela da gestão).
+ */
+export function ListaLancamentos({
+  lancamentos,
+  acao,
+  gerenciarComprovantes = false,
+}: {
+  lancamentos: Lancamento[];
+  acao?: (l: Lancamento) => ReactNode;
+  gerenciarComprovantes?: boolean;
+}) {
   return (
     <ul className="flex flex-col rounded-[var(--radius-card)] border border-borda-luz bg-surface px-4 py-1 shadow-card">
       {lancamentos.map((l) => (
-        <LinhaLancamento key={l.id} l={l} acao={acao} />
+        <LinhaLancamento key={l.id} l={l} acao={acao} gerenciarComprovantes={gerenciarComprovantes} />
       ))}
     </ul>
   );
 }
 
-function LinhaLancamento({ l, acao, numero }: { l: Lancamento; acao?: (l: Lancamento) => ReactNode; numero?: number }) {
+function LinhaLancamento({
+  l,
+  acao,
+  numero,
+  gerenciarComprovantes = false,
+}: {
+  l: Lancamento;
+  acao?: (l: Lancamento) => ReactNode;
+  numero?: number;
+  gerenciarComprovantes?: boolean;
+}) {
   const entrada = l.tipo === "receita";
   // Efeito no caixa: receita soma, despesa subtrai; o estorno (valor negativo) inverte.
   const efeito = entrada ? l.valorCentavos : -l.valorCentavos;
@@ -272,9 +296,42 @@ function LinhaLancamento({ l, acao, numero }: { l: Lancamento; acao?: (l: Lancam
             {l.estornadoPor ? <Etiqueta tom="aviso" icone={Undo2}>Estornado</Etiqueta> : null}
           </div>
         ) : null}
+        <Comprovantes l={l} gerenciar={gerenciarComprovantes} />
       </div>
       {acao ? <div className="w-full sm:w-auto">{acao(l)}</div> : null}
     </li>
+  );
+}
+
+/** Comprovantes do lançamento: cada um abre o arquivo; na gestão, também anexar e remover. */
+function Comprovantes({ l, gerenciar }: { l: Lancamento; gerenciar: boolean }) {
+  if (!l.comprovantes.length && !gerenciar) return null;
+  const varios = l.comprovantes.length > 1;
+  return (
+    <div className="mt-1.5 flex flex-wrap items-start gap-1.5">
+      {l.comprovantes.length ? (
+        <ul aria-label="Comprovantes" className="flex flex-wrap gap-1.5">
+          {l.comprovantes.map((c, i) => (
+            <li key={c.id} className="inline-flex items-center rounded-full border border-line bg-surface-item">
+              <a
+                href={`/api/financeiro/comprovantes/${l.id}/${c.id}`}
+                target="_blank"
+                rel="noopener"
+                title={c.nome}
+                className="inline-flex min-h-10 items-center gap-1.5 rounded-full pr-3 pl-2.5 text-[0.86rem] font-semibold text-lake underline-offset-2 hover:underline"
+              >
+                <Paperclip aria-hidden className="size-4 shrink-0" />
+                Comprovante{varios ? ` ${i + 1}` : ""}
+                <span className="font-normal whitespace-nowrap text-muted">({descreverComprovante(c)})</span>
+                <span className="sr-only"> (abre em outra aba)</span>
+              </a>
+              {gerenciar ? <RemoverComprovante lancamentoId={l.id} comprovanteId={c.id} nome={c.nome} /> : null}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {gerenciar ? <AnexarComprovante lancamentoId={l.id} quantidade={l.comprovantes.length} /> : null}
+    </div>
   );
 }
 

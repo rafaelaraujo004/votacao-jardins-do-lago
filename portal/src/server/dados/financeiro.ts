@@ -2,6 +2,7 @@ import "server-only";
 import type { Timestamp } from "firebase-admin/firestore";
 import { adminDb } from "../firebase-admin";
 import { ErroDeAcesso, type Contexto } from "../contexto";
+import { comprovantesParaTela, type Comprovante } from "@/lib/comprovantes";
 import { calcularSaldos, lerQuadroCasas, type FormaPagamento, type MesComSaldo, type MesResumo, type TipoLancamento } from "@/lib/financeiro";
 
 /**
@@ -82,6 +83,8 @@ export type Lancamento = {
   estornadoPor: string | null;
   criadoPorNome: string;
   criadoEm: Date | null;
+  /** Comprovantes anexados (nota, recibo, Pix…). Abrem por /api/financeiro/comprovantes/{lançamento}/{id}. */
+  comprovantes: Comprovante[];
 };
 
 export async function lancamentosDoMes(ctx: Contexto, mes: string): Promise<Lancamento[]> {
@@ -105,6 +108,7 @@ export async function lancamentosDoMes(ctx: Contexto, mes: string): Promise<Lanc
       // nome de quem lançou só aparece para a gestão
       criadoPorNome: visao === "completa" ? String(d.get("criadoPorNome") ?? "") : "",
       criadoEm: (d.get("criadoEm") as Timestamp | undefined)?.toDate() ?? null,
+      comprovantes: comprovantesParaTela(d.get("comprovantes")),
     }))
     .sort((a, b) => b.data.localeCompare(a.data) || (b.criadoEm?.getTime() ?? 0) - (a.criadoEm?.getTime() ?? 0));
 }

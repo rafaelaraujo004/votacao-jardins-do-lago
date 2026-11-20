@@ -148,6 +148,7 @@ export default async function FinanceiroGestao({ searchParams }: PageProps<"/adm
         ) : (
           <ListaLancamentos
             lancamentos={lancamentos}
+            gerenciarComprovantes={podeLancar}
             acao={
               podeLancar
                 ? (l) =>

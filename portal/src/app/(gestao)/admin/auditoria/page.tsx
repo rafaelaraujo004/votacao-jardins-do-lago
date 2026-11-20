@@ -61,6 +61,7 @@ const DESCRICAO: Record<string, { texto: string; icone: LucideIcon }> = {
   "financeiro.configurar": { texto: "Definiu o saldo inicial do caixa", icone: Wallet },
   "financeiro.categoria": { texto: "Criou, escondeu ou mostrou uma categoria do caixa", icone: Wallet },
   "financeiro.quadro": { texto: "Preencheu o quadro de casas do mês", icone: Wallet },
+  "financeiro.comprovante": { texto: "Anexou ou removeu um comprovante de lançamento", icone: Wallet },
   // Acesso com senha (equipe)
   "acesso.criar_senha": { texto: "Criou o acesso com senha de alguém da equipe", icone: KeyRound },
   "acesso.criar_morador": { texto: "Criou o login de uma casa (usuário e senha)", icone: KeyRound },

@@ -23,6 +23,8 @@
  *               npx tsx scripts/lancar-prestacao.ts --arquivo scripts/dados-financeiro/2026-09.json --antes-do-inicio --conferir
  *   Acertar a ordem das linhas de um mês lançado pelo script antigo (a ordem do arquivo vira a ordem do relatório):
  *               npx tsx scripts/lancar-prestacao.ts --arquivo scripts/dados-financeiro/2026-10.json --reordenar
+ *   Conferir se o portal está igual ao arquivo (só lê; mostra cada diferença):
+ *               npx tsx scripts/lancar-prestacao.ts --arquivo scripts/dados-financeiro/2026-10.json --comparar
  *   Gravar/corrigir só o quadro de casas do mês ("casas" no arquivo):
  *               npx tsx scripts/lancar-prestacao.ts --arquivo scripts/dados-financeiro/2026-10.json --quadro
  */
@@ -44,6 +46,7 @@ const { values } = parseArgs({
     quadro: { type: "boolean" },
     "antes-do-inicio": { type: "boolean" },
     reordenar: { type: "boolean" },
+    comparar: { type: "boolean" },
   },
 });
 const ID = values.id ?? "jardins-do-lago";
@@ -53,6 +56,7 @@ const SO_PUBLICAR = values["so-publicar"] === true;
 const SO_QUADRO = values.quadro === true;
 const ANTES_DO_INICIO = values["antes-do-inicio"] === true;
 const REORDENAR = values.reordenar === true;
+const COMPARAR = values.comparar === true;
 const SIMULADOR = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
 const QUEM = { uid: "script:lancar-prestacao", nome: "Prestação de contas lançada do relatório mensal (a pedido da administração)", papel: "admin" };
 
@@ -407,6 +411,72 @@ async function reordenar() {
   console.log(`\n✔ Ordem de ${mes} acertada.\n`);
 }
 
+/**
+ * Só LÊ: compara o que está gravado no mês com o arquivo e mostra as diferenças — cada
+ * lançamento (valor, descrição, categoria e ordem), estornos, totais do mês e quadro de casas.
+ * Não grava nada.
+ */
+async function comparar() {
+  const c = db.collection("condominiums").doc(ID);
+  const mes = dados.mes;
+  const [snap, resumo] = await Promise.all([
+    c.collection("financialEntries").where("mes", "==", mes).get(),
+    c.collection("monthlySummaries").doc(mes).get(),
+  ]);
+  console.log(`\nProjeto ${projectId}${SIMULADOR ? " (SIMULADOR)" : ""} · condomínio ${ID} · mês ${mes}`);
+  const ordenados = [...snap.docs].sort((a, b) => (a.get("criadoEm")?.toMillis?.() ?? 0) - (b.get("criadoEm")?.toMillis?.() ?? 0));
+  const estornados = ordenados.filter((d) => d.get("estornadoPor") || d.get("estornaId"));
+  const valendo = ordenados.filter((d) => !d.get("estornadoPor") && !d.get("estornaId"));
+  const diferencas: string[] = [];
+  if (estornados.length) console.log(`  ${estornados.length} lançamento(s) estornado(s) ou de estorno (não entram na comparação).`);
+
+  const usados = new Set<string>();
+  const achados = linhas.map((l) => {
+    const d = valendo.find((x) => !usados.has(x.id) && x.get("descricao") === l.descricao && Number(x.get("valorCentavos")) === l.valorCentavos);
+    if (!d) {
+      diferencas.push(`Falta no portal: "${l.descricao}" (${formatarMoeda(l.valorCentavos)}, ${l.categoriaNome}).`);
+      return null;
+    }
+    usados.add(d.id);
+    if (d.get("categoriaId") !== l.categoria) diferencas.push(`Categoria diferente em "${l.descricao}": portal ${d.get("categoriaNome")}, relatório ${l.categoriaNome}.`);
+    if (d.get("tipo") !== l.tipo) diferencas.push(`Tipo diferente em "${l.descricao}": portal ${d.get("tipo")}, relatório ${l.tipo}.`);
+    return d;
+  });
+  for (const d of valendo) {
+    if (!usados.has(d.id)) diferencas.push(`Sobra no portal (não está no relatório): "${d.get("descricao")}" (${formatarMoeda(Number(d.get("valorCentavos")))}).`);
+  }
+  // Ordem: a sequência dos lançamentos achados precisa ser a mesma do arquivo.
+  const posicoes = achados.filter((d) => d !== null).map((d) => valendo.indexOf(d!));
+  if (posicoes.some((p, i) => i > 0 && p < posicoes[i - 1])) diferencas.push("A ordem das linhas no portal não é a do relatório (corrija com --reordenar).");
+
+  const somaPortal = (tipo: string) => valendo.filter((d) => d.get("tipo") === tipo).reduce((s, d) => s + Number(d.get("valorCentavos")), 0);
+  const totais: [string, number, number, number | undefined][] = [
+    ["Receitas", receitas, somaPortal("receita"), resumo.get("receitasCentavos")],
+    ["Despesas", despesas, somaPortal("despesa"), resumo.get("despesasCentavos")],
+  ];
+  for (const [rotulo, arquivo, lancado, guardado] of totais) {
+    console.log(`  ${rotulo}: relatório ${formatarMoeda(arquivo)} · lançamentos ${formatarMoeda(lancado)} · total do mês ${guardado === undefined ? "—" : formatarMoeda(Number(guardado))}`);
+    if (lancado !== arquivo) diferencas.push(`${rotulo} dos lançamentos não batem com o relatório.`);
+    if (guardado !== undefined && Number(guardado) !== lancado) diferencas.push(`${rotulo}: o total guardado do mês não bate com a soma dos lançamentos.`);
+  }
+  console.log(`  Publicado: ${resumo.get("publicado") === true ? "sim" : "não"} · ${valendo.length} lançamentos valendo (arquivo: ${linhas.length})`);
+
+  const quadroArquivo = lerQuadroCasas(dados.casas ?? null);
+  const quadroPortal = lerQuadroCasas(resumo.get("casas") ?? null);
+  if (quadroArquivo) {
+    for (const campo of CAMPOS_QUADRO) {
+      const a = quadroArquivo[campo.chave];
+      const p = quadroPortal?.[campo.chave] ?? null;
+      if (a !== p) diferencas.push(`Quadro de casas — ${campo.rotulo}: portal ${p ?? "—"}, relatório ${a ?? "—"}.`);
+    }
+  }
+
+  if (!diferencas.length) return console.log("\n✔ O portal está igual ao relatório. Nada a corrigir.\n");
+  console.log(`\n✖ ${diferencas.length} diferença(s):`);
+  for (const d of diferencas) console.log(`  - ${d}`);
+  console.log("\n(Só leitura: nada foi gravado.)\n");
+}
+
 /** Grava (ou corrige) o quadro de casas do mês a partir do arquivo — o mesmo da tela "Quadro de casas". */
 async function soQuadro() {
   const c = db.collection("condominiums").doc(ID);
@@ -443,4 +513,4 @@ async function soQuadro() {
   console.log(`\n✔ Quadro de casas de ${mes} gravado.\n`);
 }
 
-(REORDENAR ? reordenar() : ANTES_DO_INICIO ? antesDoInicio() : SO_QUADRO ? soQuadro() : SO_PUBLICAR ? soPublicar() : main()).catch((e) => falhar(e instanceof Error ? e.message : String(e)));
+(COMPARAR ? comparar() : REORDENAR ? reordenar() : ANTES_DO_INICIO ? antesDoInicio() : SO_QUADRO ? soQuadro() : SO_PUBLICAR ? soPublicar() : main()).catch((e) => falhar(e instanceof Error ? e.message : String(e)));

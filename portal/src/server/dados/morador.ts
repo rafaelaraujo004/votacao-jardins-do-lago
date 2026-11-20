@@ -14,6 +14,7 @@ import type { DocumentData } from "firebase-admin/firestore";
 import { adminDb } from "../firebase-admin";
 import { garantirPermissao, type Contexto } from "../contexto";
 import type { Lancamento } from "./financeiro";
+import { comprovantesParaTela } from "@/lib/comprovantes";
 import { ordenarAreas, paraArea, paraReserva, type Reserva } from "./reservas";
 import { calcularSaldos, lerQuadroCasas, REGEX_MES, type FormaPagamento, type MesComSaldo, type MesResumo, type TipoLancamento } from "@/lib/financeiro";
 import { dataCurta, dataISO, type EventoAgenda } from "@/lib/agenda";
@@ -67,6 +68,7 @@ export function paraLancamentoDoMorador(id: string, d: DocumentData | undefined)
     estornadoPor: typeof d?.estornadoPor === "string" ? d.estornadoPor : null,
     criadoPorNome: "", // o morador nunca vê quem lançou
     criadoEm: null,
+    comprovantes: comprovantesParaTela(d?.comprovantes),
   };
 }
 
