@@ -178,6 +178,16 @@ describe("validação dos formulários", () => {
     expect(esquemaMudarStatusSolicitacao.safeParse({ id: "abc", status: "apagada" }).success).toBe(false);
   });
 
+  it("cancelar (não atender) exige um comentário que o morador possa ler", () => {
+    expect(esquemaMudarStatusSolicitacao.safeParse({ id: "abc", status: "cancelada" }).success).toBe(false);
+    expect(esquemaMudarStatusSolicitacao.safeParse({ id: "abc", status: "cancelada", comentario: "ok" }).success).toBe(false);
+    expect(
+      esquemaMudarStatusSolicitacao.safeParse({ id: "abc", status: "cancelada", comentario: "Fora do condomínio.", publico: "nao" }).success,
+    ).toBe(false);
+    const r = esquemaMudarStatusSolicitacao.parse({ id: "abc", status: "cancelada", comentario: "Fora da área do condomínio.", publico: "sim" });
+    expect(r).toEqual({ id: "abc", status: "cancelada", comentario: "Fora da área do condomínio.", publico: true });
+  });
+
   it("filtros do endereço: valores estranhos voltam ao padrão", () => {
     expect(lerFiltrosSolicitacoes({})).toEqual({ status: "ativas", categoria: "todas" });
     expect(lerFiltrosSolicitacoes({ status: "resolvida", categoria: "limpeza" })).toEqual({ status: "resolvida", categoria: "limpeza" });

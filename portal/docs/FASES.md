@@ -81,6 +81,14 @@ Uma fase só é "concluída" com: tela funcionando, validação, integração re
 - **Relatórios** (`/admin/relatorios`): financeiro, reservas, portaria e solicitações por ano, com gráfico e **CSV para o Excel**. Só totais, sem dados pessoais.
 - **Mapa real**: continua o mapa provisório; o interativo depende da planta do condomínio.
 
+## Fotos, sino de notificações e responsável pelas reservas (entregue em 20/11/2026)
+
+- **Fotos** (até 4, reduzidas no próprio celular, sem a localização GPS) em **classificados**, **comunicados** e **áreas de lazer** (a 1ª é a miniatura na lista de reservas). Só quem pode ver o item vê a foto (`/api/fotos/...`). Storage: `classifieds/`, `announcements/`, `amenities/` com autorização de uso único (`envioFoto`).
+- **Sino de notificações** no topo do morador, da gestão e da portaria: o síndico vê o que precisa aprovar (anúncios, reservas, solicitações); o morador vê votação oficial marcada/aberta, enquetes, comunicados, documentos e as respostas aos pedidos da casa; a portaria vê as visitas autorizadas e os comunicados. Páginas `/notificacoes`, `/admin/notificacoes`, `/portaria/notificacoes`; a portaria passou a ler comunicados em `/portaria/comunicados`.
+- **Responsável pelas reservas**: perfil de equipe novo (`reservas`) e "Quem aprova os pedidos" em cada área; os pedidos chegam no sino dessa pessoa (sem responsável → síndico).
+- **Comentário ao não aprovar**: anúncio e reserva já pediam o motivo; cancelar uma solicitação agora exige comentário visível para o morador.
+- Rodapé **"Desenvolvido por Rafael Araújo"** nas telas principais.
+
 ## O que falta
 
 - **Login dos moradores**: pronto no código; falta testar no Firebase real com um morador de teste (o simulador já aceitou o e-mail sintético `.invalid`).

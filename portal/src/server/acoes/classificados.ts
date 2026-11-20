@@ -15,6 +15,7 @@ import { garantirPermissao, getContexto, type Contexto } from "../contexto";
 import { registrarAuditoria, type AcaoAuditada } from "../auditoria";
 import { paraClassificado } from "../dados/classificados";
 import { ErroDeNegocio, executar, lerFormulario, type Resultado } from "./resultado";
+import { fotosDoFormulario } from "../fotos";
 import {
   LIMITE_ATIVOS_POR_PESSOA,
   calcularExpiraEm,
@@ -52,6 +53,8 @@ export async function criarAnuncio(_: Resultado, dados: FormData): Promise<Resul
     const ctx = garantirPermissao(await getContexto(), "classificados.usar");
     if (!ctx.unitId) throw new ErroDeNegocio("Seu cadastro não está ligado a uma casa. Fale com a administração.");
     const v = lerFormulario(esquemaAnuncio, dados);
+    // Fotos: conferidas no Storage ANTES da transação (o Storage não entra nela).
+    const fotos = await fotosDoFormulario(v.fotos, ctx.condominioId, "classificados");
     const db = adminDb();
     const col = colecao(ctx);
     const ref = col.doc();
@@ -75,6 +78,7 @@ export async function criarAnuncio(_: Resultado, dados: FormData): Promise<Resul
         categoria: v.categoria,
         preco: v.preco,
         contatoWhatsapp: v.contatoWhatsapp,
+        fotos,
         autorUid: ctx.uid,
         autorPrimeiroNome: primeiroNome(ctx.nome),
         unitId: ctx.unitId,
@@ -96,6 +100,7 @@ export async function criarAnuncio(_: Resultado, dados: FormData): Promise<Resul
           unidade: ctx.unitId,
           temPreco: v.preco !== null,
           temContato: v.contatoWhatsapp !== null,
+          fotos: fotos.length,
         },
       });
     });

@@ -12,6 +12,7 @@ import { Campo, classeEntrada } from "@/components/ui/basicos";
 import { Botao } from "@/components/ui/botao";
 import { BotaoEnviar, Formulario } from "@/components/ui/formulario";
 import { salvarArea } from "@/server/acoes/reservas";
+import { SeletorFotos } from "@/components/fotos/seletor-fotos";
 import { faixasDeUmaHora, validarFaixas, validarFaixasLivres, type ConfigArea, type TipoArea } from "@/lib/reservas";
 
 type Horario = { rotulo: string; inicio: string; fim: string };
@@ -42,7 +43,10 @@ const comChave = (f: Horario): Linha => ({ ...f, chave: ++contador });
 const item = (texto: string): Item => ({ chave: ++contador, texto });
 const preenchidas = (linhas: Linha[]) => linhas.filter((l) => l.rotulo || l.inicio || l.fim);
 
-export function FormularioArea({ area }: { area: ConfigArea | null }) {
+/** Pessoa que pode ser escolhida como responsável pelos pedidos (vem do servidor). */
+export type OpcaoResponsavel = { uid: string; nome: string; perfil: string };
+
+export function FormularioArea({ area, responsaveis = [] }: { area: ConfigArea | null; responsaveis?: OpcaoResponsavel[] }) {
   const router = useRouter();
   const [tipo, setTipo] = useState<TipoArea>(area?.tipo ?? "area");
   const [linhas, setLinhas] = useState<Linha[]>(() =>
@@ -106,6 +110,15 @@ export function FormularioArea({ area }: { area: ConfigArea | null }) {
         />
       </Campo>
 
+      {/* Miniatura e fotos da área (a primeira aparece na lista do morador). Remonta quando as fotos salvas mudam. */}
+      <SeletorFotos
+        key={(area?.fotos ?? []).join("|")}
+        modulo="areas"
+        atuais={area?.fotos ?? []}
+        rotulo="Fotos da área (opcional)"
+        dica={equipamento ? "Até 4 fotos do equipamento. A primeira vira a miniatura na lista." : "Até 4 fotos (salão, quiosque, churrasqueira…). A primeira vira a miniatura na lista."}
+      />
+
       <div className="grid gap-4 sm:grid-cols-2">
         {equipamento ? (
           <input type="hidden" name="capacidade" value="1" />
@@ -116,8 +129,29 @@ export function FormularioArea({ area }: { area: ConfigArea | null }) {
         )}
         <Campo id="exigeAprovacao" rotulo="Pedido do morador">
           <select id="exigeAprovacao" name="exigeAprovacao" defaultValue={area?.exigeAprovacao === false ? "nao" : "sim"} className={classeEntrada}>
-            <option value="sim">Exige aprovação da administração</option>
+            <option value="sim">Exige aprovação</option>
             <option value="nao">Confirma na hora (sem aprovação)</option>
+          </select>
+        </Campo>
+        <Campo
+          id="responsavelUid"
+          rotulo="Quem aprova os pedidos"
+          dica="Os pedidos desta área chegam no sino dessa pessoa. Sem responsável, chegam ao síndico."
+        >
+          <select
+            id="responsavelUid"
+            name="responsavelUid"
+            defaultValue={area?.responsavelUid && responsaveis.some((r) => r.uid === area.responsavelUid) ? area.responsavelUid : ""}
+            className={classeEntrada}
+            aria-describedby="responsavelUid-dica"
+          >
+            <option value="">Síndico / Administração</option>
+            {responsaveis.map((r) => (
+              <option key={r.uid} value={r.uid}>
+                {r.nome}
+                {r.perfil ? ` (${r.perfil})` : ""}
+              </option>
+            ))}
           </select>
         </Campo>
         <Campo id="antecedenciaMinimaHoras" rotulo="Antecedência mínima (horas)" dica="Ex.: 24 = um dia antes; 72 = três dias. 0 = até o horário começar.">

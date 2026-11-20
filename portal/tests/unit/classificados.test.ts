@@ -110,7 +110,7 @@ describe("esquemaAnuncio", () => {
   it("aceita anúncio mínimo (sem preço e sem contato)", () => {
     const r = esquemaAnuncio.safeParse(base);
     expect(r.success).toBe(true);
-    expect(r.data).toEqual({ ...base, preco: null, contatoWhatsapp: null });
+    expect(r.data).toEqual({ ...base, preco: null, contatoWhatsapp: null, fotos: [] });
   });
 
   it("converte preço para centavos", () => {

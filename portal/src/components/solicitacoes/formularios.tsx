@@ -4,9 +4,11 @@
  * Formulários do detalhe da solicitação:
  * - FormularioComentario: o morador escreve na solicitação da casa dele;
  * - FormularioResposta: a administração responde (público) ou anota (interno);
- * - FormularioStatus: a administração muda a situação, com comentário opcional.
+ * - FormularioStatus: a administração muda a situação, com comentário (obrigatório e
+ *   visível para o morador quando a solicitação é cancelada, isto é, não será atendida).
  * O servidor confere tudo de novo (casa, permissão, situação permitida).
  */
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRightLeft, Lock, MessageSquare, Send } from "lucide-react";
 import { Campo, classeEntrada } from "@/components/ui/basicos";
@@ -94,11 +96,20 @@ export function FormularioResposta({ id }: { id: string }) {
 
 export function FormularioStatus({ id, opcoes }: { id: string; opcoes: readonly StatusSolicitacao[] }) {
   const router = useRouter();
+  const [status, setStatus] = useState<string>("");
+  const naoAtender = status === "cancelada";
   return (
     <Formulario acao={mudarStatusSolicitacao} aoSalvar={() => router.refresh()}>
       <input type="hidden" name="id" value={id} />
       <Campo id="novo-status" rotulo="Nova situação">
-        <select id="novo-status" name="status" required defaultValue="" className={classeEntrada}>
+        <select
+          id="novo-status"
+          name="status"
+          required
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          className={classeEntrada}
+        >
           <option value="" disabled>
             Escolha a situação
           </option>
@@ -111,19 +122,26 @@ export function FormularioStatus({ id, opcoes }: { id: string; opcoes: readonly 
       </Campo>
       <Campo
         id="comentario-status"
-        rotulo="Comentário (opcional)"
-        dica="Ex.: equipe de manutenção agendada para sexta. A mudança de situação sempre aparece para o morador."
+        rotulo={naoAtender ? "Comentário para o morador (obrigatório)" : "Comentário (opcional)"}
+        dica={
+          naoAtender
+            ? "Explique por que a solicitação não será atendida. O morador vai ler (aparece no sino dele)."
+            : "Ex.: equipe de manutenção agendada para sexta. A mudança de situação sempre aparece para o morador."
+        }
       >
         <textarea
           id="comentario-status"
           name="comentario"
+          required={naoAtender}
+          minLength={naoAtender ? 3 : undefined}
           maxLength={1000}
-          rows={2}
+          rows={naoAtender ? 3 : 2}
           className={`${classeEntrada} py-3`}
           aria-describedby="comentario-status-dica"
         />
       </Campo>
-      <EscolhaVisibilidade nome="publico" padrao="sim" />
+      {/* Cancelamento: o comentário vai sempre para o morador. */}
+      {naoAtender ? <input type="hidden" name="publico" value="sim" /> : <EscolhaVisibilidade nome="publico" padrao="sim" />}
       <div>
         <BotaoEnviar textoEnviando="Salvando…">
           <ArrowRightLeft aria-hidden className="size-5" /> Mudar situação

@@ -171,7 +171,12 @@ describe("validação do formulário", () => {
       prioridade: "normal",
       fixado: true,
       destino: "salvar",
+      fotos: [],
     });
+  });
+  it("fotos: um campo vira lista; vários campos mantêm a ordem", () => {
+    expect(esquemaComunicado.parse({ ...valido, fotos: "atual:0" }).fotos).toEqual(["atual:0"]);
+    expect(esquemaComunicado.parse({ ...valido, fotos: ["atual:1", "atual:0"] }).fotos).toEqual(["atual:1", "atual:0"]);
   });
   it("caixa de fixar desmarcada = falso", () => {
     expect(esquemaComunicado.parse(valido).fixado).toBe(false);

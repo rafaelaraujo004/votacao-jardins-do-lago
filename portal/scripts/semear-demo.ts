@@ -44,6 +44,7 @@ const EMAILS_DEMO: Partial<Record<Papel, string>> = {
   admin: "sindico@demo.jardins.local",
   portaria: "portaria@demo.jardins.local",
   conselheiro: "conselho@demo.jardins.local",
+  reservas: "reservas@demo.jardins.local",
 };
 const ARQUIVO_DEMO = path.resolve(import.meta.dirname, "..", ".acesso-demo.txt");
 const senhaDemo = gerarSenhaProvisoria(); // nova a cada semeadura

@@ -11,6 +11,8 @@ import { horaDaMontagem } from "@/lib/sincronizacao";
 import { BotaoTema } from "@/components/ui/tema";
 import { FaixaPetalas } from "@/components/ui/painel";
 import { ENDERECO_LINHA } from "@/lib/condominio";
+import { Sino } from "@/components/notificacoes/sino";
+import { Assinatura } from "@/components/ui/assinatura";
 
 type Item = ItemMenuSerializavel & { permissao: Permissao };
 
@@ -64,6 +66,8 @@ function menuDo(ctx: Contexto): GrupoMenu[] {
     titulo: g.titulo,
     itens: g.itens
       .filter((i) => ctx.permissoes.has(i.permissao))
+      // Responsável pelas reservas: a tela dela é a agenda de reservas (sem o painel geral).
+      .filter((i) => !(ctx.papel === "reservas" && i.href === "/admin"))
       .map((i) => ({ rotulo: i.rotulo, icone: i.icone, href: i.href, fase: i.fase })),
   })).filter((g) => g.itens.length > 0);
 }
@@ -77,14 +81,15 @@ export default async function LayoutGestao({ children }: LayoutProps<"/">) {
       <aside className="bg-band pt-[env(safe-area-inset-top)] text-band-fg lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:overflow-y-auto">
         <FaixaPetalas className="opacity-80" />
         <div className="flex items-center gap-3 p-4">
-          <Logo largura={70} className="shrink-0" />
+          <Logo largura={56} className="shrink-0" />
           <div className="flex min-w-0 flex-1 flex-col leading-tight">
-            <span className="truncate font-display font-bold tracking-tight">{ctx.condominioNome}</span>
+            <span className="line-clamp-2 font-display font-bold leading-tight tracking-tight">{ctx.condominioNome}</span>
             <span className="mt-0.5 truncate text-[0.8rem] text-band-muted">{ENDERECO_LINHA}</span>
             <span className="mt-0.5 truncate text-[0.84rem] font-bold text-band-fg/90">{NOME_DO_PAPEL[ctx.papel]}</span>
           </div>
-          <BotaoTema className={`${classeBotaoFaixa} lg:hidden`} />
-          {/* Celular: botão sanduíche ao lado, abre a gaveta com as opções. */}
+          {/* Sino: o que espera a administração (celular e computador). */}
+          <Sino paginaHref="/admin/notificacoes" className={classeBotaoFaixa} />
+          {/* Celular: botão sanduíche ao lado, abre a gaveta com as opções (o tema fica lá dentro). */}
           <div className="lg:hidden">
             <GavetaMenu titulo="Menu" className={classeBotaoFaixa}>
               <NavGestao grupos={grupos} />
@@ -96,7 +101,11 @@ export default async function LayoutGestao({ children }: LayoutProps<"/">) {
                 >
                   <KeyRound aria-hidden className="size-5" /> Trocar senha
                 </Link>
-                <BotaoSair className={`${classeBotaoFaixa} w-fit`} />
+                <div className="flex items-center gap-2">
+                  <BotaoTema className={classeBotaoFaixa} />
+                  <BotaoSair className={`${classeBotaoFaixa} w-fit`} />
+                </div>
+                <Assinatura sobreFaixa className="mt-2 text-left" />
               </div>
             </GavetaMenu>
           </div>
@@ -106,6 +115,7 @@ export default async function LayoutGestao({ children }: LayoutProps<"/">) {
           <NavGestao grupos={grupos} />
         </div>
 
+        <Assinatura sobreFaixa className="hidden px-3 pb-2 lg:block" />
         <div className="hidden items-center gap-2 border-t border-white/10 p-3 lg:flex">
           <span className="min-w-0 flex-1 truncate px-1 text-[0.92rem]">{ctx.nome}</span>
           <Link
@@ -128,6 +138,7 @@ export default async function LayoutGestao({ children }: LayoutProps<"/">) {
           </p>
         ) : null}
         {children}
+        <Assinatura className="mt-10 lg:hidden" />
       </main>
       <Sincronizar montadaEm={horaDaMontagem()} />
     </div>

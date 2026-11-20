@@ -16,6 +16,7 @@ import { TituloSecao } from "@/components/ui/painel";
 import { EditorComunicado } from "@/components/comunicados/editor-comunicado";
 import { CompartilharWhatsApp } from "@/components/comunicados/compartilhar-whatsapp";
 import { EtiquetasComunicado, EtiquetaStatusComunicado, TextoComunicado } from "@/components/comunicados/pecas";
+import { GaleriaFotos } from "@/components/fotos/galeria";
 
 export const metadata: Metadata = { title: "Comunicado" };
 
@@ -47,6 +48,7 @@ export default async function ComunicadoGestao({ params }: { params: Promise<{ i
               <p className="text-[0.92rem] text-muted">Publicado em {formatarDataHora(c.publicadoEm, ctx.fuso)}</p>
             ) : null}
             <TextoComunicado texto={c.texto} />
+            <GaleriaFotos fotos={c.fotos} titulo={c.titulo} variante="pagina" className="mt-2" />
           </article>
         </Cartao>
       </div>
@@ -175,6 +177,7 @@ export default async function ComunicadoGestao({ params }: { params: Promise<{ i
               prioridade: c.prioridade,
               fixado: c.fixado,
               status: c.status,
+              fotos: c.fotos,
             }}
           />
         </Cartao>

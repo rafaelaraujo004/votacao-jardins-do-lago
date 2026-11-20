@@ -38,6 +38,7 @@ export default async function ComunicadosMorador() {
           {lista.map((c) => (
             <li key={c.id}>
               <CartaoComunicado
+                foto={c.fotos[0]}
                 href={`/comunicados/${c.id}`}
                 titulo={c.titulo}
                 texto={c.texto}

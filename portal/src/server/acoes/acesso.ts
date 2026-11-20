@@ -31,7 +31,7 @@ const ACAO_TROCAR = "acesso.trocar_senha" satisfies AcaoAuditada;
 const ACAO_CRIAR_MORADOR = "acesso.criar_morador" satisfies AcaoAuditada;
 
 /** Perfis que entram com e-mail e senha. Morador entra com usuário (código) e senha: veja abaixo. */
-const PAPEIS_COM_SENHA = ["admin", "conselheiro", "portaria"];
+const PAPEIS_COM_SENHA = ["admin", "conselheiro", "portaria", "reservas"];
 
 /** Resposta da criação: igual às outras, mais a senha (mostrada UMA vez). */
 export type ResultadoAcesso =

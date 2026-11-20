@@ -43,12 +43,20 @@ export const esquemaCancelarSolicitacao = z.object({
 });
 
 /** Administração muda a situação, com um comentário (opcional) que pode ser público ou interno. */
-export const esquemaMudarStatusSolicitacao = z.object({
-  id: idDocumento,
-  status: z.enum(STATUS_SOLICITACAO, { error: "Escolha a nova situação." }),
-  comentario: z.string().trim().max(1000, "Comentário muito longo (máximo 1.000 caracteres).").default(""),
-  publico: simNao("Diga se o morador pode ver o comentário.").default(true),
-});
+export const esquemaMudarStatusSolicitacao = z
+  .object({
+    id: idDocumento,
+    status: z.enum(STATUS_SOLICITACAO, { error: "Escolha a nova situação." }),
+    comentario: z.string().trim().max(1000, "Comentário muito longo (máximo 1.000 caracteres).").default(""),
+    publico: simNao("Diga se o morador pode ver o comentário.").default(true),
+  })
+  // Não atender (cancelar) exige explicar ao morador por quê — e ele precisa poder ler.
+  .refine((v) => v.status !== "cancelada" || v.comentario.length >= 3, {
+    message: "Para cancelar (não atender) a solicitação, escreva um comentário para o morador explicando o motivo.",
+  })
+  .refine((v) => v.status !== "cancelada" || v.publico, {
+    message: "O comentário do cancelamento precisa ficar visível para o morador.",
+  });
 
 /** Administração responde (público) ou escreve uma nota interna. */
 export const esquemaResponderSolicitacao = z.object({

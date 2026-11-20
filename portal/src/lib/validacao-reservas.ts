@@ -3,7 +3,7 @@
  * Tudo que chega do navegador passa por aqui antes de ser usado.
  */
 import { z } from "zod";
-import { idDocumento } from "./validacao";
+import { campoFotos, idDocumento } from "./validacao";
 import {
   TIPOS_AREA,
   dataValida,
@@ -92,6 +92,14 @@ export const esquemaArea = z
     livreFim: lista,
     exigencia: listaTextos("Exigências", 20, 200),
     aviso: listaTextos("Avisos", 10, 200),
+    /** Quem aprova os pedidos desta área (vazio = síndico). O servidor confere se a pessoa pode. */
+    responsavelUid: z
+      .string()
+      .trim()
+      .default("")
+      .refine((v) => v === "" || /^[A-Za-z0-9_-]{1,128}$/.test(v), "Escolha o responsável pela área de novo."),
+    /** Fotos da área na ordem: "atual:N" (mantém) ou o caminho de uma foto nova. */
+    fotos: campoFotos,
   })
   .transform((v, contexto) => {
     if (v.antecedenciaMaxDias * 24 < v.antecedenciaMinimaHoras) {
@@ -131,6 +139,8 @@ export const esquemaArea = z
       ativa: v.ativa,
       ordem: v.ordem,
       faixas: normalizarFaixas(faixas),
+      responsavelUid: v.responsavelUid || null,
+      fotos: v.fotos,
     };
   });
 

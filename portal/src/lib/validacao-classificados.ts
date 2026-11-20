@@ -3,7 +3,7 @@
  * Tudo que chega do navegador passa por aqui antes de ser usado.
  */
 import { z } from "zod";
-import { idDocumento } from "./validacao";
+import { campoFotos, idDocumento } from "./validacao";
 import { reaisParaCentavos } from "./formato";
 import { CATEGORIAS_CLASSIFICADO, normalizarWhatsapp, problemaNoConteudo } from "./classificados";
 
@@ -28,6 +28,7 @@ export const esquemaAnuncio = z
     whatsapp: z.string().trim().max(25, "Número de WhatsApp inválido.").default(""),
     /** Caixa "Entendo que o número ficará visível" (só vale se houver WhatsApp). */
     cienteContato: z.string().optional(),
+    fotos: campoFotos,
   })
   .transform((v, contexto) => {
     const problema = problemaNoConteudo(`${v.titulo}\n${v.texto}`);
@@ -70,6 +71,7 @@ export const esquemaAnuncio = z
       categoria: v.categoria,
       preco,
       contatoWhatsapp,
+      fotos: v.fotos,
     };
   });
 

@@ -10,6 +10,7 @@ Fonte única: `src/lib/permissoes.ts`.
 | Portaria | `/portaria` | Visitantes, entradas/saídas, encomendas, reservas do dia. **Nunca** financeiro |
 | Síndico / Administração (`admin`) | `/admin` | Tudo |
 | Conselho (`conselheiro`) | `/admin` | Consulta: financeiro, relatórios, unidades, comunicados, documentos. Sem edição por padrão |
+| Responsável pelas reservas (`reservas`) | `/admin/reservas` | Acesso de equipe (e-mail e senha) **só da agenda de reservas**: vê a agenda e aprova/recusa pedidos (`area.gestao`, `reservas.ver_todas`, `reservas.gerenciar`). Nada de financeiro, pessoas ou auditoria. Pode receber como extra `areas.configurar` e `informacoes.ver`. Recebe no sino os pedidos das áreas em que o síndico a marcou como responsável |
 
 ## Como a permissão final é calculada
 
@@ -47,7 +48,7 @@ Não existe área pública. Todas as páginas, ações e exportações exigem se
 | `/portaria` | `portaria.operar` (reservas de hoje: `reservas.ver_todas`) |
 | `/admin/portaria` | `visitantes.ver_todos`; o botão de limpeza LGPD exige também `moradores.gerenciar` (só o admin) |
 | `/admin/reservas` | `reservas.ver_todas` para ver; `reservas.gerenciar` para aprovar, recusar, reservar, bloquear e cancelar |
-| `/admin/reservas/areas` | `areas.configurar` |
+| `/admin/reservas/areas` | `areas.configurar` (inclui escolher **quem aprova os pedidos** de cada área — só síndico ou responsável pelas reservas ativos — e as fotos da área) |
 | Acesso com senha da equipe (página da pessoa) | `equipe.gerenciar` |
 | Usuário e senha do morador (página da pessoa e da unidade) | `moradores.gerenciar` (só o admin) |
 | `/admin/pessoas` (lista) e página da pessoa | `moradores.ver` = consulta; **editar** nome, perfil, casa e telefones: `moradores.gerenciar` (morador) ou `equipe.gerenciar` (portaria, conselho e administração) |
@@ -71,6 +72,11 @@ Não existe área pública. Todas as páginas, ações e exportações exigem se
 | `/admin/relatorios`, `/admin/relatorios/csv` | `relatorios.ver` (o financeiro exige também `financeiro.ver` ou `financeiro.ver_publicado`) |
 | PIX da taxa em `/admin/informacoes` | só o papel **admin**, mesmo que outra pessoa tenha `informacoes.gerenciar` (contra golpe) |
 | `/conta/senha` | só estar logado (fica fora das áreas, para não entrar em laço) |
+| Sino e `/notificacoes`, `/admin/notificacoes`, `/portaria/notificacoes`, `/api/notificacoes` | estar logado; cada item depende da permissão do assunto: anúncios aguardando (`classificados.moderar`), pedidos de reserva (`reservas.gerenciar`, só para o **responsável da área** — ou o síndico, se a área não tiver), solicitações abertas (`solicitacoes.gerenciar`); morador: votação, enquetes, comunicados, documentos e respostas aos pedidos da **própria casa**; portaria: visitas autorizadas (`visitantes.ver_todos`) e comunicados |
+| `/portaria/comunicados`, `/portaria/comunicados/[id]` | `comunicados.ver` (só publicados) |
+| Enviar fotos (`prepararEnvioFoto`) | anúncio: `classificados.usar`; comunicado: `comunicados.publicar`; área: `areas.configurar`. Autorização de uso único para UM caminho; 40 fotos por pessoa por hora |
+| `/api/fotos/{módulo}/{id}/{n}` | anúncio: aprovado e no prazo (`classificados.usar`), do próprio autor ou `classificados.moderar`; comunicado: publicado (`comunicados.ver`) ou `comunicados.publicar`; área: ativa (quem vê a agenda) ou `areas.configurar`. Quem não pode ver recebe "não encontrada" |
+| Cancelar (não atender) uma solicitação | `solicitacoes.gerenciar` + **comentário obrigatório e visível para o morador** |
 
 ## Testes
 

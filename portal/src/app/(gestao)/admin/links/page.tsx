@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import {
+  Bell,
   CalendarDays,
   ClipboardList,
   DoorOpen,
@@ -45,6 +46,7 @@ const ICONES: Record<string, LucideIcon> = {
   Store,
   Map,
   Phone,
+  Bell,
 };
 
 const ORDEM_AREAS: Grupo[] = ["morador", "portaria", "gestao"];

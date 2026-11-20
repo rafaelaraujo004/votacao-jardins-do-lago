@@ -39,6 +39,7 @@ export default async function ComunicadosGestao({ searchParams }: { searchParams
             {publicados.map((c) => (
               <li key={c.id}>
                 <CartaoComunicado
+                  foto={c.fotos[0]}
                   href={`/admin/comunicados/${c.id}`}
                   titulo={c.titulo}
                   texto={c.texto}
@@ -122,6 +123,7 @@ export default async function ComunicadosGestao({ searchParams }: { searchParams
           {lista.map((c) => (
             <li key={c.id}>
               <CartaoComunicado
+                foto={c.fotos[0]}
                 href={`/admin/comunicados/${c.id}`}
                 titulo={c.titulo}
                 texto={c.texto}

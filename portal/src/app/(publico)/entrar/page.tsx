@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Assinatura } from "@/components/ui/assinatura";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getContexto } from "@/server/contexto";
@@ -105,6 +106,7 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
             ) : null}
           </div>
         </div>
+        <Assinatura className="mt-6" />
       </main>
     </div>
   );

@@ -33,7 +33,9 @@ condominiums/{c}                     nome, status, fuso, moeda, (portalPublico: 
                                      antecedenciaMaxDias, prazoDesistenciaHoras, limitePorMes (0 = sem limite),
                                      limitePorCasaPorDia (null = sem limite), permitirExtraSeDiaLivre, exigencias[] ("Li e concordo"),
                                      avisos[], faixasLivres[{rotulo,inicio,fim}] (uso livre, só informativo), ativa, ordem,
-                                     faixas[{id,rotulo,inicio,fim}]
+                                     faixas[{id,rotulo,inicio,fim}], responsavelUid|null + responsavelNome (quem recebe no
+                                     sino e aprova os pedidos da área; null = síndico), fotos[{caminho,tipo,tamanho}] (até 4;
+                                     a 1ª é a miniatura)
                                      Condomínio real: area-de-lazer, quadra, rocadeira, carrinho-de-mao (src/lib/areas-jardins.ts)
   reservations/{id}                  amenityId, areaNome, unitId (null = bloqueio), unidadeRotulo, data, mes, faixaId,
                                      faixaRotulo, inicio, fim, status (pendente/confirmada/bloqueada/recusada/cancelada),
@@ -47,11 +49,12 @@ condominiums/{c}                     nome, status, fuso, moeda, (portalPublico: 
   packages/{id}                      unitId, destinatario, tipo, observacao, status (aguardando/entregue), dataRecebimento,
                                      recebidoEm/Por, entregueEm/Por, retiradoPor
   announcements/{id}                 titulo, texto, prioridade (normal/urgente), fixado, status (rascunho/publicado/arquivado),
-                                     publicadoEm|null (1ª publicação), criadoPor, criadoPorNome, criadoEm, atualizadoEm
-                                     — nunca apagado ("despublicar" = arquivar)
+                                     publicadoEm|null (1ª publicação), criadoPor, criadoPorNome, criadoEm, atualizadoEm,
+                                     fotos[{caminho,tipo,tamanho}] (até 4) — nunca apagado ("despublicar" = arquivar)
   tickets/{id}                       protocolo ("AAAA-NNNN"), unitId, unidadeRotulo, categoria, local, descricao,
                                      status (aberta/em_andamento/resolvida/cancelada), criadoPor, criadoEm, atualizadoEm,
-                                     resolvidoEm|null
+                                     resolvidoEm|null, respondidoEm|null (última resposta pública ou mudança de situação
+                                     feita pela administração — aparece no sino do morador)
     updates/{id}                     tipo (comentario/status), texto, deStatus, paraStatus, autorUid, autorNome,
                                      autorPapel, publico (false = nota interna: a casa não vê), criadoEm
   documents/{id}                     titulo, descricao, categoria (regimento/convencao/ata/prestacao/outro), url (só https —
@@ -73,10 +76,13 @@ votoCodigos/{sha256(código)}         condominioId, eleicaoId, unitId, senhaHash
   classifieds/{id}                   titulo, texto, categoria (venda/servico/doacao/procura/outro), preco (centavos)|null,
                                      contatoWhatsapp (só dígitos, com 55)|null, autorUid, autorPrimeiroNome, unitId,
                                      status (pendente/aprovado/rejeitado/removido/expirado), motivo, criadoEm, decididoEm,
-                                     expiraEm (30 dias após aprovar; vencido = "expirado" na leitura) — nunca apagado
+                                     expiraEm (30 dias após aprovar; vencido = "expirado" na leitura),
+                                     fotos[{caminho,tipo,tamanho}] (até 4) — nunca apagado
   mapPoints/{id}  usefulInfo/{id}
   counters/solicitacoes-AAAA         {ultimo, ano, atualizadoEm} — numeração dos protocolos (só servidor, em transação)
   auditLogs/{id}                     uid, nome, papel, acao, alvo, detalhes, criadoEm — só acréscimo
+  sino/{uid}                         vistasEm: quando a pessoa abriu o sino de notificações pela última vez
+                                     (só servidor; não entra na auditoria — é como marcar um e-mail como lido)
   sistema/sinais                     {portaria, reservas, financeiro, comunicados, solicitacoes, documentos,
                                      enquetes, classificados, pessoas, informacoes}: hora da última mudança de
                                      cada módulo (só servidor; gravado junto com a auditoria)
@@ -87,6 +93,18 @@ votoCodigos/{sha256(código)}         condominioId, eleicaoId, unitId, senhaHash
 ```
 
 Coleções em inglês (padrão do Firebase e da sugestão inicial); campos em português (linguagem do projeto).
+
+**Arquivos (Firebase Storage)** — ninguém lê direto pelo navegador:
+
+```
+condominiums/{c}/documents/{envio}/{nome}        arquivo de documento (até 20 MB) — abre por /api/documentos/{id}/arquivo
+condominiums/{c}/classifieds/{envio}/foto.jpg    fotos dos anúncios     ┐ até 5 MB cada, JPEG/PNG/WebP, já reduzidas
+condominiums/{c}/announcements/{envio}/foto.jpg  fotos dos comunicados  ├ no navegador (lado maior 1600 px); abrem por
+condominiums/{c}/amenities/{envio}/foto.jpg      fotos das áreas        ┘ /api/fotos/{módulo}/{id}/{n}
+```
+
+O **sino de notificações** não grava uma notificação por casa: a lista é montada na hora a partir das
+coleções acima (src/server/dados/notificacoes.ts); só `sino/{uid}` é gravado.
 
 ## Decisões
 

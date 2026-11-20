@@ -18,7 +18,7 @@ import { CorpoAnuncio, EtiquetaSituacao } from "./pecas";
 function CampoMotivo({ chave, dica }: { chave: string; dica: string }) {
   const id = `motivo-${chave}`;
   return (
-    <Campo id={id} rotulo="Motivo" dica={dica}>
+    <Campo id={id} rotulo="Comentário para o autor (motivo)" dica={dica}>
       <textarea
         id={id}
         name="motivo"
@@ -84,6 +84,7 @@ export function FilaDeModeracao({ fila, fuso, agora }: { fila: FilaModeracao; fu
                     texto={a.texto}
                     categoria={a.categoria}
                     preco={a.preco}
+                    fotos={a.fotos}
                     rodape={
                       <>
                         <Autoria a={a} fuso={fuso} />
@@ -141,6 +142,7 @@ export function FilaDeModeracao({ fila, fuso, agora }: { fila: FilaModeracao; fu
                     texto={a.texto}
                     categoria={a.categoria}
                     preco={a.preco}
+                    fotos={a.fotos}
                     rodape={
                       <>
                         <Autoria a={a} fuso={fuso} />

@@ -44,6 +44,7 @@ export function FaixaTopo({
   largura = "max-w-5xl",
   contaHref,
   sessao = null,
+  botoes,
   children,
 }: {
   titulo: string;
@@ -54,6 +55,8 @@ export function FaixaTopo({
   contaHref?: string;
   /** Área do morador: quem está logado ("Casa 12"). Vira um botão para "Minha conta". */
   sessao?: { rotulo: string } | null;
+  /** Botões redondos extras antes dos demais (ex.: o sino de notificações). */
+  botoes?: ReactNode;
   children?: ReactNode;
 }) {
   return (
@@ -79,6 +82,7 @@ export function FaixaTopo({
           </div>
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-2">
+        {botoes}
         {contaHref ? (
           <Link href={contaHref} title="Trocar senha" className={cx("grid size-11 place-items-center rounded-full", classeBotaoFaixa)}>
             <KeyRound aria-hidden className="size-5" />

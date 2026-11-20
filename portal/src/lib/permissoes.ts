@@ -1,7 +1,7 @@
 /**
  * Matriz de permissões do portal.
  *
- * Cada pessoa tem um PAPEL (morador, portaria, admin, conselheiro). O papel
+ * Cada pessoa tem um PAPEL (morador, portaria, admin, conselheiro, reservas). O papel
  * dá um conjunto padrão de permissões. O admin pode, por pessoa:
  *  - ACRESCENTAR permissões extras (só as que cabem no "teto" do papel);
  *  - RETIRAR permissões (a retirada sempre vence).
@@ -10,7 +10,7 @@
  * Firestore espelham o essencial (papel + unidade) como segunda barreira.
  */
 
-export const PAPEIS = ["morador", "portaria", "admin", "conselheiro"] as const;
+export const PAPEIS = ["morador", "portaria", "admin", "conselheiro", "reservas"] as const;
 export type Papel = (typeof PAPEIS)[number];
 
 export const PERMISSOES = [
@@ -106,6 +106,14 @@ const PADRAO_CONSELHEIRO: Permissao[] = [
   "informacoes.ver",
 ];
 
+/**
+ * Responsável pelas reservas (ex.: a pessoa que cuida da área de lazer): acesso de
+ * EQUIPE (e-mail e senha) que só vê a agenda de reservas e aprova ou recusa os pedidos.
+ * Recebe no sino os pedidos das áreas em que o síndico a marcou como responsável
+ * (sem responsável escolhido, os pedidos da área vão para o síndico).
+ */
+const PADRAO_RESERVAS: Permissao[] = ["area.gestao", "reservas.ver_todas", "reservas.gerenciar"];
+
 /** O admin (síndico) tem tudo. */
 const PADRAO_ADMIN: Permissao[] = [...PERMISSOES];
 
@@ -114,6 +122,7 @@ export const PERMISSOES_PADRAO: Record<Papel, readonly Permissao[]> = {
   portaria: PADRAO_PORTARIA,
   conselheiro: PADRAO_CONSELHEIRO,
   admin: PADRAO_ADMIN,
+  reservas: PADRAO_RESERVAS,
 };
 
 /**
@@ -134,6 +143,7 @@ export const TETO_EXTRAS: Record<Papel, readonly Permissao[]> = {
     "moradores.ver",
   ],
   admin: PADRAO_ADMIN,
+  reservas: ["areas.configurar", "informacoes.ver"],
 };
 
 export function ehPapel(valor: unknown): valor is Papel {
@@ -214,6 +224,7 @@ export const NOME_DO_PAPEL: Record<Papel, string> = {
   portaria: "Portaria",
   admin: "Síndico / Administração",
   conselheiro: "Conselho",
+  reservas: "Responsável pelas reservas",
 };
 
 /** Para onde cada papel vai depois de entrar. */
@@ -226,5 +237,7 @@ export function inicioDoPapel(papel: Papel): string {
     case "admin":
     case "conselheiro":
       return "/admin";
+    case "reservas":
+      return "/admin/reservas";
   }
 }

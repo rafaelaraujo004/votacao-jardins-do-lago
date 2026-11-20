@@ -7,6 +7,8 @@ rules_version = '2';
 // - Só dá para CRIAR o arquivo de documento que o servidor autorizou:
 //   o síndico recebe uma autorização de uso único (token com "envioDoc")
 //   que vale para UM caminho exato. Nada de sobrescrever nem apagar daqui.
+// - Fotos de anúncios e comunicados seguem o mesmo esquema ("envioFoto"),
+//   e quem lê é a rota /api/fotos/..., que confere quem pode ver.
 // - Tipo e tamanho são conferidos aqui e de novo no servidor ao salvar.
 service firebase.storage {
   match /b/{bucket}/o {
@@ -20,6 +22,20 @@ service firebase.storage {
         && request.resource.contentType.matches(
           'application/pdf|image/(jpeg|png|webp)|application/msword|application/vnd[.]ms-excel|application/vnd[.]openxmlformats-officedocument[.](wordprocessingml[.]document|spreadsheetml[.]sheet)'
         );
+    }
+
+    // Fotos dos classificados (morador), dos comunicados e das áreas de lazer (síndico): mesma ideia,
+    // com a autorização "envioFoto" para UM caminho exato. Só foto (JPEG, PNG ou
+    // WebP) de até 5 MB — o navegador já reduz a foto antes de enviar.
+    match /condominiums/{condominio}/{modulo}/{envio}/{nome} {
+      allow create: if (modulo == 'classifieds' || modulo == 'announcements' || modulo == 'amenities')
+        && request.auth != null
+        && resource == null
+        && 'envioFoto' in request.auth.token
+        && request.auth.token.envioFoto == ('condominiums/' + condominio + '/' + modulo + '/' + envio + '/' + nome)
+        && request.resource.size > 0
+        && request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
     }
 
     // Todo o resto: fechado.

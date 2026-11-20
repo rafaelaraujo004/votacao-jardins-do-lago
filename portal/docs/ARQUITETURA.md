@@ -28,6 +28,8 @@ portal/
     api/sessao/              cria a sessão
     api/demo/entrar/         login de demonstração (404 fora do simulador)
     api/sinais/              "o que mudou?" para as telas se atualizarem sozinhas
+    api/notificacoes/        a lista do sino de quem está logado
+    api/fotos/               entrega cada foto (anúncio, comunicado, área) só para quem pode ver
   src/components/ui/       peças visuais reutilizáveis
   src/components/layout/   faixa do topo e menus
   src/lib/                 código que pode rodar em qualquer lugar (permissões, formatos, validação)
@@ -80,7 +82,8 @@ Peças: `Botao`, `BotaoLink`, `Cartao`, `Alerta`, `Etiqueta`, `EstadoVazio`, `Ca
 ## Navegação
 
 - **Morador** (celular primeiro): área **sempre com login** (o layout exige `area.morador`; cada página confere de novo) com faixa verde e **"Casa 12 · Sair"** no topo; o condomínio vem sempre da sessão, nunca da URL; barra inferior com 5 itens: Início · Contas · Agenda · Pedidos (solicitações) · Mais (no computador vira coluna, com o bloco da casa: Autorizar visita e Encomendas). Mapa, Contatos, Comunicados, Documentos, Enquetes, Classificados, Visitas e Encomendas ficam em **Mais** e nos atalhos do Início (filtrados pelas permissões). O Início mostra os comunicados recentes no topo, a enquete aberta, as solicitações da casa, o PIX da taxa, a ronda e o atalho da votação oficial (quando houver link). `/entrar` tem as abas "Sou morador" (usuário + senha) e "Sou da equipe" (e-mail + senha).
-- **Portaria** (tablet/computador): uma tela de trabalho com buscar, validar código, entrada/saída, nova encomenda e listas do dia.
+- **Portaria** (tablet/computador): uma tela de trabalho com buscar, validar código, entrada/saída, nova encomenda e listas do dia. O sino do topo mostra as visitas autorizadas pelos moradores e os comunicados (lidos em `/portaria/comunicados`).
+- **Sino de notificações** no topo das três áreas (veja "Sino de notificações" abaixo) e o rodapé "Desenvolvido por Rafael Araújo" nas telas principais (`src/components/ui/assinatura.tsx`).
 - **Gestão** (síndico e conselho): menu lateral em grupos, filtrado pelas permissões (Pessoas, Portaria, Finanças com Relatórios, Serviços com Reservas e Solicitações, Comunicação com Comunicados, Documentos, Enquetes e Classificados, Configurações → Informações do condomínio, Auditoria). O painel `/admin` mostra as pendências (solicitações abertas, reservas pendentes, anúncios para aprovar) e os atalhos. Conselho vê "Somente consulta".
 
 ## Links por módulo
@@ -113,3 +116,30 @@ O que uma pessoa faz aparece sozinho para as outras, em poucos segundos, sem nin
 4. Não atualiza enquanto a pessoa digita ou está com uma janela de confirmação aberta; espera ela terminar. Por segurança, atualiza também a cada 30 min (portaria: 10 min), por causa da virada do dia.
 
 Custo: cada pergunta lê **um** documento (o servidor guarda por 2 min o condomínio de cada pessoa). Isso cabe com folga no plano gratuito (Spark), ao contrário de recarregar a tela inteira de tempo em tempo.
+
+Quando um módulo muda, o `<Sincronizar>` também dispara o evento `portal:sinais` na janela (com a lista de módulos); o sino escuta esse evento para se atualizar em qualquer tela.
+
+## Fotos (classificados, comunicados e áreas de lazer)
+
+Regras puras em `src/lib/fotos.ts`; servidor em `src/server/fotos.ts` e `src/server/acoes/fotos.ts`; telas em `src/components/fotos/`.
+
+1. **No celular**, cada foto é reduzida (lado maior de 1600 px) e regravada em JPEG (`src/lib/foto-navegador.ts`). Fica leve e os dados escondidos da foto (como a **localização GPS**) ficam para trás.
+2. O servidor dá uma **autorização de uso único** (token com `envioFoto` = caminho exato `condominiums/{c}/{classifieds|announcements|amenities}/{uuid}/foto.jpg`). As regras do Storage só deixam **criar** aquele arquivo, imagem de até 5 MB. Até 4 fotos por item; a primeira é a capa/miniatura.
+3. Ao salvar, o servidor confere cada foto no Storage (existe, tipo, tamanho, pasta do condomínio) e grava `fotos[{caminho,tipo,tamanho}]` no documento. Na edição, o formulário manda `atual:N` para as fotos que ficam (o caminho interno não vai ao navegador); as que saíram são apagadas do Storage depois de salvar.
+4. **Ninguém lê o Storage direto**: a tela usa `/api/fotos/{módulo}/{id}/{n}?v=...`, que confere login e se a pessoa pode ver o item (anúncio aprovado ou do autor; comunicado publicado; área ativa) e entrega um link temporário de 10 minutos (no simulador, o próprio portal entrega a foto). O `?v=` muda quando a foto é trocada. Por isso a CSP permite imagens de `https://storage.googleapis.com`.
+
+## Sino de notificações
+
+Regras puras em `src/lib/notificacoes.ts` (testadas em `tests/unit/notificacoes.test.ts`); dados em `src/server/dados/notificacoes.ts`; tela em `src/components/notificacoes/`.
+
+- O portal **não grava uma notificação por casa**: a lista é montada na hora a partir do que já existe, só com o que o perfil pode ver. Cada pessoa guarda só a hora em que abriu o sino (`condominiums/{c}/sino/{uid}`); o que aconteceu depois aparece como **"Novo"**.
+- **Gestão**: anúncios aguardando aprovação, pedidos de reserva (cada pedido vai para o **responsável da área**; área sem responsável → síndico) e solicitações abertas. Esses itens "precisam de você" e contam no número do sino até serem resolvidos.
+- **Morador**: votação oficial marcada/aberta (diz se a casa já votou), enquetes abertas que a casa não respondeu (contam até responder), comunicados e documentos dos últimos 30 dias e as respostas aos pedidos da casa (anúncio aprovado/não aprovado/removido com o motivo, reserva confirmada/recusada, solicitação respondida — campo `respondidoEm`).
+- **Portaria**: visitas autorizadas que ainda valem e comunicados.
+- O sino busca `/api/notificacoes` ao abrir a tela, ao ser tocado e quando o `<Sincronizar>` avisa que um módulo do sino mudou. Lista completa em `/notificacoes`, `/admin/notificacoes` e `/portaria/notificacoes`.
+
+## Responsável pelas reservas
+
+- Perfil de equipe **`reservas`** ("Responsável pelas reservas"): entra com e-mail e senha e cai direto em `/admin/reservas` (sem o painel geral). Só vê a agenda e aprova/recusa pedidos.
+- Em **Configurar áreas**, o síndico escolhe **"Quem aprova os pedidos"** de cada área (síndico ou uma pessoa com perfil `reservas` ativa). Os pedidos daquela área vão para o sino dessa pessoa; na agenda aparece "Quem aprova: Shirley (você)". Se a pessoa for suspensa, os pedidos voltam a ir para o síndico.
+- Recusar um pedido (reserva, anúncio) exige um comentário para o morador; cancelar (não atender) uma solicitação também exige comentário, sempre visível para o morador.

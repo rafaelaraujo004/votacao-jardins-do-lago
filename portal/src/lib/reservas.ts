@@ -63,6 +63,15 @@ export type ConfigArea = {
   avisos: string[];
   /** Horários de uso livre, sem reserva (só informativo; não são reserváveis). */
   faixasLivres: FaixaLivre[];
+  /**
+   * Quem recebe no sino e aprova os pedidos desta área (ex.: a responsável pelas
+   * reservas). null = o síndico. Opcional para não quebrar áreas antigas.
+   */
+  responsavelUid?: string | null;
+  /** Nome de quem é responsável (guardado junto, para mostrar sem consultar o cadastro). */
+  responsavelNome?: string;
+  /** Endereços protegidos das fotos da área (/api/fotos/...), a primeira é a miniatura. */
+  fotos?: string[];
   ativa: boolean;
   faixas: Faixa[];
   ordem: number;

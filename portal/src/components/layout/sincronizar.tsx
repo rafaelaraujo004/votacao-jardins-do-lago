@@ -15,7 +15,7 @@
  */
 import { useEffect, useRef, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { lerSinais, modulosDaTela, modulosQueMudaram, type ModuloSinc, type Sinais } from "@/lib/sincronizacao";
+import { EVENTO_SINAIS, lerSinais, modulosDaTela, modulosQueMudaram, type ModuloSinc, type Sinais } from "@/lib/sincronizacao";
 
 /** Quanto tempo depois da última tecla a pessoa ainda conta como "digitando". */
 const DIGITANDO_MS = 5000;
@@ -82,6 +82,8 @@ export function Sincronizar({
         const mudaram = modulosQueMudaram(conhecidos.current, novos, montadaEm);
         conhecidos.current = { ...conhecidos.current, ...novos };
         if (mudaram.length === 0) return;
+        // Avisa quem quiser saber (ex.: o sino de notificações), em qualquer tela.
+        window.dispatchEvent(new CustomEvent(EVENTO_SINAIS, { detail: { modulos: mudaram } }));
         const daTela = modulosDaTela(caminhoAtual.current);
         if (mudaram.some((m) => daTela.includes(m))) {
           atualizarRef.current();

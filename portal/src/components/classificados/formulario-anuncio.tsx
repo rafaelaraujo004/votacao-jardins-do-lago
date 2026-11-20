@@ -10,6 +10,7 @@ import { Send } from "lucide-react";
 import { Alerta, Campo, classeEntrada } from "@/components/ui/basicos";
 import { BotaoEnviar, Formulario } from "@/components/ui/formulario";
 import { criarAnuncio } from "@/server/acoes/classificados";
+import { SeletorFotos } from "@/components/fotos/seletor-fotos";
 import {
   CATEGORIAS_CLASSIFICADO,
   DICA_CATEGORIA,
@@ -85,6 +86,8 @@ export function FormularioAnuncio({ primeiroNome }: { primeiroNome: string }) {
           aria-describedby="texto-dica"
         />
       </Campo>
+
+      <SeletorFotos modulo="classificados" dica="Até 4 fotos do que você está anunciando. A primeira é a capa." />
 
       {categoria === "doacao" ? null : (
         <Campo id="preco" rotulo="Preço (opcional)" dica="Em reais. Ex.: 150 ou 1.200,50. Deixe vazio para “a combinar”.">

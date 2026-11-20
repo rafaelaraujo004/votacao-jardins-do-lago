@@ -237,6 +237,11 @@ service cloud.firestore {
         allow read, write: if false;
       }
 
+      // Quando cada pessoa abriu o sino de notificações pela última vez (só o servidor).
+      match /sino/{uid} {
+        allow read, write: if false;
+      }
+
       // ----- auditoria: só leitura, para quem tem permissão; ninguém altera -----
 
       match /auditLogs/{id} {

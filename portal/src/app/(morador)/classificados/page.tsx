@@ -168,6 +168,7 @@ function ListaPublica({
                   texto={a.texto}
                   categoria={a.categoria}
                   preco={a.preco}
+                  fotos={a.fotos}
                   etiquetas={
                     a.meu ? (
                       <Etiqueta tom="destaque" icone={UserRound}>
@@ -229,6 +230,7 @@ function MeusAnuncios({ anuncios, fuso, agora }: { anuncios: MeuAnuncio[]; fuso:
                 texto={a.texto}
                 categoria={a.categoria}
                 preco={a.preco}
+                fotos={a.fotos}
                 etiquetas={<EtiquetaSituacao situacao={a.situacao} />}
                 rodape={
                   <>

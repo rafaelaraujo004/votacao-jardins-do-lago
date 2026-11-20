@@ -47,5 +47,13 @@ describe("matriz de permissões", () => {
     expect(inicioDoPapel("portaria")).toBe("/portaria");
     expect(inicioDoPapel("admin")).toBe("/admin");
     expect(inicioDoPapel("conselheiro")).toBe("/admin");
+    expect(inicioDoPapel("reservas")).toBe("/admin/reservas");
+  });
+
+  it("responsável pelas reservas só vê e decide reservas (nada de financeiro, pessoas ou auditoria)", () => {
+    const p = calcularPermissoes("reservas");
+    expect([...p].sort()).toEqual(["area.gestao", "reservas.gerenciar", "reservas.ver_todas"]);
+    expect(calcularPermissoes("reservas", ["areas.configurar"]).has("areas.configurar")).toBe(true);
+    expect(calcularPermissoes("reservas", ["financeiro.ver", "moradores.ver"]).has("financeiro.ver")).toBe(false);
   });
 });

@@ -26,6 +26,12 @@ export const MODULOS_SINC = [
 ] as const;
 export type ModuloSinc = (typeof MODULOS_SINC)[number];
 
+/**
+ * Evento que o <Sincronizar> dispara na janela quando módulos mudam
+ * (detalhe: { modulos }). O sino de notificações escuta para se atualizar.
+ */
+export const EVENTO_SINAIS = "portal:sinais";
+
 /** Sinais: para cada módulo, quando foi a última mudança (milissegundos). */
 export type Sinais = Partial<Record<ModuloSinc, number>>;
 
@@ -121,6 +127,7 @@ const TELAS: [caminho: string, modulos: ModuloSinc[]][] = [
   ["/admin/classificados", ["classificados"]],
   ["/admin/pessoas", ["pessoas"]],
   ["/admin/informacoes", ["informacoes"]],
+  ["/admin/notificacoes", ["classificados", "reservas", "solicitacoes"]],
   // Morador
   ["/visitas", ["portaria"]],
   ["/encomendas", ["portaria"]],
@@ -132,6 +139,7 @@ const TELAS: [caminho: string, modulos: ModuloSinc[]][] = [
   ["/enquetes", ["enquetes"]],
   ["/votacao", ["eleicoes"]],
   ["/classificados", ["classificados"]],
+  ["/notificacoes", ["classificados", "reservas", "solicitacoes", "eleicoes", "enquetes", "comunicados", "documentos"]],
   ["/contatos", ["informacoes"]],
   ["/mapa", ["pessoas"]],
 ];

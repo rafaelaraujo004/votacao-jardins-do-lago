@@ -59,6 +59,7 @@ export async function WidgetComunicados({ ctx }: { ctx: Contexto }) {
           {lista.map((c) => (
             <li key={c.id}>
               <CartaoComunicado
+                foto={c.fotos[0]}
                 href={`/comunicados/${c.id}`}
                 titulo={c.titulo}
                 texto={c.texto}

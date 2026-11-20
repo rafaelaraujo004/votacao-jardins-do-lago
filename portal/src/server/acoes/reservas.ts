@@ -14,8 +14,10 @@ import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "../firebase-admin";
 import { garantirPermissao, getContexto, ErroDeAcesso, type Contexto } from "../contexto";
 import { registrarAuditoria } from "../auditoria";
-import { acaoReserva, gravarReserva, paraArea, paraReserva, type Reserva } from "../dados/reservas";
+import { acaoReserva, gravarReserva, paraArea, paraReserva, podeSerResponsavel, type Reserva } from "../dados/reservas";
 import { ErroDeNegocio, executar, lerFormulario, type Resultado } from "./resultado";
+import { apagarFotos, fotosDoFormulario } from "../fotos";
+import { fotosRemovidas, lerFotos } from "@/lib/fotos";
 import {
   AREAS_SUGERIDAS,
   avisoDesistenciaTardia,
@@ -52,6 +54,9 @@ export async function salvarArea(_: Resultado, dados: FormData): Promise<Resulta
     const db = adminDb();
     const col = db.collection("condominiums").doc(ctx.condominioId).collection("amenities");
     const ref = v.id ? col.doc(v.id) : col.doc();
+    // Fotos da área: as que ficam e as novas, conferidas no Storage ANTES da transação.
+    const fotosAntes = v.id ? lerFotos((await ref.get()).get("fotos"), ctx.condominioId, "areas") : [];
+    const fotos = await fotosDoFormulario(v.fotos, ctx.condominioId, "areas", fotosAntes);
     const campos = {
       tipo: v.tipo,
       nome: v.nome,
@@ -70,6 +75,7 @@ export async function salvarArea(_: Resultado, dados: FormData): Promise<Resulta
       ativa: v.ativa,
       ordem: v.ordem,
       faixas: v.faixas,
+      fotos,
       atualizadoEm: FieldValue.serverTimestamp(),
       atualizadoPor: ctx.uid,
     };
@@ -77,9 +83,18 @@ export async function salvarArea(_: Resultado, dados: FormData): Promise<Resulta
     await db.runTransaction(async (tx) => {
       const atual = await tx.get(ref);
       if (v.id && !atual.exists) throw new ErroDeNegocio("Área não encontrada. Atualize a página.");
+      // Responsável pelos pedidos: precisa ter acesso ativo e poder aprovar reservas.
+      let responsavel: { responsavelUid: string | null; responsavelNome: string } = { responsavelUid: null, responsavelNome: "" };
+      if (v.responsavelUid) {
+        const membro = await tx.get(db.collection("condominiums").doc(ctx.condominioId).collection("members").doc(v.responsavelUid));
+        if (!podeSerResponsavel(membro.data())) {
+          throw new ErroDeNegocio("A pessoa escolhida como responsável não pode aprovar reservas (ou está suspensa). Escolha outra.");
+        }
+        responsavel = { responsavelUid: membro.id, responsavelNome: String(membro.get("nome") ?? "") };
+      }
       // Ao editar, apaga o campo antigo em dias (agora a antecedência é em horas).
-      if (v.id) tx.update(ref, { ...campos, antecedenciaMinDias: FieldValue.delete() });
-      else tx.create(ref, { ...campos, criadoEm: FieldValue.serverTimestamp() });
+      if (v.id) tx.update(ref, { ...campos, ...responsavel, antecedenciaMinDias: FieldValue.delete() });
+      else tx.create(ref, { ...campos, ...responsavel, criadoEm: FieldValue.serverTimestamp() });
       registrarAuditoria(db, tx, {
         condominioId: ctx.condominioId,
         uid: ctx.uid,
@@ -101,10 +116,14 @@ export async function salvarArea(_: Resultado, dados: FormData): Promise<Resulta
           permitirExtraSeDiaLivre: v.permitirExtraSeDiaLivre,
           exigencias: v.exigencias.length,
           avisos: v.avisos.length,
+          responsavel: v.responsavelUid ? "pessoa escolhida" : "síndico",
+          fotos: fotos.length,
         },
       });
     });
 
+    // Fotos que saíram da área: apagadas do Storage (depois de salvar).
+    await apagarFotos(fotosRemovidas(fotosAntes, fotos));
     revalidarReservas();
     revalidatePath("/admin/reservas/areas");
     return v.id ? `Área "${v.nome}" atualizada.` : `Área "${v.nome}" criada.`;

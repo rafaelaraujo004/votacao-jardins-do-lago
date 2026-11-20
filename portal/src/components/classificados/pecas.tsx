@@ -29,6 +29,7 @@ import {
   type StatusClassificado,
 } from "@/lib/classificados";
 import { cx } from "@/lib/cx";
+import { GaleriaFotos } from "@/components/fotos/galeria";
 
 type Tom = "ok" | "info" | "aviso" | "erro" | "neutro" | "destaque";
 
@@ -97,12 +98,13 @@ export function BotaoWhatsapp({ numero, titulo }: { numero: string; titulo: stri
   );
 }
 
-/** Título, etiquetas, preço e texto do anúncio. `extra` vai no fim (ex.: botões). */
+/** Fotos (se houver), título, etiquetas, preço e texto do anúncio. `rodape` vai no fim (ex.: botões). */
 export function CorpoAnuncio({
   titulo,
   texto,
   categoria,
   preco,
+  fotos = [],
   etiquetas,
   rodape,
   className,
@@ -111,6 +113,8 @@ export function CorpoAnuncio({
   texto: string;
   categoria: CategoriaClassificado;
   preco: number | null;
+  /** Endereços protegidos das fotos (a primeira é a capa). */
+  fotos?: string[];
   /** Etiquetas além da categoria (ex.: situação, "Seu anúncio"). */
   etiquetas?: ReactNode;
   rodape?: ReactNode;
@@ -119,6 +123,7 @@ export function CorpoAnuncio({
   const valor = textoPreco(categoria, preco);
   return (
     <article className={cx("flex flex-col gap-2.5", className)}>
+      <GaleriaFotos fotos={fotos} titulo={titulo} />
       <div className="flex flex-wrap items-center gap-2">
         <EtiquetaCategoria categoria={categoria} />
         {etiquetas}

@@ -10,6 +10,7 @@ import {
   type CategoriaClassificado,
   type StatusClassificado,
 } from "@/lib/classificados";
+import { enderecosFotos, lerFotos, type FotoGuardada } from "@/lib/fotos";
 
 /**
  * Dados dos classificados.
@@ -51,6 +52,7 @@ type Bruto = {
   criadoEm: Date | null;
   decididoEm: Date | null;
   expiraEm: Date | null;
+  fotos: FotoGuardada[];
 };
 
 function data(v: unknown): Date | null {
@@ -61,7 +63,8 @@ function texto(v: unknown, padrao = ""): string {
   return typeof v === "string" ? v : padrao;
 }
 
-export function paraClassificado(id: string, d: DocumentData | undefined): Bruto {
+/** `condominioId` só é preciso para ler as fotos (as ações que só mudam o status não passam). */
+export function paraClassificado(id: string, d: DocumentData | undefined, condominioId = ""): Bruto {
   return {
     id,
     titulo: texto(d?.titulo, "Anúncio"),
@@ -78,8 +81,12 @@ export function paraClassificado(id: string, d: DocumentData | undefined): Bruto
     criadoEm: data(d?.criadoEm),
     decididoEm: data(d?.decididoEm),
     expiraEm: data(d?.expiraEm),
+    fotos: condominioId ? lerFotos(d?.fotos, condominioId, "classificados") : [],
   };
 }
+
+/** Endereços protegidos das fotos do anúncio (/api/fotos/...). */
+const fotosDe = (a: Bruto) => enderecosFotos("classificados", a.id, a.fotos);
 
 const maisNovoPrimeiro = (a: Date | null, b: Date | null) => (b?.getTime() ?? 0) - (a?.getTime() ?? 0);
 
@@ -98,6 +105,8 @@ export type AnuncioPublico = {
   expiraEm: Date | null;
   /** É da própria pessoa? (para mostrar "Seu anúncio"; o uid não sai do servidor) */
   meu: boolean;
+  /** Endereços protegidos das fotos (a primeira é a capa). */
+  fotos: string[];
 };
 
 /** Anúncios aprovados e dentro do prazo, do mais novo para o mais antigo. */
@@ -107,7 +116,7 @@ export async function anunciosPublicados(ctx: Contexto, agora = new Date()): Pro
   // "aprovado" no banco e, com o tempo, encheriam o limite de leitura escondendo os novos.
   const snap = await base(ctx).where("expiraEm", ">", Timestamp.fromDate(agora)).limit(LIMITE_LEITURA).get();
   return snap.docs
-    .map((d) => paraClassificado(d.id, d.data()))
+    .map((d) => paraClassificado(d.id, d.data(), ctx.condominioId))
     .filter((a) => estaVisivel(a.status, a.expiraEm, agora))
     .sort((a, b) => maisNovoPrimeiro(a.decididoEm, b.decididoEm))
     .map((a) => ({
@@ -120,6 +129,7 @@ export async function anunciosPublicados(ctx: Contexto, agora = new Date()): Pro
       autorPrimeiroNome: a.autorPrimeiroNome,
       publicadoEm: a.decididoEm,
       expiraEm: a.expiraEm,
+      fotos: fotosDe(a),
       meu: a.autorUid === ctx.uid,
     }));
 }
@@ -138,6 +148,8 @@ export type MeuAnuncio = {
   motivo: string;
   criadoEm: Date | null;
   expiraEm: Date | null;
+  /** Endereços protegidos das fotos (a primeira é a capa). */
+  fotos: string[];
 };
 
 /** Todos os anúncios da própria pessoa (qualquer situação), do mais novo para o mais antigo. */
@@ -145,7 +157,7 @@ export async function meusAnuncios(ctx: Contexto, agora = new Date()): Promise<M
   garantirPermissao(ctx, "classificados.usar");
   const snap = await base(ctx).where("autorUid", "==", ctx.uid).limit(LIMITE_LEITURA).get();
   return snap.docs
-    .map((d) => paraClassificado(d.id, d.data()))
+    .map((d) => paraClassificado(d.id, d.data(), ctx.condominioId))
     .sort((a, b) => maisNovoPrimeiro(a.criadoEm, b.criadoEm))
     .map((a) => ({
       id: a.id,
@@ -158,6 +170,7 @@ export async function meusAnuncios(ctx: Contexto, agora = new Date()): Promise<M
       motivo: a.motivo,
       criadoEm: a.criadoEm,
       expiraEm: a.expiraEm,
+      fotos: fotosDe(a),
     }));
 }
 
@@ -178,6 +191,8 @@ export type AnuncioModeracao = {
   criadoEm: Date | null;
   decididoEm: Date | null;
   expiraEm: Date | null;
+  /** Endereços protegidos das fotos (a primeira é a capa). */
+  fotos: string[];
 };
 
 export type FilaModeracao = {
@@ -213,7 +228,7 @@ export async function filaModeracao(ctx: Contexto, agora = new Date()): Promise<
     col.where("status", "==", "aprovado").limit(LIMITE_LEITURA).get(),
     col.where("status", "in", ["rejeitado", "removido", "expirado"]).limit(LIMITE_LEITURA).get(),
   ]);
-  const todos = [...pend.docs, ...aprov.docs, ...decididos.docs].map((d) => paraClassificado(d.id, d.data()));
+  const todos = [...pend.docs, ...aprov.docs, ...decididos.docs].map((d) => paraClassificado(d.id, d.data(), ctx.condominioId));
   const casas = await rotulosDasCasas(ctx, todos.map((a) => a.unitId ?? "").filter(Boolean));
 
   const paraTela = (a: Bruto): AnuncioModeracao => ({
@@ -230,6 +245,7 @@ export async function filaModeracao(ctx: Contexto, agora = new Date()): Promise<
     criadoEm: a.criadoEm,
     decididoEm: a.decididoEm,
     expiraEm: a.expiraEm,
+    fotos: fotosDe(a),
   });
   const lista = todos.map(paraTela);
 

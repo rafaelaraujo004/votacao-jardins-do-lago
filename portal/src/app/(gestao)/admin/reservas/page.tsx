@@ -194,11 +194,12 @@ export default async function AgendaReservas({ searchParams }: PageProps<"/admin
 
       {pendentes.length ? (
         <section aria-labelledby="titulo-pendentes" className="flex flex-col gap-3">
+          {/* Os pedidos das áreas de quem está vendo vêm primeiro. */}
           <TituloSecao id="titulo-pendentes" extra={`${pendentes.length} ${pendentes.length === 1 ? "pedido" : "pedidos"}`}>
             Pedidos aguardando aprovação
           </TituloSecao>
           <ul className="flex flex-col gap-2.5">
-            {pendentes.map((r) => (
+            {ordenarPorResponsavel(pendentes, areas, ctx.uid).map((r) => (
               <li key={r.id} className="saltado flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center">
                 <div className="min-w-0 flex-1">
                   <b className="block text-ink">
@@ -208,6 +209,7 @@ export default async function AgendaReservas({ searchParams }: PageProps<"/admin
                     {dataCurta(r.data)}/{r.data.slice(0, 4)} · {descreverFaixa({ rotulo: r.faixaRotulo, inicio: r.inicio, fim: r.fim })}
                   </span>
                   {r.observacao ? <span className="block text-[0.88rem] text-muted">“{r.observacao}”</span> : null}
+                  <QuemAprova area={areas.find((a) => a.id === r.amenityId)} uid={ctx.uid} />
                   <Link href={link(r.amenityId, r.data.slice(0, 7), r.data)} scroll={false} className="mt-1 inline-flex min-h-11 items-center gap-1.5 text-[0.9rem] font-bold text-lake">
                     <CalendarDays aria-hidden className="size-4" /> Ver no calendário
                   </Link>
@@ -425,7 +427,7 @@ function BotoesDecisao({ reserva: r, hoje }: { reserva: Reserva; hoje: string })
         textoEnviar="Recusar pedido"
         varianteEnviar="perigo"
       >
-        <Campo id={`motivo-r-${r.id}`} rotulo="Motivo da recusa">
+        <Campo id={`motivo-r-${r.id}`} rotulo="Comentário para o morador (motivo da recusa)">
           <input id={`motivo-r-${r.id}`} name="motivo" required minLength={3} maxLength={200} className={classeEntrada} placeholder="Ex.: data reservada para evento do condomínio" />
         </Campo>
       </DialogoFormulario>
@@ -450,5 +452,22 @@ function BotaoCancelar({ reserva: r }: { reserva: Reserva }) {
         <input id={`motivo-c-${r.id}`} name="motivo" required minLength={3} maxLength={200} className={classeEntrada} placeholder={bloqueio ? "Ex.: manutenção concluída" : "Ex.: pedido do morador"} />
       </Campo>
     </DialogoFormulario>
+  );
+}
+
+/** Pedidos das áreas em que a pessoa é responsável primeiro (a ordem de data continua dentro de cada grupo). */
+function ordenarPorResponsavel(pendentes: Reserva[], areas: ConfigArea[], uid: string): Reserva[] {
+  const minhas = new Set(areas.filter((a) => a.responsavelUid === uid).map((a) => a.id));
+  return [...pendentes].sort((a, b) => Number(minhas.has(b.amenityId)) - Number(minhas.has(a.amenityId)));
+}
+
+/** "Quem aprova: Shirley (você)" — o responsável escolhido na configuração da área, ou o síndico. */
+function QuemAprova({ area, uid }: { area: ConfigArea | undefined; uid: string }) {
+  const minha = !!area?.responsavelUid && area.responsavelUid === uid;
+  return (
+    <span className="block text-[0.86rem] text-muted">
+      Quem aprova: <b className="text-ink-2">{area?.responsavelUid ? area.responsavelNome || "responsável da área" : "Síndico / Administração"}</b>
+      {minha ? " (você)" : ""}
+    </span>
   );
 }

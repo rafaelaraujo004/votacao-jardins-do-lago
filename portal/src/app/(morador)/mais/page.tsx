@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import {
   Award,
+  Bell,
   CalendarDays,
   ChevronRight,
   ClipboardList,
@@ -39,6 +40,7 @@ const DA_CASA: Modulo[] = [
 
 // Comunicação e informações do condomínio.
 const DO_CONDOMINIO: Modulo[] = [
+  { icone: Bell, titulo: "Notificações", descricao: "Votações, enquetes, avisos e respostas aos seus pedidos", tom: "vinho", href: "/notificacoes", permissao: "area.morador" },
   { icone: Megaphone, titulo: "Comunicados", descricao: "Avisos da administração", tom: "areia", href: "/comunicados", permissao: "comunicados.ver" },
   { icone: Vote, titulo: "Enquetes", descricao: "Um voto por casa nas decisões do condomínio", tom: "vinho", href: "/enquetes", permissao: "enquetes.votar" },
   { icone: Award, titulo: "Votação oficial", descricao: "Eleições do condomínio com voto secreto", tom: "vinho", href: "/votacao", permissao: "eleicoes.votar" },

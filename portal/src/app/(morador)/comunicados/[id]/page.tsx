@@ -10,6 +10,7 @@ import { formatarDataHora } from "@/lib/formato";
 import { cx } from "@/lib/cx";
 import { Cartao } from "@/components/ui/basicos";
 import { EtiquetasComunicado, TextoComunicado } from "@/components/comunicados/pecas";
+import { GaleriaFotos } from "@/components/fotos/galeria";
 
 export const metadata: Metadata = { title: "Comunicado" };
 
@@ -38,6 +39,7 @@ export default async function ComunicadoMorador({ params }: { params: Promise<{ 
             </p>
           ) : null}
           <TextoComunicado texto={c.texto} className="mt-1" />
+          <GaleriaFotos fotos={c.fotos} titulo={c.titulo} variante="pagina" className="mt-2" />
         </article>
       </Cartao>
     </div>

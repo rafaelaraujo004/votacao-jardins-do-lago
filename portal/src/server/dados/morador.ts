@@ -93,7 +93,7 @@ export async function areasAtivas(ctx: Contexto): Promise<ConfigArea[]> {
   garantirPermissao(ctx, "area.morador");
   const snap = await base(ctx).collection("amenities").get();
   return snap.docs
-    .map((d) => paraArea(d.id, d.data()))
+    .map((d) => paraArea(d.id, d.data(), ctx.condominioId))
     .filter((a) => a.ativa)
     .sort(ordenarAreas); // áreas primeiro, depois equipamentos
 }

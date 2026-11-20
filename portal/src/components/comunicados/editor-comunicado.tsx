@@ -15,6 +15,8 @@ import { salvarComunicado } from "@/server/acoes/comunicados";
 import { LIMITE_TEXTO, LIMITE_TITULO, limparTexto, limparTitulo, type Prioridade, type StatusComunicado } from "@/lib/comunicados";
 import { cx } from "@/lib/cx";
 import { EtiquetasComunicado, TextoComunicado } from "./pecas";
+import { SeletorFotos } from "@/components/fotos/seletor-fotos";
+import { GaleriaFotos } from "@/components/fotos/galeria";
 
 export type ComunicadoEditavel = {
   id: string;
@@ -23,6 +25,8 @@ export type ComunicadoEditavel = {
   prioridade: Prioridade;
   fixado: boolean;
   status: StatusComunicado;
+  /** Endereços das fotos que o comunicado já tem. */
+  fotos: string[];
 };
 
 /** Botão de enviar que diz o destino (salvar ou publicar) e mostra o carregamento. */
@@ -52,6 +56,7 @@ export function EditorComunicado({ comunicado }: { comunicado: ComunicadoEditave
   const [prioridade, setPrioridade] = useState<Prioridade>(comunicado?.prioridade ?? "normal");
   const [fixado, setFixado] = useState(comunicado?.fixado ?? false);
   const [vendo, setVendo] = useState<"escrever" | "previa">("escrever");
+  const [fotosPrevia, setFotosPrevia] = useState<string[]>(comunicado?.fotos ?? []);
 
   const publicado = comunicado?.status === "publicado";
   const tituloLimpo = limparTitulo(titulo);
@@ -127,6 +132,15 @@ export function EditorComunicado({ comunicado }: { comunicado: ComunicadoEditave
           </p>
         </Campo>
 
+        {/* Remonta quando as fotos salvas mudam (depois de salvar, a lista vem nova do servidor). */}
+        <SeletorFotos
+          key={(comunicado?.fotos ?? []).join("|")}
+          modulo="comunicados"
+          atuais={comunicado?.fotos ?? []}
+          dica="Até 4 fotos (ex.: a obra, o aviso impresso, o evento). A primeira aparece na lista."
+          aoMudar={setFotosPrevia}
+        />
+
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-1.5 font-bold">Prioridade</legend>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -183,6 +197,7 @@ export function EditorComunicado({ comunicado }: { comunicado: ComunicadoEditave
               <EtiquetasComunicado prioridade={prioridade} fixado={fixado} novo={!publicado} />
               <h2 className="break-words text-[1.4rem] font-bold text-destaque">{tituloLimpo || "Sem título"}</h2>
               <TextoComunicado texto={textoLimpo} />
+              <GaleriaFotos fotos={fotosPrevia} titulo={tituloLimpo || "Comunicado"} variante="pagina" className="mt-2" />
             </article>
           </Cartao>
           {tituloLimpo.length < 3 || textoLimpo.length < 3 ? (

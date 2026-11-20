@@ -10,7 +10,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithCustomToken } from "firebase/auth";
-import { Building2, ChevronRight, House, LoaderCircle, ShieldCheck, Landmark, type LucideIcon } from "lucide-react";
+import { Building2, CalendarCheck, ChevronRight, House, LoaderCircle, ShieldCheck, Landmark, type LucideIcon } from "lucide-react";
 import { cabecalhosSeguros, firebaseAuth } from "@/lib/firebase/client";
 import { useAvisos } from "@/components/ui/avisos";
 import { Alerta } from "@/components/ui/basicos";
@@ -24,6 +24,7 @@ const ICONES: Record<Papel, LucideIcon> = {
   portaria: ShieldCheck,
   admin: Building2,
   conselheiro: Landmark,
+  reservas: CalendarCheck,
 };
 
 async function lerErro(resposta: Response): Promise<string> {

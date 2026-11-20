@@ -39,6 +39,7 @@ export const AREAS_PROTEGIDAS = [
   "/enquetes",
   "/votacao",
   "/classificados",
+  "/notificacoes",
   "/relatorio",
   // Equipe e conta
   "/admin",
@@ -88,6 +89,7 @@ export const config = {
     "/enquetes/:path*",
     "/votacao/:path*",
     "/classificados/:path*",
+    "/notificacoes/:path*",
     "/relatorio/:path*",
     "/admin/:path*",
     "/portaria/:path*",

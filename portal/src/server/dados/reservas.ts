@@ -4,7 +4,8 @@ import { adminDb } from "../firebase-admin";
 import { ErroDeAcesso, type Contexto } from "../contexto";
 import { registrarAuditoria, type AcaoAuditada } from "../auditoria";
 import { ErroDeNegocio } from "../acoes/resultado";
-import type { Permissao } from "@/lib/permissoes";
+import { calcularPermissoes, ehPapel, NOME_DO_PAPEL, type Permissao } from "@/lib/permissoes";
+import { enderecosFotos, lerFotos } from "@/lib/fotos";
 import { hojeISO } from "@/lib/formato";
 import { dataCurta, dataISO, type EventoAgenda } from "@/lib/agenda";
 import {
@@ -72,7 +73,8 @@ function faixasLivresDe(v: unknown): FaixaLivre[] {
     .map((f) => ({ rotulo: texto(f.rotulo, "Uso livre"), inicio: f.inicio!, fim: f.fim! }));
 }
 
-export function paraArea(id: string, d: DocumentData | undefined): ConfigArea {
+/** `condominioId` só é preciso para as fotos (as ações que só leem as regras não passam). */
+export function paraArea(id: string, d: DocumentData | undefined, condominioId = ""): ConfigArea {
   const faixas = Array.isArray(d?.faixas) ? (d.faixas as Partial<Faixa>[]) : [];
   const limiteDia = d?.limitePorCasaPorDia;
   return {
@@ -92,6 +94,9 @@ export function paraArea(id: string, d: DocumentData | undefined): ConfigArea {
     exigencias: textos(d?.exigencias),
     avisos: textos(d?.avisos),
     faixasLivres: faixasLivresDe(d?.faixasLivres),
+    responsavelUid: typeof d?.responsavelUid === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(d.responsavelUid) ? d.responsavelUid : null,
+    responsavelNome: texto(d?.responsavelNome),
+    fotos: condominioId ? enderecosFotos("areas", id, lerFotos(d?.fotos, condominioId, "areas")) : [],
     ativa: d?.ativa !== false,
     ordem: numero(d?.ordem, 99),
     faixas: faixas
@@ -169,6 +174,38 @@ export function paraReserva(id: string, d: DocumentData | undefined): Reserva {
 
 const porDataEHora = (a: Reserva, b: Reserva) => a.data.localeCompare(b.data) || a.inicio.localeCompare(b.inicio);
 
+// ---------- Responsável pelos pedidos de cada área ----------
+
+/** Pessoa que pode ser escolhida como responsável por uma área (precisa poder aprovar reservas). */
+export type ResponsavelPossivel = { uid: string; nome: string; perfil: string };
+
+/**
+ * A pessoa (cadastro do membro) pode ser responsável pelos pedidos de uma área?
+ * Vínculo ativo, perfil síndico ou responsável pelas reservas, e a permissão "reservas.gerenciar".
+ */
+export function podeSerResponsavel(d: DocumentData | undefined): boolean {
+  if (!d || d.status !== "ativo" || !ehPapel(d.papel)) return false;
+  // Só quem usa o painel de reservas da administração (síndico ou responsável pelas reservas).
+  if (d.papel !== "admin" && d.papel !== "reservas") return false;
+  const extras = Array.isArray(d.permissoesExtras) ? d.permissoesExtras : [];
+  const negadas = Array.isArray(d.permissoesNegadas) ? d.permissoesNegadas : [];
+  return calcularPermissoes(d.papel, extras, negadas).has("reservas.gerenciar");
+}
+
+/** Quem o síndico pode escolher como responsável (responsáveis pelas reservas primeiro, depois a administração). */
+export async function responsaveisPossiveis(ctx: Contexto): Promise<ResponsavelPossivel[]> {
+  garantirUmaDas(ctx, ["areas.configurar"]);
+  const snap = await base(ctx).collection("members").where("status", "==", "ativo").get();
+  const ordem = (papel: unknown) => (papel === "reservas" ? 0 : papel === "admin" ? 1 : 2);
+  return snap.docs
+    .filter((d) => podeSerResponsavel(d.data()))
+    .sort((a, b) => ordem(a.get("papel")) - ordem(b.get("papel")) || texto(a.get("nome")).localeCompare(texto(b.get("nome")), "pt-BR"))
+    .map((d) => {
+      const papel = d.get("papel");
+      return { uid: d.id, nome: texto(d.get("nome"), "Sem nome"), perfil: ehPapel(papel) ? NOME_DO_PAPEL[papel] : "" };
+    });
+}
+
 // ---------- Áreas ----------
 
 /** Áreas de lazer. O morador só recebe as ativas; a gestão vê todas. */
@@ -177,7 +214,7 @@ export async function listarAreas(ctx: Contexto): Promise<ConfigArea[]> {
   const snap = await base(ctx).collection("amenities").get();
   const veTodas = ctx.permissoes.has("reservas.ver_todas") || ctx.permissoes.has("areas.configurar");
   return snap.docs
-    .map((d) => paraArea(d.id, d.data()))
+    .map((d) => paraArea(d.id, d.data(), ctx.condominioId))
     .filter((a) => veTodas || a.ativa)
     .sort(ordenarAreas);
 }
@@ -187,7 +224,7 @@ export async function obterArea(ctx: Contexto, id: string): Promise<ConfigArea |
   if (!/^[A-Za-z0-9_-]{1,64}$/.test(id)) return null;
   const d = await base(ctx).collection("amenities").doc(id).get();
   if (!d.exists) return null;
-  const area = paraArea(d.id, d.data());
+  const area = paraArea(d.id, d.data(), ctx.condominioId);
   const veTodas = ctx.permissoes.has("reservas.ver_todas") || ctx.permissoes.has("areas.configurar");
   return area.ativa || veTodas ? area : null;
 }

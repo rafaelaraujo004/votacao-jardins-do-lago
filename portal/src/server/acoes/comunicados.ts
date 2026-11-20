@@ -13,6 +13,8 @@ import { garantirPermissao, getContexto } from "../contexto";
 import { registrarAuditoria } from "../auditoria";
 import { acaoComunicado, paraComunicadoGestao } from "../dados/comunicados";
 import { ErroDeNegocio, executar, lerFormulario, type Resultado } from "./resultado";
+import { apagarFotos, fotosDoFormulario } from "../fotos";
+import { fotosRemovidas, lerFotos } from "@/lib/fotos";
 import { conferirMudanca, statusDepois } from "@/lib/comunicados";
 import { esquemaComunicado, esquemaMudanca } from "@/lib/validacao-comunicados";
 
@@ -34,10 +36,20 @@ export async function salvarComunicado(_: Resultado, dados: FormData): Promise<R
     const ref = v.id ? col.doc(v.id) : col.doc();
     const auditoriaBase = { condominioId: ctx.condominioId, uid: ctx.uid, nome: ctx.nome, papel: ctx.papel, alvo: `announcements/${ref.id}` };
 
+    // Fotos: as que ficam ("atual:N") e as novas, conferidas no Storage ANTES da transação.
+    const fotosAntes = v.id ? lerFotos((await ref.get()).get("fotos"), ctx.condominioId, "comunicados") : [];
+    const fotos = await fotosDoFormulario(v.fotos, ctx.condominioId, "comunicados", fotosAntes);
+    const mesmaLista = (a: { caminho: string }[], b: { caminho: string }[]) =>
+      a.length === b.length && a.every((f, i) => f.caminho === b[i]?.caminho);
+
     const final = await db.runTransaction(async (tx) => {
       const doc = v.id ? await tx.get(ref) : null;
       if (v.id && !doc?.exists) throw new ErroDeNegocio("Comunicado não encontrado. Atualize a página.");
       const atual = doc?.exists ? paraComunicadoGestao(doc.id, doc.data()) : null;
+      // Outra pessoa mudou as fotos enquanto esta editava: não mistura as duas versões.
+      if (doc?.exists && !mesmaLista(lerFotos(doc.get("fotos"), ctx.condominioId, "comunicados"), fotosAntes)) {
+        throw new ErroDeNegocio("As fotos deste comunicado mudaram enquanto você editava. Atualize a página e tente de novo.");
+      }
 
       const statusAntes = atual?.status ?? null;
       const status = v.destino === "publicar" ? "publicado" : (statusAntes ?? "rascunho");
@@ -51,6 +63,7 @@ export async function salvarComunicado(_: Resultado, dados: FormData): Promise<R
         prioridade: v.prioridade,
         fixado,
         status,
+        fotos,
         atualizadoEm: FieldValue.serverTimestamp(),
         // A data de publicação é a da PRIMEIRA vez (republicar não "renova" o comunicado).
         ...(publicando && !atual?.publicadoEm ? { publicadoEm: FieldValue.serverTimestamp() } : {}),
@@ -71,7 +84,7 @@ export async function salvarComunicado(_: Resultado, dados: FormData): Promise<R
       registrarAuditoria(db, tx, {
         ...auditoriaBase,
         acao: acaoComunicado(atual ? "comunicado.editar" : "comunicado.criar"),
-        detalhes: { titulo: v.titulo, prioridade: v.prioridade, fixado, situacao: status },
+        detalhes: { titulo: v.titulo, prioridade: v.prioridade, fixado, situacao: status, fotos: fotos.length },
       });
       if (publicando) {
         registrarAuditoria(db, tx, {
@@ -83,6 +96,8 @@ export async function salvarComunicado(_: Resultado, dados: FormData): Promise<R
       return { novo: !atual, status, publicando };
     });
 
+    // Fotos que saíram do comunicado: apagadas do Storage (depois de salvar).
+    await apagarFotos(fotosRemovidas(fotosAntes, fotos));
     revalidarComunicados(ref.id);
     if (final.publicando) return `Comunicado publicado: "${v.titulo}". Os moradores já podem ler.`;
     if (final.novo) return `Rascunho salvo: "${v.titulo}". Ele ainda não aparece para os moradores.`;

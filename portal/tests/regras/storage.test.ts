@@ -64,3 +64,39 @@ describe("envio de arquivo de documento", () => {
     await assertFails(getBytes(ref(env.authenticatedContext("morador1").storage(), CAMINHO)));
   });
 });
+
+describe("envio de fotos (anúncios, comunicados e áreas de lazer)", () => {
+  const ENVIO = "0f1e2d3c-4b5a-4978-8a9b-0c1d2e3f4a5b";
+  const FOTO = `condominiums/condo-a/classifieds/${ENVIO}/foto.jpg`;
+  const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
+  const comFoto = (caminho: string) => env.authenticatedContext("morador1", { envioFoto: caminho }).storage();
+
+  it("cria a foto exata que foi autorizada, nas três pastas", async () => {
+    await assertSucceeds(uploadBytes(ref(comFoto(FOTO), FOTO), JPEG, { contentType: "image/jpeg" }));
+    for (const pasta of ["announcements", "amenities"]) {
+      const c = `condominiums/condo-a/${pasta}/${ENVIO}/foto.jpg`;
+      await assertSucceeds(uploadBytes(ref(comFoto(c), c), JPEG, { contentType: "image/jpeg" }));
+    }
+  });
+
+  it("não cria em outra pasta, outro caminho ou com a autorização de documento", async () => {
+    const outraPasta = `condominiums/condo-a/financialEntries/${ENVIO}/foto.jpg`;
+    await assertFails(uploadBytes(ref(comFoto(outraPasta), outraPasta), JPEG, { contentType: "image/jpeg" }));
+    const outro = `condominiums/condo-a/classifieds/${ENVIO}/outra.jpg`;
+    await assertFails(uploadBytes(ref(comFoto(FOTO), outro), JPEG, { contentType: "image/jpeg" }));
+    const doc = env.authenticatedContext("sindico", { envioDoc: FOTO }).storage();
+    await assertFails(uploadBytes(ref(doc, FOTO.replace("foto.jpg", "foto2.jpg")), JPEG, { contentType: "image/jpeg" }));
+  });
+
+  it("só aceita imagem de até 5 MB", async () => {
+    const html = `condominiums/condo-a/classifieds/aaaa1111-bbbb-4ccc-8ddd-eeeeffff0000/foto.jpg`;
+    await assertFails(uploadBytes(ref(comFoto(html), html), JPEG, { contentType: "text/html" }));
+    const grande = `condominiums/condo-a/classifieds/aaaa1111-bbbb-4ccc-8ddd-eeeeffff0001/foto.jpg`;
+    await assertFails(uploadBytes(ref(comFoto(grande), grande), new Uint8Array(5 * 1024 * 1024 + 1), { contentType: "image/jpeg" }));
+  });
+
+  it("ninguém lê nem apaga a foto pelo navegador", async () => {
+    await assertFails(getBytes(ref(comFoto(FOTO), FOTO)));
+    await assertFails(deleteObject(ref(comFoto(FOTO), FOTO)));
+  });
+});

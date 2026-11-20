@@ -52,6 +52,13 @@ export const USUARIOS_DEMO: Record<Papel, UsuarioDemo> = {
     unitId: null,
     descricao: "Vê o painel só para consulta.",
   },
+  reservas: {
+    uid: "demo-reservas",
+    nome: "Shirley Demonstração",
+    papel: "reservas",
+    unitId: null,
+    descricao: "Responsável pelas reservas: aprova ou recusa os pedidos.",
+  },
 };
 
 /**

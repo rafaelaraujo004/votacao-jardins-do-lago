@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { GaleriaFotos } from "@/components/fotos/galeria";
 import { LinkVoltarFaixa } from "@/components/ui/link-voltar";
 import {
   AlarmClock,
@@ -337,9 +338,14 @@ function ListaDeAreas({
                 href={href(a)}
                 className="flex h-full min-h-11 items-center gap-3 rounded-[var(--radius-card)] border border-borda-luz bg-surface p-4 shadow-card transition-shadow active:shadow-afundado"
               >
-                <span className="grid size-[46px] shrink-0 place-items-center rounded-[14px] bg-ok-soft text-pine">
-                  <Icone aria-hidden className="size-6" />
-                </span>
+                {a.fotos?.[0] ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- miniatura protegida do portal (/api/fotos)
+                  <img src={a.fotos[0]} alt="" loading="lazy" decoding="async" className="size-16 shrink-0 rounded-[14px] bg-surface-2 object-cover" />
+                ) : (
+                  <span className="grid size-[46px] shrink-0 place-items-center rounded-[14px] bg-ok-soft text-pine">
+                    <Icone aria-hidden className="size-6" />
+                  </span>
+                )}
                 <span className="min-w-0 flex-1">
                   <b className="block text-[1.05rem] text-ink">{a.nome}</b>
                   <span className="block text-[0.88rem] text-muted">
@@ -364,6 +370,7 @@ function RegrasDaArea({ area }: { area: ConfigArea }) {
   const limiteDia = area.limitePorCasaPorDia;
   return (
     <Cartao className="flex flex-col gap-3 p-4">
+      <GaleriaFotos fotos={area.fotos ?? []} titulo={area.nome} variante={(area.fotos?.length ?? 0) > 1 ? "pagina" : "cartao"} />
       <h2 className="text-[1.1rem] font-bold text-destaque">{area.tipo === "equipamento" ? "Regras do equipamento" : "Regras da área"}</h2>
       <ul className="flex flex-col gap-1.5 text-[0.95rem] text-ink-2">
         {area.tipo === "area" && area.capacidade > 0 ? (

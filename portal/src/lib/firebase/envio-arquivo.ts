@@ -1,5 +1,5 @@
 /**
- * Envio de ARQUIVO de documento direto do navegador para o Firebase Storage.
+ * Envio de ARQUIVO (documento ou foto) direto do navegador para o Firebase Storage.
  *
  * Usa um "app" do Firebase separado só para isso: entra com a autorização de
  * uso único que o servidor gerou (vale só para criar aquele arquivo, naquele
@@ -37,11 +37,13 @@ function appDeEnvio(): FirebaseApp {
 }
 
 /**
- * Manda o arquivo. `aoProgredir` recebe de 0 a 100.
- * Lança erro com mensagem em português se algo der errado.
+ * Manda o arquivo (ou a foto já reduzida) para o caminho autorizado.
+ * `aoProgredir` recebe de 0 a 100. Lança erro com mensagem em português se algo der errado.
+ * Um envio por vez: a autorização de uso único é trocada a cada arquivo.
  */
-export async function enviarArquivoDocumento(
-  arquivo: File,
+export async function enviarComPermissao(
+  arquivo: Blob,
+  tipo: string,
   permissao: { caminho: string; token: string },
   aoProgredir: (porcento: number) => void,
 ): Promise<void> {
@@ -57,15 +59,24 @@ export async function enviarArquivoDocumento(
   await signInWithCustomToken(auth, permissao.token);
   try {
     await new Promise<void>((resolve, reject) => {
-      const tarefa = uploadBytesResumable(ref(storage, permissao.caminho), arquivo, { contentType: arquivo.type });
+      const tarefa = uploadBytesResumable(ref(storage, permissao.caminho), arquivo, { contentType: tipo });
       tarefa.on(
         "state_changed",
         (s) => aoProgredir(s.totalBytes ? Math.round((s.bytesTransferred / s.totalBytes) * 100) : 0),
-        (erro) => reject(new Error(`O envio do arquivo falhou (${erro.code}). Confira a internet e tente de novo.`)),
+        (erro) => reject(new Error(`O envio falhou (${erro.code}). Confira a internet e tente de novo.`)),
         () => resolve(),
       );
     });
   } finally {
     await signOut(auth).catch(() => undefined);
   }
+}
+
+/** Arquivo de documento (PDF, foto, Word, Excel). */
+export async function enviarArquivoDocumento(
+  arquivo: File,
+  permissao: { caminho: string; token: string },
+  aoProgredir: (porcento: number) => void,
+): Promise<void> {
+  return enviarComPermissao(arquivo, arquivo.type, permissao, aoProgredir);
 }

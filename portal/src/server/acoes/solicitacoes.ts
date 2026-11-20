@@ -235,6 +235,8 @@ export async function mudarStatusSolicitacao(_: Resultado, dados: FormData): Pro
       tx.update(ref, {
         status: v.status,
         atualizadoEm: FieldValue.serverTimestamp(),
+        // Resposta da administração: aparece no sino do morador.
+        respondidoEm: FieldValue.serverTimestamp(),
         // Data da solução: marca ao resolver; se sair de "resolvida", limpa.
         resolvidoEm: v.status === "resolvida" ? FieldValue.serverTimestamp() : null,
       });
@@ -301,7 +303,8 @@ export async function responderSolicitacao(_: Resultado, dados: FormData): Promi
         criadoEm: FieldValue.serverTimestamp(),
       });
       // Nota interna não muda a data de "atualizada" que o morador vê.
-      if (v.publico) tx.update(ref, { atualizadoEm: FieldValue.serverTimestamp() });
+      // A resposta pública também aparece no sino do morador (respondidoEm).
+      if (v.publico) tx.update(ref, { atualizadoEm: FieldValue.serverTimestamp(), respondidoEm: FieldValue.serverTimestamp() });
       registrarAuditoria(db, tx, {
         condominioId: ctx.condominioId,
         uid: ctx.uid,

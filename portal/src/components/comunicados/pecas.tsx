@@ -97,6 +97,7 @@ export function CartaoComunicado({
   novo,
   data,
   extra,
+  foto,
 }: {
   href: string;
   titulo: string;
@@ -108,6 +109,8 @@ export function CartaoComunicado({
   data?: string;
   /** Etiqueta extra (ex.: situação, na gestão). */
   extra?: ReactNode;
+  /** Capa (primeira foto), se o comunicado tiver fotos. */
+  foto?: string;
 }) {
   const urgente = prioridade === "urgente";
   return (
@@ -118,14 +121,19 @@ export function CartaoComunicado({
         urgente ? "border-danger bg-danger-soft" : "border-borda-luz bg-surface",
       )}
     >
-      <span
-        className={cx(
-          "grid size-11 shrink-0 place-items-center rounded-[14px]",
-          urgente ? "bg-surface text-danger" : "bg-sand text-texto-areia",
-        )}
-      >
-        {urgente ? <TriangleAlert aria-hidden className="size-6" /> : <Megaphone aria-hidden className="size-6" />}
-      </span>
+      {foto ? (
+        // eslint-disable-next-line @next/next/no-img-element -- foto protegida do portal (sem otimizador de imagem)
+        <img src={foto} alt="" loading="lazy" decoding="async" className="size-16 shrink-0 rounded-[14px] bg-surface-2 object-cover" />
+      ) : (
+        <span
+          className={cx(
+            "grid size-11 shrink-0 place-items-center rounded-[14px]",
+            urgente ? "bg-surface text-danger" : "bg-sand text-texto-areia",
+          )}
+        >
+          {urgente ? <TriangleAlert aria-hidden className="size-6" /> : <Megaphone aria-hidden className="size-6" />}
+        </span>
+      )}
       <span className="flex min-w-0 flex-1 flex-col gap-1.5">
         {extra || urgente || fixado || novo ? (
           <span className="flex flex-wrap gap-1.5">

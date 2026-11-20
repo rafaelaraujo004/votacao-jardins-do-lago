@@ -3,7 +3,7 @@
  * Tudo que chega do navegador passa por aqui antes de ser usado.
  */
 import { z } from "zod";
-import { idDocumento } from "./validacao";
+import { campoFotos, idDocumento } from "./validacao";
 import { LIMITE_TEXTO, LIMITE_TITULO, MUDANCAS, PRIORIDADES, limparTexto, limparTitulo } from "./comunicados";
 
 /** Caixa de marcar: o navegador manda "on" (ou "sim") quando marcada e nada quando não. */
@@ -40,6 +40,8 @@ export const esquemaComunicado = z.object({
   prioridade: z.enum(PRIORIDADES, { error: "Escolha a prioridade." }),
   fixado: marcado,
   destino: z.enum(["salvar", "publicar"], { error: "Escolha salvar ou publicar." }),
+  /** Fotos na ordem: "atual:N" (mantém) ou o caminho de uma foto nova. */
+  fotos: campoFotos,
 });
 export type DadosComunicado = z.infer<typeof esquemaComunicado>;
 

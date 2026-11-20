@@ -1,23 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  AlarmClock,
-  ArrowLeft,
-  CalendarRange,
-  CircleCheck,
-  CirclePause,
-  Clock,
-  ListChecks,
-  Pencil,
-  Plus,
-  ShieldCheck,
-  Sun,
-  TreePalm,
-  TriangleAlert,
-  Users,
-  Wrench,
-  Zap,
-} from "lucide-react";
+import { AlarmClock, ArrowLeft, CalendarRange, CircleCheck, CirclePause, Clock, ListChecks, Pencil, Plus, ShieldCheck, Sun, TreePalm, TriangleAlert, Users, Wrench, Zap, UserCheck } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { listarAreas } from "@/server/dados/reservas";
 import { criarAreasSugeridas } from "@/server/acoes/reservas";
@@ -112,7 +95,13 @@ function CartaoArea({ area: a }: { area: ConfigArea }) {
     <Cartao className="flex h-full flex-col gap-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <h3 className="flex items-center gap-2 text-lg font-bold">
-          <Icone aria-hidden className="size-5 text-pine" /> {a.nome}
+          {a.fotos?.[0] ? (
+            // eslint-disable-next-line @next/next/no-img-element -- miniatura protegida do portal (/api/fotos)
+            <img src={a.fotos[0]} alt="" loading="lazy" decoding="async" className="size-12 shrink-0 rounded-xl bg-surface-2 object-cover" />
+          ) : (
+            <Icone aria-hidden className="size-5 text-pine" />
+          )}{" "}
+          {a.nome}
         </h3>
         {a.ativa ? (
           <Etiqueta tom="ok" icone={CircleCheck}>
@@ -125,6 +114,9 @@ function CartaoArea({ area: a }: { area: ConfigArea }) {
         )}
       </div>
       <ul className="flex flex-col gap-1 text-[0.92rem] text-ink-2">
+        <li className={item}>
+          <UserCheck aria-hidden className={icone} /> Quem aprova: {a.responsavelUid ? a.responsavelNome || "responsável da área" : "Síndico / Administração"}
+        </li>
         {a.tipo === "area" && a.capacidade > 0 ? (
           <li className={item}>
             <Users aria-hidden className={icone} /> Até {a.capacidade} pessoas

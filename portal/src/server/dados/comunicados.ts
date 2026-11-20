@@ -12,6 +12,7 @@ import {
   type Prioridade,
   type StatusComunicado,
 } from "@/lib/comunicados";
+import { enderecosFotos, lerFotos } from "@/lib/fotos";
 
 /**
  * Dados dos comunicados (condominiums/{c}/announcements/{id}).
@@ -33,6 +34,8 @@ export type ComunicadoMorador = {
   prioridade: Prioridade;
   fixado: boolean;
   publicadoEm: Date | null;
+  /** Endereços protegidos das fotos (/api/fotos/...), a primeira é a capa. */
+  fotos: string[];
 };
 
 /** O que a gestão vê (inclui situação e quem escreveu). */
@@ -44,7 +47,7 @@ export type ComunicadoGestao = ComunicadoMorador & {
 };
 
 // Campos lidos do banco (o resto do documento nem sai do Firestore).
-const CAMPOS_MORADOR = ["titulo", "texto", "prioridade", "fixado", "publicadoEm", "status"] as const;
+const CAMPOS_MORADOR = ["titulo", "texto", "prioridade", "fixado", "publicadoEm", "status", "fotos"] as const;
 
 function texto(v: unknown): string {
   return typeof v === "string" ? v : "";
@@ -54,7 +57,8 @@ function data(v: unknown): Date | null {
   return (v as Timestamp | undefined)?.toDate?.() ?? null;
 }
 
-export function paraComunicadoMorador(id: string, d: DocumentData | undefined): ComunicadoMorador {
+/** `condominioId` só é preciso para as fotos (as ações que só mudam a situação não passam). */
+export function paraComunicadoMorador(id: string, d: DocumentData | undefined, condominioId = ""): ComunicadoMorador {
   return {
     id,
     titulo: texto(d?.titulo) || "Comunicado",
@@ -62,12 +66,13 @@ export function paraComunicadoMorador(id: string, d: DocumentData | undefined): 
     prioridade: ehPrioridade(d?.prioridade) ? d.prioridade : "normal",
     fixado: d?.fixado === true,
     publicadoEm: data(d?.publicadoEm),
+    fotos: condominioId ? enderecosFotos("comunicados", id, lerFotos(d?.fotos, condominioId, "comunicados")) : [],
   };
 }
 
-export function paraComunicadoGestao(id: string, d: DocumentData | undefined): ComunicadoGestao {
+export function paraComunicadoGestao(id: string, d: DocumentData | undefined, condominioId = ""): ComunicadoGestao {
   return {
-    ...paraComunicadoMorador(id, d),
+    ...paraComunicadoMorador(id, d, condominioId),
     // Situação desconhecida no banco: trata como rascunho (não aparece para o morador).
     status: ehStatusComunicado(d?.status) ? d.status : "rascunho",
     criadoPorNome: texto(d?.criadoPorNome),
@@ -92,7 +97,7 @@ export async function listarPublicados(ctx: Contexto): Promise<ComunicadoMorador
     .where("status", "==", "publicado")
     .select(...CAMPOS_MORADOR)
     .get();
-  return ordenarParaMorador(snap.docs.map((d) => paraComunicadoMorador(d.id, d.data())));
+  return ordenarParaMorador(snap.docs.map((d) => paraComunicadoMorador(d.id, d.data(), ctx.condominioId)));
 }
 
 /** Um comunicado publicado. Rascunho, arquivado ou inexistente → null (a página mostra "não encontrado"). */
@@ -101,7 +106,7 @@ export async function obterPublicado(ctx: Contexto, id: string): Promise<Comunic
   if (!idDocumento.safeParse(id).success) return null;
   const d = await colecao(ctx).doc(id).get();
   if (!d.exists || d.get("status") !== "publicado") return null;
-  return paraComunicadoMorador(d.id, d.data());
+  return paraComunicadoMorador(d.id, d.data(), ctx.condominioId);
 }
 
 /** Os 3 comunicados do Início (fixados e urgentes primeiro). */
@@ -116,14 +121,14 @@ export async function listarParaGestao(ctx: Contexto): Promise<ComunicadoGestao[
   garantirPermissao(ctx, "comunicados.publicar");
   const snap = await colecao(ctx).get();
   const tempo = (c: ComunicadoGestao) => (c.atualizadoEm ?? c.criadoEm)?.getTime() ?? 0;
-  return snap.docs.map((d) => paraComunicadoGestao(d.id, d.data())).sort((a, b) => tempo(b) - tempo(a));
+  return snap.docs.map((d) => paraComunicadoGestao(d.id, d.data(), ctx.condominioId)).sort((a, b) => tempo(b) - tempo(a));
 }
 
 export async function obterParaGestao(ctx: Contexto, id: string): Promise<ComunicadoGestao | null> {
   garantirPermissao(ctx, "comunicados.publicar");
   if (!idDocumento.safeParse(id).success) return null;
   const d = await colecao(ctx).doc(id).get();
-  return d.exists ? paraComunicadoGestao(d.id, d.data()) : null;
+  return d.exists ? paraComunicadoGestao(d.id, d.data(), ctx.condominioId) : null;
 }
 
 /** Contagem por situação (números do topo da tela da gestão). */

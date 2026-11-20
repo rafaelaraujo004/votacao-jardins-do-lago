@@ -32,7 +32,8 @@ const politicaDeConteudo = [
   "default-src 'self'",
   `script-src ${scripts.join(" ")}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  // storage.googleapis.com: fotos de anúncios e comunicados (link temporário entregue por /api/fotos/...)
+  "img-src 'self' data: blob: https://storage.googleapis.com",
   "font-src 'self'",
   `connect-src ${conexoes.join(" ")}`,
   "frame-src https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/",

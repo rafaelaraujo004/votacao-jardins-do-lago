@@ -4,7 +4,7 @@
  * Cada parte do portal tem um link curto e fácil de mandar pelo WhatsApp:
  *   /sindico  /conselho  /portaria  /morador  /reservas  /visitas  /encomendas
  *   /financeiro  /comunicados  /solicitacoes  /documentos  /enquetes  /votacao  /classificados
- *   /mapa  /contatos
+ *   /notificacoes  /mapa  /contatos
  *
  * O MESMO link serve para todo mundo: cada pessoa cai na versão do módulo do SEU perfil.
  * Ex.: /reservas → morador: pedir reserva; síndico: agenda e aprovações; portaria: tela da portaria.
@@ -149,6 +149,7 @@ export const MODULOS: readonly Modulo[] = [
     icone: "Megaphone",
     destinos: {
       morador: { href: "/comunicados", permissao: "comunicados.ver" },
+      portaria: { href: "/portaria/comunicados", permissao: "comunicados.ver" },
       gestao: { href: "/admin/comunicados", permissao: "comunicados.ver" },
     },
     detalhe: true,
@@ -214,6 +215,19 @@ export const MODULOS: readonly Modulo[] = [
     destinos: {
       morador: { href: "/classificados", permissao: "classificados.usar" },
       gestao: { href: "/admin/classificados", permissao: "classificados.moderar" },
+    },
+  },
+  {
+    chave: "notificacoes",
+    nome: "Notificações",
+    link: "/notificacoes",
+    descricao: "O sino: votações, enquetes, comunicados e respostas aos pedidos (equipe: o que espera aprovação; portaria: visitas autorizadas).",
+    para: "moradores",
+    icone: "Bell",
+    destinos: {
+      morador: { href: "/notificacoes", permissao: "area.morador" },
+      portaria: { href: "/portaria/notificacoes", permissao: "area.portaria" },
+      gestao: { href: "/admin/notificacoes", permissao: "area.gestao" },
     },
   },
   {
