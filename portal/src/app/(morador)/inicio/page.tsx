@@ -200,12 +200,6 @@ export default async function InicioMorador() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Votação oficial SEMPRE no topo enquanto houver uma agendada ou aberta
-          (e o resultado nos 7 dias seguintes). Sem votação, não aparece nada. */}
-      <Suspense fallback={null}>
-        <WidgetEleicao ctx={ctx} />
-      </Suspense>
-
       {/* Identidade: ilustração do condomínio + endereço */}
       <div className="grid gap-4 sm:grid-cols-2">
         <section
@@ -228,6 +222,13 @@ export default async function InicioMorador() {
         </h1>
         <p className="mt-0.5 text-ink-2">Bem-vindo ao portal do {ctx.condominioNome}.</p>
       </header>
+
+      {/* Votação oficial: logo abaixo da saudação, ACIMA de todos os outros avisos,
+          enquanto houver uma agendada ou aberta (e o resultado nos 7 dias seguintes).
+          Sem votação, não aparece nada. */}
+      <Suspense fallback={null}>
+        <WidgetEleicao ctx={ctx} />
+      </Suspense>
 
       {/* Comunicados recentes (o urgente aparece cedo) */}
       <Suspense fallback={<BlocoCarregando altura="h-28" />}>
