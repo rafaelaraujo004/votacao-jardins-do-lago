@@ -22,7 +22,7 @@ import type { MesComSaldo } from "@/lib/financeiro";
 import { COR_EVENTO, mesCurto } from "@/lib/agenda";
 import { cx } from "@/lib/cx";
 import { Cartao, EstadoVazio, Etiqueta } from "@/components/ui/basicos";
-import { IlustracaoCondominio } from "@/components/ui/ilustracao-condominio";
+import { FotoCondominio } from "@/components/ui/foto-condominio";
 import { FaixaPetalas, TituloSecao, type TomModulo } from "@/components/ui/painel";
 import { ResumoFinanceiroPainel } from "@/components/financeiro/resumo-painel";
 import { ResumoContasInicio } from "@/components/financeiro/resumo-inicio";
@@ -46,8 +46,8 @@ const ATALHOS: {
   rotuloAbrir?: string;
 }[] = [
   { icone: "Award", titulo: "Votação oficial", href: "/votacao", tom: "vinho", permissao: "eleicoes.votar", ajuda: "Eleição do síndico e do conselho. Aqui você vê a chapa, o dia e o horário da votação e vota quando ela abrir. Vale um voto por casa e o voto é secreto: ninguém vê em quem a sua casa votou." },
-  { icone: "ReceiptText", titulo: "Prestação de contas", href: "/financeiro", tom: "verde", permissao: "financeiro.ver_publicado", ajuda: "Para onde vai o dinheiro do condomínio: saldo, entradas e saídas de cada mês que a administração já conferiu e publicou." },
-  { icone: "QrCode", titulo: "Pagar taxa", href: "/contatos#titulo-pix", tom: "verde", permissao: "informacoes.ver", ajuda: "Mostra a chave PIX e o nome do favorecido para pagar a taxa do condomínio. É só copiar a chave e pagar no app do seu banco.", rotuloAbrir: "Ver o PIX" },
+  { icone: "ReceiptText", titulo: "Prestação de contas", href: "/financeiro", tom: "verde", permissao: "financeiro.ver_publicado", ajuda: "Para onde vai o dinheiro do Residencial Jardins do Lago: saldo, entradas e saídas de cada mês que a administração já conferiu e publicou." },
+  { icone: "QrCode", titulo: "Pagar taxa", href: "/contatos#titulo-pix", tom: "verde", permissao: "informacoes.ver", ajuda: "Mostra a chave PIX e o nome do favorecido para pagar a taxa do residencial. É só copiar a chave e pagar no app do seu banco.", rotuloAbrir: "Ver o PIX" },
   { icone: "CalendarDays", titulo: "Agenda das áreas", href: "/reservas", tom: "verde", permissao: "reservas.fazer", ajuda: "Veja os horários livres da área de lazer, da quadra e dos equipamentos e peça a sua reserva. As regras de cada área aparecem lá." },
   { icone: "ClipboardPlus", titulo: "Informar problema", href: "/solicitacoes?nova=1", tom: "areia", permissao: "solicitacoes.abrir", ajuda: "Avise a administração sobre algo que precisa de atenção: lâmpada queimada, vazamento, barulho, sugestão. Você recebe um número de protocolo.", rotuloAbrir: "Informar agora" },
   { icone: "ClipboardList", titulo: "Minhas solicitações", href: "/solicitacoes", tom: "vinho", permissao: "solicitacoes.abrir", ajuda: "Acompanhe os pedidos que a sua casa já fez: se estão em aberto, em andamento ou resolvidos, e as respostas da administração." },
@@ -56,8 +56,8 @@ const ATALHOS: {
   { icone: "Package", titulo: "Minhas encomendas", href: "/encomendas", tom: "areia", permissao: "encomendas.ver_proprias", ajuda: "Veja as entregas que chegaram na portaria para a sua casa e se já foram retiradas." },
   { icone: "Vote", titulo: "Enquetes", href: "/enquetes", tom: "vinho", permissao: "enquetes.votar", ajuda: "Perguntas rápidas da administração para saber a opinião dos moradores (um voto por casa). É diferente da votação oficial." },
   { icone: "Store", titulo: "Classificados", href: "/classificados", tom: "areia", permissao: "classificados.usar", ajuda: "Compra, venda e serviços entre vizinhos. Você pode anunciar; o anúncio aparece depois que a administração aprovar." },
-  { icone: "FolderOpen", titulo: "Documentos", href: "/documentos", tom: "lago", permissao: "documentos.ver", ajuda: "Regimento interno, convenção, atas de assembleia e outros documentos do condomínio." },
-  { icone: "MapPinned", titulo: "Mapa das casas", href: "/mapa", tom: "lago", permissao: "mapa.ver", ajuda: "Encontre qualquer casa no desenho do condomínio. Toque na casa e depois em \"Chegar\" para ver o caminho desde a portaria." },
+  { icone: "FolderOpen", titulo: "Documentos", href: "/documentos", tom: "lago", permissao: "documentos.ver", ajuda: "Regimento interno, convenção, atas de assembleia e outros documentos do Residencial Jardins do Lago." },
+  { icone: "MapPinned", titulo: "Mapa das casas", href: "/mapa", tom: "lago", permissao: "mapa.ver", ajuda: "Encontre qualquer casa no desenho do residencial. Toque na casa e depois em \"Chegar\" para ver o caminho desde a portaria." },
   { icone: "BookUser", titulo: "Contatos úteis", href: "/contatos", tom: "vinho", permissao: "informacoes.ver", ajuda: "Telefones da portaria, da ronda noturna e da responsável pelas reservas, além do endereço e do PIX da taxa." },
   { icone: "KeyRound", titulo: "Trocar senha", href: "/conta/senha", tom: "lago", permissao: "area.morador", ajuda: "Troque a senha que você usa para entrar no portal. Use uma senha fácil de lembrar e difícil de adivinhar, e não passe para outras pessoas.", rotuloAbrir: "Trocar agora" },
 ];
@@ -144,7 +144,7 @@ async function AgendaInicio({ ctx }: { ctx: Contexto }) {
         ) : undefined
       }
     >
-      Agenda do condomínio
+      Agenda do residencial
     </TituloSecao>
     <Cartao className="p-4">
       <Calendario ano={ano} mes={mes} hoje={dia} eventos={eventos} />
@@ -203,10 +203,10 @@ export default async function InicioMorador() {
           className="surgir order-1 overflow-hidden rounded-[var(--radius-card)] border border-borda-luz shadow-card"
         >
           <FaixaPetalas />
-          <IlustracaoCondominio />
+          <FotoCondominio />
         </section>
         {/* O endereço fica num cartão normal: assim acompanha o tema claro/escuro sem ficar estranho. */}
-        <Cartao semEspaco aria-label="Endereço do condomínio" className="surgir order-3 flex flex-col justify-center p-3 sm:order-2 sm:p-4">
+        <Cartao semEspaco aria-label="Endereço do Residencial Jardins do Lago" className="surgir order-3 flex flex-col justify-center p-3 sm:order-2 sm:p-4">
           <EnderecoCopiavel />
         </Cartao>
         <Suspense fallback={<BlocoCarregando altura="order-2 h-64 sm:order-3 sm:col-span-2 sm:h-96" />}>
