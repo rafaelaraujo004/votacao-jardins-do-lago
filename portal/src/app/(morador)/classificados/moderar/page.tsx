@@ -22,7 +22,7 @@ export default async function ModerarClassificados() {
       <CabecalhoPagina
         sobretitulo="Moderação"
         titulo="Moderar classificados"
-        subtitulo="Aprove os anúncios que seguem as regras do condomínio. Ao não aprovar ou remover, explique o motivo: o autor vai ler."
+        subtitulo="Aprove os anúncios que seguem as regras do Residencial Jardins do Lago. Ao não aprovar ou remover, explique o motivo: o autor vai ler."
       />
       <FilaDeModeracao fila={fila} fuso={ctx.fuso} agora={agora} />
     </div>

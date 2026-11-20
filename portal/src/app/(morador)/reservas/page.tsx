@@ -116,7 +116,7 @@ export default async function ReservasMorador({ searchParams }: PageProps<"/rese
   // Perfil sem permissão para reservar: só vê a agenda.
   const aviso = !podeReservar ? (
     <Alerta tipo="info" titulo="Seu perfil só vê a agenda">
-      Para pedir reservas, fale com a administração do condomínio.
+      Para pedir reservas, fale com a administração do Residencial Jardins do Lago.
     </Alerta>
   ) : null;
 

@@ -723,7 +723,7 @@ export async function comprovanteDaCasa(
   if (!doc.exists || !votante.exists) return null;
   const e = paraEleicao(doc.id, doc.data());
   return {
-    condominioNome: texto(cond.get("nome"), "Condomínio"),
+    condominioNome: texto(cond.get("nome"), "Residencial Jardins do Lago"),
     fuso: texto(cond.get("fuso"), "America/Belem"),
     titulo: e.titulo,
     cargo: e.cargo,

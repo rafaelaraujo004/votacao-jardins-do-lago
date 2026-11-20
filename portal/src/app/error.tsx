@@ -27,7 +27,7 @@ export default function Erro({ reset }: { error: Error & { digest?: string }; re
               </div>
             }
           >
-            Tente de novo em alguns instantes. Se continuar, avise a administração do condomínio.
+            Tente de novo em alguns instantes. Se continuar, avise a administração do Residencial Jardins do Lago.
           </EstadoVazio>
         </div>
       </Cartao>

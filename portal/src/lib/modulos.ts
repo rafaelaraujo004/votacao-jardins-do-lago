@@ -130,7 +130,7 @@ export const MODULOS: readonly Modulo[] = [
   },
   {
     chave: "financeiro",
-    nome: "Contas do condomínio",
+    nome: "Contas do residencial",
     link: "/financeiro",
     descricao: "Prestação de contas: entradas, saídas e saldo de cada mês.",
     para: "moradores",
@@ -171,7 +171,7 @@ export const MODULOS: readonly Modulo[] = [
     chave: "documentos",
     nome: "Documentos",
     link: "/documentos",
-    descricao: "Regimento, atas, convenção e outros documentos do condomínio.",
+    descricao: "Regimento, atas, convenção e outros documentos do Residencial Jardins do Lago.",
     para: "moradores",
     icone: "FolderOpen",
     destinos: {
@@ -183,7 +183,7 @@ export const MODULOS: readonly Modulo[] = [
     chave: "enquetes",
     nome: "Enquetes",
     link: "/enquetes",
-    descricao: "Opinar nas enquetes do condomínio (um voto por casa).",
+    descricao: "Opinar nas enquetes do residencial (um voto por casa).",
     para: "moradores",
     icone: "Vote",
     destinos: {
@@ -196,7 +196,7 @@ export const MODULOS: readonly Modulo[] = [
     chave: "votacao",
     nome: "Votação oficial",
     link: "/votacao",
-    descricao: "Eleição do condomínio com voto secreto (um voto por casa).",
+    descricao: "Eleição do residencial com voto secreto (um voto por casa).",
     para: "moradores",
     icone: "Vote",
     destinos: {
@@ -234,7 +234,7 @@ export const MODULOS: readonly Modulo[] = [
     chave: "mapa",
     nome: "Mapa das casas",
     link: "/mapa",
-    descricao: "Planta do condomínio com os 225 lotes.",
+    descricao: "Planta do Residencial Jardins do Lago com os 225 lotes.",
     para: "moradores",
     icone: "Map",
     destinos: { morador: { href: "/mapa", permissao: "mapa.ver" } },

@@ -52,7 +52,7 @@ export async function WidgetEnquetes({ ctx }: { ctx: Contexto }) {
         <span className="block text-[0.72rem] font-bold uppercase tracking-wide text-vinho-fg-suave">
           {enquete ? "Enquete aberta" : "Enquetes"}
         </span>
-        <b className="block break-words font-display text-[1.1rem] leading-snug">{enquete ? enquete.pergunta : "Votações do condomínio"}</b>
+        <b className="block break-words font-display text-[1.1rem] leading-snug">{enquete ? enquete.pergunta : "Votações do residencial"}</b>
         <span className="text-[0.9rem] text-vinho-fg-suave">{linha}</span>
       </span>
       {/* Em telas estreitas fica só a setinha; o texto continua para leitores de tela. */}

@@ -48,7 +48,7 @@ export default async function PaginaPortaria() {
       </Cartao>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <BlocoNumero rotulo="Dentro agora" valor={dentro.length} cor="lake" detalhe="visitantes no condomínio" />
+        <BlocoNumero rotulo="Dentro agora" valor={dentro.length} cor="lake" detalhe="visitantes no residencial" />
         <BlocoNumero rotulo="Esperados hoje" valor={esperados.length} cor="pine" detalhe="autorizações válidas" />
         <BlocoNumero rotulo="Encomendas aguardando" valor={encomendas.length} cor="plum" detalhe="na portaria" />
         <BlocoNumero rotulo="Entradas hoje" valor={entradas} cor="ink" detalhe="registradas" />

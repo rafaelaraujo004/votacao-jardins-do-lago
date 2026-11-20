@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
 
   const ctx = await carregarContexto(db, uid);
   if (!ctx) {
-    return erro(403, "Sua conta ainda não está ligada a uma casa ou está suspensa. Fale com a administração do condomínio.");
+    return erro(403, "Sua conta ainda não está ligada a uma casa ou está suspensa. Fale com a administração do Residencial Jardins do Lago.");
   }
 
   const cookie = await adminAuth().createSessionCookie(corpo.data.idToken, { expiresIn: DURACAO_SESSAO_MS });

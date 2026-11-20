@@ -127,7 +127,7 @@ export function FormularioEnquete({ valores }: { valores: ValoresEnquete }) {
       </fieldset>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Campo id="abreEm" rotulo="Abre em" dica="Data e hora do condomínio.">
+        <Campo id="abreEm" rotulo="Abre em" dica="Data e hora do residencial.">
           <input id="abreEm" name="abreEm" type="datetime-local" required defaultValue={valores.abreEm} className={classeEntrada} aria-describedby="abreEm-dica" />
         </Campo>
         <Campo id="fechaEm" rotulo="Fecha em" dica="Depois disso ninguém mais vota.">

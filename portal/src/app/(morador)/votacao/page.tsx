@@ -32,7 +32,7 @@ export default async function VotacaoMorador() {
       <CabecalhoPagina
         sobretitulo="Participação"
         titulo="Votação oficial"
-        subtitulo="Eleições do condomínio. Vale um voto por casa e o voto é secreto."
+        subtitulo="Eleições do Residencial Jardins do Lago. Vale um voto por casa e o voto é secreto."
       />
 
       {!ctx.unitId ? (

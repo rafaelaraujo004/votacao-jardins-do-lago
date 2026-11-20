@@ -441,7 +441,7 @@ export function MapaInterativo() {
             ref={refSvg}
             viewBox={`${vx} ${vy} ${vw} ${vh}`}
             role="img"
-            aria-label={`Planta do condomínio com ${TOTAL_LOTES} casas, lago, área de lazer, quadra de esportes e portaria.`}
+            aria-label={`Planta do Residencial Jardins do Lago com ${TOTAL_LOTES} casas, lago, área de lazer, quadra de esportes e portaria.`}
             className={cx("mx-auto block max-w-none", !base && "invisible")}
             style={{ width: largura || "100%", height: largura ? Math.round((largura * vh) / vw) : "auto" }}
           >
@@ -499,7 +499,7 @@ export function MapaInterativo() {
               className="pointer-events-auto inline-flex min-h-12 shrink-0 items-center gap-1.5 rounded-full border border-borda-luz bg-surface/95 px-3 text-[0.9rem] font-bold text-lake shadow-card backdrop-blur active:shadow-afundado"
             >
               <LogOut aria-hidden className="size-4" />
-              Sair<span className="sr-only"> do condomínio</span>
+              Sair<span className="sr-only"> do residencial</span>
             </button>
           </div>
           <p
@@ -523,7 +523,7 @@ export function MapaInterativo() {
           <BotaoMapa rotulo="Reduzir" onClick={() => zoomBotao(1 / PASSO_BOTAO)} disabled={escala <= ESCALA_MIN + 0.01}>
             <ZoomOut aria-hidden className="size-5" />
           </BotaoMapa>
-          <BotaoMapa rotulo="Ver o condomínio inteiro" onClick={() => setEscalaEscolhida(1)} disabled={escala <= ESCALA_MIN + 0.01}>
+          <BotaoMapa rotulo="Ver o residencial inteiro" onClick={() => setEscalaEscolhida(1)} disabled={escala <= ESCALA_MIN + 0.01}>
             <Maximize aria-hidden className="size-5" />
           </BotaoMapa>
         </div>

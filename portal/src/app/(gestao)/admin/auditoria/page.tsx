@@ -45,7 +45,7 @@ export const metadata: Metadata = { title: "Auditoria" };
 const DESCRICAO: Record<string, { texto: string; icone: LucideIcon }> = {
   "sessao.entrar": { texto: "Entrou no portal", icone: LogIn },
   "sessao.sair": { texto: "Saiu do portal", icone: LogOut },
-  "condominio.criar": { texto: "Criou o condomínio no sistema", icone: Settings },
+  "condominio.criar": { texto: "Criou o residencial no sistema", icone: Settings },
   "membro.criar": { texto: "Cadastrou uma pessoa", icone: Settings },
   "membro.alterar": { texto: "Alterou o cadastro de uma pessoa", icone: Pencil },
   "membro.permissoes": { texto: "Alterou as permissões de uma pessoa", icone: Settings },
@@ -76,7 +76,7 @@ const DESCRICAO: Record<string, { texto: string; icone: LucideIcon }> = {
   "area.criar": { texto: "Cadastrou área de lazer", icone: TreePalm },
   "area.editar": { texto: "Alterou área de lazer", icone: Pencil },
   // Configurações
-  "informacoes.alterar": { texto: "Alterou as informações do condomínio", icone: Settings },
+  "informacoes.alterar": { texto: "Alterou as informações do residencial", icone: Settings },
   // Comunicados
   "comunicado.criar": { texto: "Criou comunicado", icone: Megaphone },
   "comunicado.editar": { texto: "Alterou comunicado", icone: Pencil },

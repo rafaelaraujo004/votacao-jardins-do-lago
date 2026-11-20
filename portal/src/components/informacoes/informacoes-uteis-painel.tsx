@@ -167,7 +167,7 @@ export function InformacoesUteisPainel({ info, podeEditar }: { info: Informacoes
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section aria-label="Endereço do condomínio" className="flex flex-col gap-2">
+        <section aria-label="Endereço do Residencial Jardins do Lago" className="flex flex-col gap-2">
           <EnderecoCopiavel />
         </section>
 

@@ -501,7 +501,7 @@ export async function votacaoPorCodigo(
     : null;
   return {
     codigo,
-    condominioNome: texto(cond.get("nome"), "Condomínio"),
+    condominioNome: texto(cond.get("nome"), "Residencial Jardins do Lago"),
     fuso: texto(cond.get("fuso"), FUSO_PADRAO),
     eleicaoId: e.id,
     titulo: e.titulo,

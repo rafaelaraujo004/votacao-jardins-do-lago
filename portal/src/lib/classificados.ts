@@ -147,7 +147,7 @@ export function formatarWhatsapp(digitos: string): string {
 /** Link que abre a conversa no WhatsApp já com uma mensagem sobre o anúncio. */
 export function linkWhatsapp(digitos: string, titulo: string): string {
   const numero = digitos.replace(/\D/g, "");
-  const mensagem = `Olá! Vi seu anúncio "${titulo}" nos classificados do condomínio.`;
+  const mensagem = `Olá! Vi seu anúncio "${titulo}" nos classificados do Residencial Jardins do Lago.`;
   return `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
 }
 

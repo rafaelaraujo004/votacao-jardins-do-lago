@@ -24,23 +24,23 @@ export const metadata: Metadata = { title: "Painel" };
 
 /** Atalhos do painel (só aparecem os que o perfil pode usar). Cada um tem um "i" com a explicação. */
 const ATALHOS: { titulo: string; icone: NomeIconeAtalho; tom: TomModulo; permissao: Permissao; alemDe?: Permissao; href: string; ajuda: string }[] = [
-  { titulo: "Votação oficial", icone: "Award", tom: "vinho", permissao: "eleicoes.gerenciar", href: "/admin/votacao", ajuda: "Eleição do condomínio com voto secreto. Aqui a comissão cria a votação, cadastra a chapa, publica, envia os links de voto pelo WhatsApp, bloqueia casas e acompanha no mapa quem já votou. O resultado aparece só depois do encerramento." },
-  { titulo: "Unidades", icone: "Building2", tom: "verde", permissao: "unidades.ver", href: "/admin/unidades", ajuda: "Lista das casas do condomínio (número, quadra e se está ativa). É a base para moradores, votação, portaria e cobranças." },
+  { titulo: "Votação oficial", icone: "Award", tom: "vinho", permissao: "eleicoes.gerenciar", href: "/admin/votacao", ajuda: "Eleição do Residencial Jardins do Lago com voto secreto. Aqui a comissão cria a votação, cadastra a chapa, publica, envia os links de voto pelo WhatsApp, bloqueia casas e acompanha no mapa quem já votou. O resultado aparece só depois do encerramento." },
+  { titulo: "Unidades", icone: "Building2", tom: "verde", permissao: "unidades.ver", href: "/admin/unidades", ajuda: "Lista das casas do Residencial Jardins do Lago (número, quadra e se está ativa). É a base para moradores, votação, portaria e cobranças." },
   { titulo: "Moradores e equipe", icone: "Users", tom: "lago", permissao: "moradores.ver", href: "/admin/pessoas", ajuda: "Moradores de cada casa (com ou sem acesso ao portal), portaria, conselho e administração. Aqui você edita e exclui cadastros, traz a lista de contatos, cria acessos, gera senha nova e ajusta permissões." },
-  { titulo: "Lançar no caixa", icone: "ReceiptText", tom: "areia", permissao: "financeiro.lancar", href: "/admin/financeiro/novo", ajuda: "Atalho para registrar uma receita ou despesa do condomínio agora mesmo (taxa recebida, conta paga, compra)." },
+  { titulo: "Lançar no caixa", icone: "ReceiptText", tom: "areia", permissao: "financeiro.lancar", href: "/admin/financeiro/novo", ajuda: "Atalho para registrar uma receita ou despesa do Residencial Jardins do Lago agora mesmo (taxa recebida, conta paga, compra)." },
   { titulo: "Prestação de contas", icone: "Landmark", tom: "areia", permissao: "financeiro.ver", href: "/admin/financeiro", ajuda: "Entradas e saídas de cada mês, saldo e categorias. Quando o mês estiver conferido, publique para os moradores verem." },
-  { titulo: "Relatórios", icone: "ChartColumn", tom: "lago", permissao: "relatorios.ver", href: "/admin/relatorios", ajuda: "Gráficos e números do condomínio: financeiro, solicitações, reservas e portaria. Dá para baixar planilha." },
+  { titulo: "Relatórios", icone: "ChartColumn", tom: "lago", permissao: "relatorios.ver", href: "/admin/relatorios", ajuda: "Gráficos e números do Residencial Jardins do Lago: financeiro, solicitações, reservas e portaria. Dá para baixar planilha." },
   { titulo: "Reservas e áreas", icone: "CalendarDays", tom: "verde", permissao: "reservas.ver_todas", href: "/admin/reservas", ajuda: "Pedidos de reserva da área de lazer e dos equipamentos. Aprove ou recuse e configure as regras de cada área." },
   { titulo: "Solicitações", icone: "ClipboardList", tom: "vinho", permissao: "solicitacoes.gerenciar", href: "/admin/solicitacoes", ajuda: "Pedidos e reclamações dos moradores (lâmpada, vazamento, barulho…). Responda e acompanhe até resolver." },
   { titulo: "Novo comunicado", icone: "SquarePen", tom: "areia", permissao: "comunicados.publicar", href: "/admin/comunicados/novo", ajuda: "Atalho para escrever um aviso agora. Ele aparece no Início de todos os moradores e pode ser compartilhado no WhatsApp." },
-  { titulo: "Comunicados", icone: "Megaphone", tom: "areia", permissao: "comunicados.ver", href: "/admin/comunicados", ajuda: "Todos os avisos do condomínio: publicados, rascunhos e arquivados." },
+  { titulo: "Comunicados", icone: "Megaphone", tom: "areia", permissao: "comunicados.ver", href: "/admin/comunicados", ajuda: "Todos os avisos do Residencial Jardins do Lago: publicados, rascunhos e arquivados." },
   { titulo: "Documentos", icone: "FolderOpen", tom: "lago", permissao: "documentos.ver", href: "/admin/documentos", ajuda: "Regimento, atas, convenção e outros arquivos. Escolha quem pode ver cada documento." },
   { titulo: "Enquetes", icone: "Vote", tom: "vinho", permissao: "enquetes.gerenciar", href: "/admin/enquetes", ajuda: "Perguntas rápidas para os moradores opinarem (um voto por casa). Diferente da votação oficial: serve para consultas do dia a dia." },
   { titulo: "Classificados", icone: "Store", tom: "areia", permissao: "classificados.moderar", href: "/admin/classificados", ajuda: "Anúncios de compra, venda e serviços entre vizinhos. Aprove ou recuse antes de aparecerem para todos." },
   { titulo: "Portaria", icone: "ShieldCheck", tom: "vinho", permissao: "portaria.operar", alemDe: "area.portaria", href: "/portaria", ajuda: "Tela de trabalho da portaria: conferir o código de visitas autorizadas, registrar entrada e saída e receber encomendas." },
   { titulo: "Histórico da portaria", icone: "DoorOpen", tom: "lago", permissao: "visitantes.ver_todos", href: "/admin/portaria", ajuda: "Quem entrou e saiu, visitas autorizadas e encomendas. Também faz a limpeza dos dados antigos (LGPD)." },
   { titulo: "Links de acesso", icone: "Link2", tom: "lago", permissao: "area.gestao", href: "/admin/links", ajuda: "Links prontos para mandar aos moradores e à equipe entrarem no portal." },
-  { titulo: "Informações do condomínio", icone: "Settings", tom: "areia", permissao: "informacoes.gerenciar", href: "/admin/informacoes", ajuda: "PIX da taxa, telefone da ronda, responsável pelas reservas e outros dados que aparecem para os moradores." },
+  { titulo: "Informações do residencial", icone: "Settings", tom: "areia", permissao: "informacoes.gerenciar", href: "/admin/informacoes", ajuda: "PIX da taxa, telefone da ronda, responsável pelas reservas e outros dados que aparecem para os moradores." },
   { titulo: "Auditoria", icone: "ScrollText", tom: "vinho", permissao: "auditoria.ver", href: "/admin/auditoria", ajuda: "Registro de tudo que foi feito no portal: quem fez, o quê e quando. Na votação, registra que a casa votou — nunca em quem." },
 ];
 
@@ -118,7 +118,7 @@ export default async function PainelGestao() {
     resumoDoCondominio(ctx),
     pendenciasDo(ctx),
     // Se uma destas leituras falhar, o painel continua abrindo sem o bloco.
-    ctx.permissoes.has("informacoes.ver") ? semFalhar("as informações do condomínio", () => informacoesDoCondominio(ctx)) : null,
+    ctx.permissoes.has("informacoes.ver") ? semFalhar("as informações do residencial", () => informacoesDoCondominio(ctx)) : null,
     semFalhar("a prestação de contas", () => financeiroDo(ctx)),
   ]);
   const mesAtual = hojeISO(new Date(), ctx.fuso).slice(0, 7);
@@ -131,7 +131,7 @@ export default async function PainelGestao() {
     <div className="flex flex-col gap-6">
       <TituloPagina
         sobretitulo="Visão geral"
-        titulo="Painel do condomínio"
+        titulo="Painel do residencial"
         descricao="Resumo do cadastro e o que está esperando a administração."
         acoes={somenteConsulta ? <Etiqueta tom="info" icone={Eye}>Somente consulta</Etiqueta> : null}
       />

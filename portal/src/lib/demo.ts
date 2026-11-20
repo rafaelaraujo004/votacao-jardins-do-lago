@@ -76,7 +76,7 @@ export const INFORMACOES_DEMO = {
   horarioAdministracao: "Segunda a sexta, das 8h às 17h",
   aviso: "Demonstração: os telefones e dados desta página são fictícios.",
   // CNPJ de exemplo (dígitos válidos, de livros e manuais), não é de nenhum condomínio.
-  pix: { tipo: "cnpj", chave: "11222333000181", favorecido: "Condomínio Demonstração" },
+  pix: { tipo: "cnpj", chave: "11222333000181", favorecido: "Residencial Jardins do Lago (demonstração)" },
   telefoneRonda: "94900000004",
   responsavelReservas: { nome: "Responsável (demo)", telefone: "94900000005", horario: "8h às 20h" },
   linkVotacao: "https://example.com/votacao-demo",

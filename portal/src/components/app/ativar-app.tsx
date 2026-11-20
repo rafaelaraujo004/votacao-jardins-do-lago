@@ -173,7 +173,7 @@ export function AtivarApp() {
           <div>
             <p className="rotulo-caixa text-plum">Portal no seu celular</p>
             <h2 id="titulo-ativar-app" className="mt-1 text-[1.45rem] font-bold leading-tight text-destaque">
-              Receba os avisos do condomínio na hora
+              Receba os avisos do residencial na hora
             </h2>
           </div>
           <button type="button" onClick={agoraNao} className="grid size-10 shrink-0 place-items-center rounded-full hover:bg-surface-2" title="Fechar">

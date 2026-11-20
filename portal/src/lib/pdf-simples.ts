@@ -190,6 +190,6 @@ export function pdfComprovante(c: {
         antes: 4,
       },
     ],
-    rodape: `Portal do condomínio · gerado em ${c.geradoEm}`,
+    rodape: `Portal do Residencial Jardins do Lago · gerado em ${c.geradoEm}`,
   });
 }

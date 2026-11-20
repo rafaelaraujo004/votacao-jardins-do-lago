@@ -41,7 +41,7 @@ export const EXEMPLO_CATEGORIA: Record<CategoriaSolicitacao, string> = {
   iluminacao: "poste apagado, lâmpada piscando",
   convivencia: "som alto, animais, uso de áreas comuns",
   seguranca: "pessoa estranha, muro danificado, câmera",
-  sugestao: "ideias para melhorar o condomínio",
+  sugestao: "ideias para melhorar o residencial",
   outro: "qualquer outro assunto",
 };
 

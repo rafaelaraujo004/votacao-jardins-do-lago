@@ -316,7 +316,7 @@ export default async function AgendaReservas({ searchParams }: PageProps<"/admin
                             textoEnviar="Bloquear horário"
                           >
                             <Campo id={`motivo-b-${faixa.id}`} rotulo="Motivo">
-                              <input id={`motivo-b-${faixa.id}`} name="motivo" required minLength={3} maxLength={200} className={classeEntrada} placeholder="Ex.: manutenção, evento do condomínio" />
+                              <input id={`motivo-b-${faixa.id}`} name="motivo" required minLength={3} maxLength={200} className={classeEntrada} placeholder="Ex.: manutenção, evento do residencial" />
                             </Campo>
                           </DialogoFormulario>
                         </>
@@ -381,7 +381,7 @@ function DetalheReserva({ reserva: r }: { reserva: Reserva }) {
     <div className="text-[0.9rem] text-ink-2">
       {r.status === "bloqueada" ? (
         <p>
-          <b>Bloqueio:</b> {r.motivo || "uso do condomínio"}
+          <b>Bloqueio:</b> {r.motivo || "uso do residencial"}
         </p>
       ) : (
         <p>
@@ -428,7 +428,7 @@ function BotoesDecisao({ reserva: r, hoje }: { reserva: Reserva; hoje: string })
         varianteEnviar="perigo"
       >
         <Campo id={`motivo-r-${r.id}`} rotulo="Comentário para o morador (motivo da recusa)">
-          <input id={`motivo-r-${r.id}`} name="motivo" required minLength={3} maxLength={200} className={classeEntrada} placeholder="Ex.: data reservada para evento do condomínio" />
+          <input id={`motivo-r-${r.id}`} name="motivo" required minLength={3} maxLength={200} className={classeEntrada} placeholder="Ex.: data reservada para evento do residencial" />
         </Campo>
       </DialogoFormulario>
     </div>

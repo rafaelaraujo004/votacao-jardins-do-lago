@@ -329,7 +329,7 @@ export const esquemaLinkVotacao = z
 export function mensagemConviteMoradores(nomeCondominio: string, link: string): string {
   return [
     `Olá, moradores do ${nomeCondominio}!`,
-    "O portal do condomínio já está no ar. Entre pelo link abaixo com o USUÁRIO e a SENHA que a administração enviou para a sua casa:",
+    "O portal do Residencial Jardins do Lago já está no ar. Entre pelo link abaixo com o USUÁRIO e a SENHA que a administração enviou para a sua casa:",
     link,
     "Lá você vê a prestação de contas, os contatos, o mapa e a agenda das áreas de lazer, pede reservas, autoriza visitas e acompanha as encomendas. Não passe o seu usuário e a sua senha para ninguém. Se ainda não recebeu, fale com a administração.",
   ].join("\n\n");

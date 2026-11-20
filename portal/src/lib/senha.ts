@@ -115,7 +115,7 @@ export function mensagemErroLogin(codigo: string): string {
     case "auth/too-many-requests":
       return "Muitas tentativas seguidas. Por segurança, aguarde alguns minutos e tente de novo.";
     case "auth/user-disabled":
-      return "Esta conta está desativada. Fale com a administração do condomínio.";
+      return "Esta conta está desativada. Fale com a administração do Residencial Jardins do Lago.";
     case "auth/network-request-failed":
       return "Sem conexão com a internet. Confira o sinal e tente de novo.";
     default:
@@ -137,7 +137,7 @@ export function mensagemErroTroca(codigo: string): string {
     case "auth/too-many-requests":
       return "Muitas tentativas seguidas. Por segurança, aguarde alguns minutos e tente de novo.";
     case "auth/user-disabled":
-      return "Esta conta está desativada. Fale com a administração do condomínio.";
+      return "Esta conta está desativada. Fale com a administração do Residencial Jardins do Lago.";
     case "auth/requires-recent-login":
       return "Por segurança, saia e entre de novo antes de trocar a senha.";
     case "auth/network-request-failed":

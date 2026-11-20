@@ -24,7 +24,7 @@ import { AtalhoVotacao, CartaoPix } from "@/components/informacoes/cartoes";
 import { BotaoEnviar, Formulario } from "@/components/ui/formulario";
 import { LinkCopiavel } from "@/components/acesso/link-copiavel";
 
-export const metadata: Metadata = { title: "Informações do condomínio" };
+export const metadata: Metadata = { title: "Informações do residencial" };
 
 export default async function PaginaInformacoes() {
   const ctx = await exigirPermissao("informacoes.gerenciar");
@@ -42,7 +42,7 @@ export default async function PaginaInformacoes() {
     <div className="flex flex-col gap-6">
       <TituloPagina
         sobretitulo="Configurações"
-        titulo="Informações do condomínio"
+        titulo="Informações do residencial"
         descricao="Telefones, aviso, PIX da taxa, ronda, responsável pelas reservas e link da votação. Os moradores veem tudo isso no portal depois de entrar."
       />
 

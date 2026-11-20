@@ -42,8 +42,8 @@ const DA_CASA: Modulo[] = [
 const DO_CONDOMINIO: Modulo[] = [
   { icone: Bell, titulo: "Notificações", descricao: "Votações, enquetes, avisos e respostas aos seus pedidos", tom: "vinho", href: "/notificacoes", permissao: "area.morador" },
   { icone: Megaphone, titulo: "Comunicados", descricao: "Avisos da administração", tom: "areia", href: "/comunicados", permissao: "comunicados.ver" },
-  { icone: Vote, titulo: "Enquetes", descricao: "Um voto por casa nas decisões do condomínio", tom: "vinho", href: "/enquetes", permissao: "enquetes.votar" },
-  { icone: Award, titulo: "Votação oficial", descricao: "Eleições do condomínio com voto secreto", tom: "vinho", href: "/votacao", permissao: "eleicoes.votar" },
+  { icone: Vote, titulo: "Enquetes", descricao: "Um voto por casa nas decisões do residencial", tom: "vinho", href: "/enquetes", permissao: "enquetes.votar" },
+  { icone: Award, titulo: "Votação oficial", descricao: "Eleições do residencial com voto secreto", tom: "vinho", href: "/votacao", permissao: "eleicoes.votar" },
   { icone: FolderOpen, titulo: "Documentos", descricao: "Regimento, convenção, atas e prestações", tom: "lago", href: "/documentos", permissao: "documentos.ver" },
   { icone: Store, titulo: "Classificados", descricao: "Compra, venda e serviços entre vizinhos", tom: "areia", href: "/classificados", permissao: "classificados.usar" },
   { icone: Phone, titulo: "Contatos úteis", descricao: "Portaria, ronda, reservas e PIX da taxa", tom: "vinho", href: "/contatos", permissao: "informacoes.ver" },
@@ -103,7 +103,7 @@ export default async function MaisMorador() {
       <CabecalhoPagina sobretitulo="Mais" titulo="Todos os módulos" subtitulo="Tudo o que o portal oferece para a sua casa." />
 
       <SecaoModulos id="titulo-da-casa" titulo="Minha casa" modulos={DA_CASA.filter(pode)} />
-      <SecaoModulos id="titulo-do-condominio" titulo="Do condomínio" modulos={DO_CONDOMINIO.filter(pode)} />
+      <SecaoModulos id="titulo-do-condominio" titulo="Do residencial" modulos={DO_CONDOMINIO.filter(pode)} />
 
       <section aria-labelledby="titulo-preferencias" className="flex flex-col gap-3">
         <TituloSecao id="titulo-preferencias" extra="Valem neste aparelho">

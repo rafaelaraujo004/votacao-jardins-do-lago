@@ -265,7 +265,7 @@ export function EntrarSenha({
           </p>
         </div>
       ) : (
-        <p className="text-[0.9rem] text-muted">Esqueceu a senha? Peça à administração do condomínio uma nova senha provisória.</p>
+        <p className="text-[0.9rem] text-muted">Esqueceu a senha? Peça à administração do Residencial Jardins do Lago uma nova senha provisória.</p>
       )}
     </section>
   );

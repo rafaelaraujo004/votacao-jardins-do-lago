@@ -68,7 +68,7 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
             <div className="flex flex-col items-center gap-4 text-center">
               <Logo largura={150} />
               <div className="flex flex-col gap-1.5">
-                <h1 className="text-[1.9rem] font-bold text-destaque">Portal do condomínio</h1>
+                <h1 className="text-[1.9rem] font-bold text-destaque">Portal do Residencial Jardins do Lago</h1>
                 <p className="text-[1.05rem] text-ink-2">
                   Visitas, encomendas e reservas da sua casa num só lugar.
                 </p>
@@ -85,7 +85,7 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
 
             {cookieSemVinculo && !saiu ? (
               <Alerta tipo="aviso" titulo="Não encontramos um acesso ativo para esta conta.">
-                <p>Ela pode ter sido suspensa ou ainda não estar ligada a uma casa. Fale com a administração do condomínio.</p>
+                <p>Ela pode ter sido suspensa ou ainda não estar ligada a uma casa. Fale com a administração do Residencial Jardins do Lago.</p>
                 <BotaoSair className="-ml-3 mt-1 text-ink-2 hover:bg-surface-2" />
               </Alerta>
             ) : null}

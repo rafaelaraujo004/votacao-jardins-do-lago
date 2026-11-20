@@ -38,7 +38,7 @@ export default async function PaginaUnidades({ searchParams }: PageProps<"/admin
         descricao={
           unidades.length
             ? `${unidades.length} unidades cadastradas · ${ativas} ativas · ${semMorador} sem morador cadastrado · ${semAcesso} sem ninguém com acesso ao portal`
-            : "Cadastre as casas do condomínio para depois ligar os moradores a elas."
+            : "Cadastre as casas do Residencial Jardins do Lago para depois ligar os moradores a elas."
         }
       />
 
@@ -55,7 +55,7 @@ export default async function PaginaUnidades({ searchParams }: PageProps<"/admin
             <Formulario acao={cadastrarSequencia}>
               <p className="text-ink-2">
                 Ex.: de 1 até 220 cria “Casa 1”, “Casa 2”… “Casa 220”. Casas que já existem não são alteradas. Use a quadra só
-                se o condomínio repetir números em quadras diferentes.
+                se o residencial repetir números em quadras diferentes.
               </p>
               <div className="grid gap-4 sm:grid-cols-4">
                 <Campo id="de" rotulo="Do número">

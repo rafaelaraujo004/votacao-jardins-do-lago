@@ -57,7 +57,7 @@ function BotaoRemover({ a }: { a: AnuncioModeracao }) {
       textoEnviando="Removendo…"
       varianteEnviar="perigo"
     >
-      <CampoMotivo chave={`remover-${a.id}`} dica="Ex.: produto já vendido, conteúdo fora das regras do condomínio." />
+      <CampoMotivo chave={`remover-${a.id}`} dica="Ex.: produto já vendido, conteúdo fora das regras do residencial." />
     </DialogoFormulario>
   );
 }

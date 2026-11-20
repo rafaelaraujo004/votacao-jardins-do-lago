@@ -25,7 +25,7 @@ export default async function ComunicadosMorador() {
         subtitulo={
           novos
             ? `${novos} ${novos === 1 ? "comunicado novo" : "comunicados novos"} nos últimos 7 dias.`
-            : "Avisos da administração do condomínio."
+            : "Avisos da administração do Residencial Jardins do Lago."
         }
       />
 

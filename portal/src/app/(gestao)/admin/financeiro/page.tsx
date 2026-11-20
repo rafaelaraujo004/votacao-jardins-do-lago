@@ -41,7 +41,7 @@ export default async function FinanceiroGestao({ searchParams }: PageProps<"/adm
       <TituloPagina
         sobretitulo="Finanças"
         titulo="Prestação de contas"
-        descricao="Receitas, despesas e saldo do condomínio. Nada é apagado: correções são feitas por estorno."
+        descricao="Receitas, despesas e saldo do Residencial Jardins do Lago. Nada é apagado: correções são feitas por estorno."
         acoes={
           podeLancar && categorias.length ? (
             <BotaoLink href={`/admin/financeiro/novo?mes=${mes}`} icone={<Plus aria-hidden className="size-5" />}>

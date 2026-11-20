@@ -56,7 +56,7 @@ export default async function PaginaTrocarSenha({ searchParams }: PageProps<"/co
               titulo="Sua conta não entra com senha"
               acao={<BotaoLink href={inicio}>Voltar ao início</BotaoLink>}
             >
-              Esta conta ainda não tem senha. Peça à administração do condomínio para criar o seu acesso.
+              Esta conta ainda não tem senha. Peça à administração do Residencial Jardins do Lago para criar o seu acesso.
             </EstadoVazio>
           ) : (
             <>

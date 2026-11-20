@@ -20,7 +20,7 @@ export default function SemAcesso() {
             titulo="Esta área não faz parte do seu perfil"
             acao={<BotaoLink href="/">Voltar para o início</BotaoLink>}
           >
-            Se você precisa usar esta parte do portal, peça à administração do condomínio para liberar o acesso.
+            Se você precisa usar esta parte do portal, peça à administração do Residencial Jardins do Lago para liberar o acesso.
           </EstadoVazio>
         </div>
       </Cartao>

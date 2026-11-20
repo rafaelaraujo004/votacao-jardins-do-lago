@@ -24,7 +24,7 @@ export default async function FinanceiroMorador({ searchParams }: PageProps<"/fi
   const meses = await mesesPublicados(ctx);
 
   const cabecalho = (
-    <CabecalhoPagina sobretitulo="Contas" titulo="Prestação de contas" subtitulo="Para onde vai o dinheiro do condomínio." />
+    <CabecalhoPagina sobretitulo="Contas" titulo="Prestação de contas" subtitulo="Para onde vai o dinheiro do Residencial Jardins do Lago." />
   );
 
   if (meses.length === 0) {

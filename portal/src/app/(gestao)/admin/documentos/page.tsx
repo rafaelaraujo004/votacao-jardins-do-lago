@@ -25,7 +25,7 @@ export default async function DocumentosGestao() {
     const docs = await documentosVisiveis(ctx);
     return (
       <div className="flex flex-col gap-6">
-        <TituloPagina sobretitulo="Comunicação" titulo="Documentos" descricao="Regimento, convenção, atas e outros documentos do condomínio." />
+        <TituloPagina sobretitulo="Comunicação" titulo="Documentos" descricao="Regimento, convenção, atas e outros documentos do Residencial Jardins do Lago." />
         <ListaDocumentos documentos={docs} fuso={ctx.fuso} />
       </div>
     );

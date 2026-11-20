@@ -55,7 +55,7 @@ const GRUPOS: { titulo: string; itens: Item[] }[] = [
     titulo: "Configurações",
     itens: [
       { rotulo: "Links de acesso", icone: "Link2", href: "/admin/links", permissao: "area.gestao" },
-      { rotulo: "Informações do condomínio", icone: "Settings", href: "/admin/informacoes", permissao: "informacoes.gerenciar" },
+      { rotulo: "Informações do residencial", icone: "Settings", href: "/admin/informacoes", permissao: "informacoes.gerenciar" },
     ],
   },
   { titulo: "Controle", itens: [{ rotulo: "Auditoria", icone: "ScrollText", href: "/admin/auditoria", permissao: "auditoria.ver" }] },

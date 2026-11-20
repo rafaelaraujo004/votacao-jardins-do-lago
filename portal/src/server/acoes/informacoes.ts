@@ -38,7 +38,7 @@ async function gravar(ctx: Contexto, novos: Record<string, Valor>, extras: Recor
 
   await db.runTransaction(async (tx) => {
     const atual = await tx.get(ref);
-    if (!atual.exists) throw new ErroDeNegocio("Condomínio não encontrado.");
+    if (!atual.exists) throw new ErroDeNegocio("Cadastro do residencial não encontrado.");
     const antes = (atual.get("informacoes") ?? {}) as Record<string, unknown>;
     // Quais campos mudaram (só os nomes, para a auditoria ficar curta e sem dados).
     const mudaram = Object.keys(novos).filter((k) => !igual(antes[k], novos[k]));

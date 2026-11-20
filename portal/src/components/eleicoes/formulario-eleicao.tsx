@@ -227,7 +227,7 @@ export function FormularioEleicao({ valores }: { valores: ValoresEleicao }) {
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Campo id="abreEm" rotulo="Abre em" dica="Data e hora do condomínio.">
+        <Campo id="abreEm" rotulo="Abre em" dica="Data e hora do residencial.">
           <input
             id="abreEm"
             name="abreEm"

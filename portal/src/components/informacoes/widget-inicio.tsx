@@ -14,7 +14,7 @@ export type PecaInformacao = "votacao" | "pix" | "ronda" | "responsavel";
 export async function WidgetInformacoesInicio({
   ctx,
   mostrar = ["votacao", "pix", "ronda"],
-  titulo = "Do condomínio",
+  titulo = "Do residencial",
 }: {
   ctx: Contexto;
   /** Quais peças aparecem, nesta ordem. */
@@ -29,7 +29,7 @@ export async function WidgetInformacoesInicio({
     info = await informacoesDoCondominio(ctx);
   } catch (erro) {
     // Se a leitura falhar, o Início continua abrindo sem este bloco.
-    console.error("Início: não foi possível carregar as informações do condomínio", erro);
+    console.error("Início: não foi possível carregar as informações do residencial", erro);
     return null;
   }
 

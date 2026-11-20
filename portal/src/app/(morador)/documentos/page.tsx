@@ -22,7 +22,7 @@ export default async function DocumentosMorador() {
     <div className="flex flex-col gap-6">
       <CabecalhoPagina
         sobretitulo="Documentos"
-        titulo="Documentos do condomínio"
+        titulo="Documentos do residencial"
         subtitulo="Toque em um documento para abrir. Ele abre em outra aba (Google Drive ou outro serviço)."
       />
       {docs ? (

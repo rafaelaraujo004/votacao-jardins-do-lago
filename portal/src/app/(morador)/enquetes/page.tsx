@@ -22,7 +22,7 @@ export default async function EnquetesMorador() {
       <CabecalhoPagina
         sobretitulo="Participação"
         titulo="Enquetes"
-        subtitulo="Ajude a decidir as coisas do condomínio. Vale um voto por casa."
+        subtitulo="Ajude a decidir as coisas do Residencial Jardins do Lago. Vale um voto por casa."
       />
 
       {!ctx.unitId ? (

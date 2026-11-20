@@ -22,7 +22,7 @@ export default async function ComunicadosPortaria() {
         <Link href="/portaria" className="flex min-h-11 w-fit items-center gap-1.5 font-bold text-lake">
           <ArrowLeft aria-hidden className="size-4" /> Voltar à portaria
         </Link>
-        <TituloPagina sobretitulo="Avisos" titulo="Comunicados" descricao="Avisos publicados pela administração do condomínio." />
+        <TituloPagina sobretitulo="Avisos" titulo="Comunicados" descricao="Avisos publicados pela administração do Residencial Jardins do Lago." />
       </Cartao>
       {lista.length === 0 ? (
         <EstadoVazio icone={Megaphone} titulo="Nenhum comunicado publicado">

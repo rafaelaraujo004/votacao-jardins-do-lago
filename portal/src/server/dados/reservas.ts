@@ -341,7 +341,7 @@ export async function reservasDoDia(ctx: Contexto, data: string): Promise<Reserv
     .map((r) => ({
       id: r.id,
       areaNome: r.areaNome,
-      unidadeRotulo: r.status === "bloqueada" ? `Fechado: ${r.motivo || "uso do condomínio"}` : (r.unidadeRotulo ?? "—"),
+      unidadeRotulo: r.status === "bloqueada" ? `Fechado: ${r.motivo || "uso do residencial"}` : (r.unidadeRotulo ?? "—"),
       faixaRotulo: descreverFaixa({ rotulo: r.faixaRotulo, inicio: r.inicio, fim: r.fim }),
       status: r.status as ReservaDaPortaria["status"],
       inicio: r.inicio,

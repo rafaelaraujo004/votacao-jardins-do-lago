@@ -157,7 +157,7 @@ export default async function ComunicadoGestao({ params }: { params: Promise<{ i
           <TituloSecao id="titulo-compartilhar">Avisar no WhatsApp</TituloSecao>
           <Cartao className="flex flex-col gap-3">
             <p className="text-ink-2">
-              Texto pronto para o grupo do condomínio. O morador entra no portal com o usuário e a senha dele para ler o
+              Texto pronto para o grupo do Residencial Jardins do Lago. O morador entra no portal com o usuário e a senha dele para ler o
               comunicado completo.
             </p>
             <CompartilharWhatsApp mensagem={mensagem} />

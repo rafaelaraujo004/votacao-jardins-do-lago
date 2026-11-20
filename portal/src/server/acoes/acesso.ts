@@ -460,7 +460,7 @@ export async function concluirTrocaDeSenha(idToken: string): Promise<Resultado> 
 
     const db = adminDb();
     const ctx = await carregarContexto(db, uid);
-    if (!ctx) throw new ErroDeNegocio("Sua conta está suspensa ou sem vínculo. Fale com a administração do condomínio.");
+    if (!ctx) throw new ErroDeNegocio("Sua conta está suspensa ou sem vínculo. Fale com a administração do Residencial Jardins do Lago.");
 
     const conta = await adminAuth().getUser(uid);
     const mudouEm = Date.parse(conta.tokensValidAfterTime ?? "") || 0;

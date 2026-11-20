@@ -103,7 +103,7 @@ export default async function ContatosMorador() {
       {info?.telefoneRonda ? <CartaoRonda telefone={info.telefoneRonda} /> : null}
 
       <section aria-labelledby="titulo-condominio" className="flex flex-col gap-3">
-        <TituloSecao id="titulo-condominio">Condomínio</TituloSecao>
+        <TituloSecao id="titulo-condominio">Residencial Jardins do Lago</TituloSecao>
         {contatos.length ? (
           <ul className="flex flex-col gap-3">
             {contatos.map((ct) => {
