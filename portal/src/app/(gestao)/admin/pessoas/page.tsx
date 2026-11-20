@@ -7,7 +7,9 @@ import { listarUnidades, rotulosDasUnidades } from "@/server/dados/unidades";
 import { situacoesLoginMoradores } from "@/server/dados/acesso";
 import { ehPapel, NOME_DO_PAPEL, PAPEIS, type Papel } from "@/lib/permissoes";
 import { rotuloCasas } from "@/lib/importar-moradores";
-import { Cartao, classeEntrada, EstadoVazio, TituloPagina } from "@/components/ui/basicos";
+import { contarCasas, ehOrdemPessoas, numeroDoRotulo, ordenarPessoas, type OrdemPessoas } from "@/lib/lista-pessoas";
+import { BuscaAoDigitar } from "./busca-ao-digitar";
+import { Cartao, EstadoVazio, TituloPagina } from "@/components/ui/basicos";
 import { Botao, BotaoLink } from "@/components/ui/botao";
 import { SegmentoLinks } from "@/components/ui/painel";
 import { EtiquetaSenhaProvisoria, EtiquetaSituacaoPessoa } from "./etiquetas";
@@ -40,17 +42,41 @@ export default async function PaginaPessoas({ searchParams }: PageProps<"/admin/
     ctx.permissoes.has("unidades.ver") ? semFalhar("as casas", () => listarUnidades(ctx), []) : Promise.resolve([]),
     gerenciaMoradores ? semFalhar("a lista de contatos", () => totalDeContatosDaLista(ctx), 0) : Promise.resolve(0),
   ]);
-  const { papel: papelBruto, busca: buscaBruta } = await searchParams;
+  const { papel: papelBruto, busca: buscaBruta, ordem: ordemBruta } = await searchParams;
   const papel = ehPapel(papelBruto) ? papelBruto : null;
   const busca = typeof buscaBruta === "string" ? buscaBruta.trim().slice(0, 60) : "";
+  const ordem: OrdemPessoas = ehOrdemPessoas(ordemBruta) ? ordemBruta : "nome";
   const podeAdicionar = gerenciaMoradores || ctx.permissoes.has("equipe.gerenciar");
   const gerencia = (p: Papel) => ctx.permissoes.has(p === "morador" ? "moradores.gerenciar" : "equipe.gerenciar");
 
-  const filtradas = pessoas.filter(
-    (p) =>
-      (!papel || p.papel === papel) &&
-      (!busca || normalizar(`${p.nome} ${p.unitId ? rotulos.get(p.unitId) ?? "" : ""}`).includes(normalizar(busca))),
+  // Número de cada casa (para ordenar "Casa 2" antes de "Casa 10").
+  const numeros = new Map(unidades.map((u) => [u.id, u.numero]));
+  const numeroDaCasa = (unitId: string) => numeros.get(unitId) ?? numeroDoRotulo(rotulos.get(unitId));
+
+  // Busca só com números = a casa com aquele número (135 não traz a 1350); com letras = nome ou casa.
+  const buscaNumero = /^\d{1,4}$/.test(busca) ? Number(busca) : null;
+  const confereBusca = (p: (typeof pessoas)[number]) =>
+    !busca ||
+    (buscaNumero !== null
+      ? !!p.unitId && numeroDaCasa(p.unitId) === buscaNumero
+      : normalizar(`${p.nome} ${p.unitId ? rotulos.get(p.unitId) ?? "" : ""}`).includes(normalizar(busca)));
+  const filtradas = ordenarPessoas(
+    pessoas.filter((p) => (!papel || p.papel === papel) && confereBusca(p)),
+    ordem,
+    numeroDaCasa,
   );
+  const casasNaLista = contarCasas(filtradas);
+
+  /** Link da lista mantendo filtro, busca e ordem (só muda o que for passado). */
+  const linkLista = (muda: { papel?: Papel | null; ordem?: OrdemPessoas }) => {
+    const qs = new URLSearchParams();
+    const p = muda.papel === undefined ? papel : muda.papel;
+    const o = muda.ordem ?? ordem;
+    if (p) qs.set("papel", p);
+    if (busca) qs.set("busca", busca);
+    if (o !== "nome") qs.set("ordem", o);
+    return `/admin/pessoas${qs.size ? `?${qs}` : ""}`;
+  };
 
   // Casas ativas sem nenhum morador cadastrado (ex.: casas que não estavam na lista do Word).
   const casasComMorador = new Set(pessoas.filter((p) => p.papel === "morador" && p.unitId).map((p) => p.unitId));
@@ -96,18 +122,14 @@ export default async function PaginaPessoas({ searchParams }: PageProps<"/admin/
         rotulo="Filtrar por perfil"
         rolavel
         ariaCurrent="page"
-        opcoes={abas.map((a) => {
-          const qs = new URLSearchParams();
-          if (a.valor) qs.set("papel", a.valor);
-          if (busca) qs.set("busca", busca);
-          return { rotulo: a.rotulo, href: `/admin/pessoas${qs.size ? `?${qs}` : ""}`, ativo: a.valor === papel };
-        })}
+        opcoes={abas.map((a) => ({ rotulo: a.rotulo, href: linkLista({ papel: a.valor }), ativo: a.valor === papel }))}
       />
 
       <form role="search" className="flex gap-2">
         {papel ? <input type="hidden" name="papel" value={papel} /> : null}
-        <label htmlFor="busca" className="sr-only">Buscar pessoa</label>
-        <input id="busca" name="busca" defaultValue={busca} placeholder="Buscar pelo nome ou casa" className={classeEntrada} />
+        {ordem !== "nome" ? <input type="hidden" name="ordem" value={ordem} /> : null}
+        <label htmlFor="busca" className="sr-only">Buscar pessoa pelo nome ou número da casa</label>
+        <BuscaAoDigitar inicial={busca} papel={papel} ordem={ordem} />
         <Botao type="submit" variante="secundario" icone={<Search aria-hidden className="size-5" />}>
           <span className="max-sm:sr-only">Buscar</span>
         </Botao>
@@ -119,9 +141,23 @@ export default async function PaginaPessoas({ searchParams }: PageProps<"/admin/
         </EstadoVazio>
       ) : (
         <Cartao semEspaco className="overflow-hidden">
-          <h2 className="border-b border-line px-4 py-2.5 text-[0.9rem] font-bold text-muted">
-            {filtradas.length === 1 ? "1 pessoa" : `${filtradas.length} pessoas`}
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-line px-4 py-2.5">
+            <h2 className="text-[0.9rem] font-bold text-muted">
+              {filtradas.length === 1 ? "1 pessoa" : `${filtradas.length} pessoas`}
+              {casasNaLista > 0 ? ` · ${casasNaLista === 1 ? "1 casa" : `${casasNaLista} casas`}` : ""}
+            </h2>
+            <div className="flex items-center gap-2">
+              <span className="text-[0.86rem] font-bold text-muted">Ordenar por</span>
+              <SegmentoLinks
+                rotulo="Ordenar a lista"
+                ariaCurrent="page"
+                opcoes={[
+                  { rotulo: "Nome", href: linkLista({ ordem: "nome" }), ativo: ordem === "nome" },
+                  { rotulo: "Nº da casa", href: linkLista({ ordem: "casa" }), ativo: ordem === "casa" },
+                ]}
+              />
+            </div>
+          </div>
           <ul className="divide-y divide-line">
             {filtradas.map((p) => (
               <li key={p.uid}>
@@ -131,10 +167,14 @@ export default async function PaginaPessoas({ searchParams }: PageProps<"/admin/
                 >
                   {/* basis: no celular o nome fica com a linha de cima e as etiquetas descem (nunca espremido). */}
                   <div className="min-w-0 flex-1 basis-[13rem]">
+                    {/* Ordem por casa: a casa vem antes do nome, para achar pelo número. */}
+                    {ordem === "casa" && p.unitId ? (
+                      <p className="text-[0.86rem] font-bold text-pine">{rotulos.get(p.unitId) ?? p.unitId}</p>
+                    ) : null}
                     <p className="truncate font-bold">{p.nome}</p>
                     <p className="text-[0.9rem] text-muted">
                       {NOME_DO_PAPEL[p.papel]}
-                      {p.unitId ? ` · ${rotulos.get(p.unitId) ?? p.unitId}` : ""}
+                      {p.unitId && ordem !== "casa" ? ` · ${rotulos.get(p.unitId) ?? p.unitId}` : ""}
                     </p>
                   </div>
                   {/* Morador: situação do login (Sem acesso / Senha provisória / Acesso ativo). Equipe: só a senha provisória. */}
