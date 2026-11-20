@@ -1,34 +1,48 @@
 "use client";
 
 /**
- * Formulário do anúncio novo. O servidor confere tudo de novo
+ * Formulário do anúncio (novo ou edição). O servidor confere tudo de novo
  * (tamanho dos textos, preço, WhatsApp, limite de anúncios).
+ * Na edição, o anúncio volta para "aguardando aprovação" ao salvar.
  */
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Send } from "lucide-react";
 import { Alerta, Campo, classeEntrada } from "@/components/ui/basicos";
 import { BotaoEnviar, Formulario } from "@/components/ui/formulario";
-import { criarAnuncio } from "@/server/acoes/classificados";
+import { criarAnuncio, editarAnuncio } from "@/server/acoes/classificados";
 import { SeletorFotos } from "@/components/fotos/seletor-fotos";
 import {
   CATEGORIAS_CLASSIFICADO,
   DICA_CATEGORIA,
   DIAS_VALIDADE,
   ROTULO_CATEGORIA,
+  formatarWhatsapp,
+  precoParaCampo,
   type CategoriaClassificado,
 } from "@/lib/classificados";
 import { cx } from "@/lib/cx";
 
-export function FormularioAnuncio({ primeiroNome }: { primeiroNome: string }) {
+/** O que o formulário precisa para editar (só campos do próprio anúncio). */
+export type AnuncioParaEditar = {
+  id: string;
+  titulo: string;
+  texto: string;
+  categoria: CategoriaClassificado;
+  preco: number | null;
+  contatoWhatsapp: string | null;
+  fotos: string[];
+};
+
+export function FormularioAnuncio({ primeiroNome, anuncio = null }: { primeiroNome: string; anuncio?: AnuncioParaEditar | null }) {
   const router = useRouter();
-  const [categoria, setCategoria] = useState<CategoriaClassificado | "">("");
-  const [whatsapp, setWhatsapp] = useState("");
+  const [categoria, setCategoria] = useState<CategoriaClassificado | "">(anuncio?.categoria ?? "");
+  const [whatsapp, setWhatsapp] = useState(anuncio?.contatoWhatsapp ? formatarWhatsapp(anuncio.contatoWhatsapp) : "");
   const temContato = whatsapp.trim().length > 0;
 
   return (
     <Formulario
-      acao={criarAnuncio}
+      acao={anuncio ? editarAnuncio : criarAnuncio}
       aoSalvar={() => {
         setCategoria("");
         setWhatsapp("");
@@ -36,6 +50,7 @@ export function FormularioAnuncio({ primeiroNome }: { primeiroNome: string }) {
         router.refresh();
       }}
     >
+      {anuncio ? <input type="hidden" name="id" value={anuncio.id} /> : null}
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1.5 font-bold">Que tipo de anúncio?</legend>
         <div className="grid gap-2 sm:grid-cols-2">
@@ -67,7 +82,7 @@ export function FormularioAnuncio({ primeiroNome }: { primeiroNome: string }) {
       </fieldset>
 
       <Campo id="titulo" rotulo="Título" dica="Curto e direto. Ex.: Bicicleta aro 26, Aulas de violão, Bolo de pote.">
-        <input id="titulo" name="titulo" required minLength={4} maxLength={80} className={classeEntrada} aria-describedby="titulo-dica" />
+        <input id="titulo" name="titulo" required minLength={4} maxLength={80} defaultValue={anuncio?.titulo} className={classeEntrada} aria-describedby="titulo-dica" />
       </Campo>
 
       <Campo
@@ -82,16 +97,17 @@ export function FormularioAnuncio({ primeiroNome }: { primeiroNome: string }) {
           minLength={10}
           maxLength={1000}
           rows={5}
+          defaultValue={anuncio?.texto}
           className={`${classeEntrada} py-3`}
           aria-describedby="texto-dica"
         />
       </Campo>
 
-      <SeletorFotos modulo="classificados" dica="Até 4 fotos do que você está anunciando. A primeira é a capa." />
+      <SeletorFotos modulo="classificados" atuais={anuncio?.fotos ?? []} dica="Até 4 fotos do que você está anunciando. A primeira é a capa." />
 
       {categoria === "doacao" ? null : (
         <Campo id="preco" rotulo="Preço (opcional)" dica="Em reais. Ex.: 150 ou 1.200,50. Deixe vazio para “a combinar”.">
-          <input id="preco" name="preco" inputMode="decimal" maxLength={20} placeholder="R$" className={classeEntrada} aria-describedby="preco-dica" />
+          <input id="preco" name="preco" inputMode="decimal" maxLength={20} placeholder="R$" defaultValue={precoParaCampo(anuncio?.preco ?? null)} className={classeEntrada} aria-describedby="preco-dica" />
         </Campo>
       )}
 
@@ -114,7 +130,7 @@ export function FormularioAnuncio({ primeiroNome }: { primeiroNome: string }) {
         <Alerta tipo="aviso" titulo="Seu número ficará visível">
           <p>Todos os moradores com acesso ao portal verão este WhatsApp junto do anúncio.</p>
           <label className="mt-2 flex min-h-11 cursor-pointer items-center gap-3 font-bold text-ink">
-            <input type="checkbox" name="cienteContato" value="sim" required className="size-5 shrink-0 accent-pine" />
+            <input type="checkbox" name="cienteContato" value="sim" required defaultChecked={Boolean(anuncio?.contatoWhatsapp)} className="size-5 shrink-0 accent-pine" />
             Entendo e quero mostrar meu WhatsApp
           </label>
         </Alerta>
@@ -129,7 +145,7 @@ export function FormularioAnuncio({ primeiroNome }: { primeiroNome: string }) {
 
       <div>
         <BotaoEnviar largo textoEnviando="Enviando…">
-          <Send aria-hidden className="size-5" /> Enviar para aprovação
+          <Send aria-hidden className="size-5" /> {anuncio ? "Salvar e enviar para aprovação" : "Enviar para aprovação"}
         </BotaoEnviar>
       </div>
     </Formulario>

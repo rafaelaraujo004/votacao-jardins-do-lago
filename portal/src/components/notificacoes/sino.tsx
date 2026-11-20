@@ -17,6 +17,7 @@ import { contarSino, lerNotificacoes, MODULOS_DO_SINO, rotuloContagem, type Noti
 import { EVENTO_SINAIS } from "@/lib/sincronizacao";
 import { cx } from "@/lib/cx";
 import { ListaNotificacoes } from "./lista";
+import { EVENTO_ATIVAR_APP } from "@/components/app/ativar-app";
 
 type Dados = { itens: Notificacao[]; vistasEm: number | null; fuso?: string; agora: number };
 
@@ -32,6 +33,8 @@ export function Sino({ className, paginaHref }: { className?: string; paginaHref
   const [vistasAoAbrir, setVistasAoAbrir] = useState<number | null>(null);
   const [aberto, setAberto] = useState(false);
   const buscando = useRef(false);
+  /** Este aparelho ainda não recebe as notificações no celular (mostra o botão para ativar). */
+  const [semNoCelular, setSemNoCelular] = useState(false);
 
   const buscar = useCallback(async () => {
     if (buscando.current) return;
@@ -94,6 +97,7 @@ export function Sino({ className, paginaHref }: { className?: string; paginaHref
   }, []);
 
   async function abrir() {
+    setSemNoCelular(!("Notification" in window) || Notification.permission !== "granted");
     setVistasAoAbrir(dados?.vistasEm ?? null);
     setAberto(true);
     document.documentElement.classList.add("overflow-hidden");
@@ -167,7 +171,19 @@ export function Sino({ className, paginaHref }: { className?: string; paginaHref
               <p className="mt-3 px-2 text-center text-[0.85rem] text-muted">Sem internet: mostrando a última lista carregada.</p>
             ) : null}
           </div>
-          <div className="border-t border-line px-4 py-3">
+          <div className="flex flex-col gap-1 border-t border-line px-4 py-3">
+            {semNoCelular ? (
+              <button
+                type="button"
+                onClick={() => {
+                  dialogo.current?.close();
+                  window.dispatchEvent(new Event(EVENTO_ATIVAR_APP));
+                }}
+                className="botao-verde flex min-h-11 items-center justify-center gap-2 rounded-full font-bold"
+              >
+                <Bell aria-hidden className="size-5" /> Receber no celular
+              </button>
+            ) : null}
             <Link href={paginaHref} className="flex min-h-11 items-center justify-center rounded-full font-bold text-lake hover:underline">
               Ver todas as notificações
             </Link>

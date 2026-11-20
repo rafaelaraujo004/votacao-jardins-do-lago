@@ -4,6 +4,7 @@ import { Sino } from "@/components/notificacoes/sino";
 import { Sincronizar } from "@/components/layout/sincronizar";
 import { horaDaMontagem } from "@/lib/sincronizacao";
 import { Assinatura } from "@/components/ui/assinatura";
+import { AtivarApp } from "@/components/app/ativar-app";
 
 /**
  * Moldura da portaria: tela larga, pensada para tablet e computador.
@@ -27,6 +28,7 @@ export default async function LayoutPortaria({ children }: LayoutProps<"/">) {
         <Assinatura className="mt-8" />
       </main>
       <Sincronizar montadaEm={horaDaMontagem()} intervaloSegundos={15} maximoMinutos={10} />
+      <AtivarApp />
     </div>
   );
 }

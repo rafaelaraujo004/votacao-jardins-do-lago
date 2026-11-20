@@ -242,12 +242,22 @@ service cloud.firestore {
         allow read, write: if false;
       }
 
+      // Aparelhos inscritos para receber notificações no celular (só o servidor).
+      match /pushInscricoes/{id} {
+        allow read, write: if false;
+      }
+
       // ----- auditoria: só leitura, para quem tem permissão; ninguém altera -----
 
       match /auditLogs/{id} {
         allow read: if papel(c, 'admin') || temExtra(c, 'auditoria.ver');
         allow write: if false;
       }
+    }
+
+    // Chaves das notificações no celular (VAPID): só o servidor lê. config/webpush.
+    match /config/{doc} {
+      allow read, write: if false;
     }
 
     // Qualquer outro caminho: negado.

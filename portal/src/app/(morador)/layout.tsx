@@ -3,6 +3,7 @@ import { NOME_DO_PAPEL } from "@/lib/permissoes";
 import { FaixaTopo, classeBotaoFaixa } from "@/components/layout/faixa-topo";
 import { Sino } from "@/components/notificacoes/sino";
 import { Assinatura } from "@/components/ui/assinatura";
+import { AtivarApp } from "@/components/app/ativar-app";
 import { NavMorador } from "@/components/layout/navegacao";
 import { Sincronizar } from "@/components/layout/sincronizar";
 import { horaDaMontagem } from "@/lib/sincronizacao";
@@ -47,6 +48,7 @@ export default async function LayoutMorador({ children }: LayoutProps<"/">) {
         </main>
       </div>
       <Sincronizar montadaEm={horaDaMontagem()} />
+      <AtivarApp />
     </div>
   );
 }

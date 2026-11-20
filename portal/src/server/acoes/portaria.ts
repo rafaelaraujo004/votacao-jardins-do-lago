@@ -17,6 +17,8 @@ import { consumirTentativa } from "../rate-limit";
 import { ErroDeNegocio, executar, lerFormulario, type Resultado } from "./resultado";
 import { limparVisitantesAntigos, segredoDoCodigo } from "../dados/portaria";
 import { hojeISO } from "@/lib/formato";
+import { dataISOParaBR } from "@/lib/formato";
+import { avisarNoCelular } from "../push";
 import {
   ehUsoUnico,
   erroNoPeriodo,
@@ -134,6 +136,11 @@ export async function autorizarVisita(_: ResultadoCodigoGerado, dados: FormData)
       });
       if (gravou) {
         revalidarPortaria();
+        avisarNoCelular(ctx.condominioId, { papeis: ["portaria"] }, {
+          titulo: `Visita autorizada · ${ctx.unidadeRotulo ?? "casa"}`,
+          texto: `${v.nome} · ${v.validaAte && v.validaAte !== v.data ? `de ${dataISOParaBR(v.data)} a ${dataISOParaBR(v.validaAte)}` : dataISOParaBR(v.data)}`,
+          url: "/portaria",
+        });
         return { codigo, nome: v.nome, data: v.data, validaAte: v.validaAte, usoUnico };
       }
     }

@@ -68,6 +68,8 @@ Não existe área pública. Todas as páginas, ações e exportações exigem se
 | `/votar/[código]` (público) | sem login: o código do link + a senha de 6 números da casa |
 | `/classificados` (morador) | `classificados.usar` (anúncios aprovados: só primeiro nome e o WhatsApp escolhido pelo autor) |
 | `/classificados/moderar` (morador com extra) | `classificados.moderar` |
+| `/classificados/[id]/editar` | `classificados.usar` + ser o **autor**; só aguardando, publicado ou não aprovado; ao salvar volta para aprovação |
+| Notificações no celular (`chavePublicaPush`, `salvarInscricaoPush`, `removerInscricaoPush`) | estar logado; a inscrição fica ligada a quem está logado e só ela mesma remove |
 | `/admin/classificados` | `classificados.moderar` (vê a casa do autor) |
 | `/admin/relatorios`, `/admin/relatorios/csv` | `relatorios.ver` (o financeiro exige também `financeiro.ver` ou `financeiro.ver_publicado`) |
 | PIX da taxa em `/admin/informacoes` | só o papel **admin**, mesmo que outra pessoa tenha `informacoes.gerenciar` (contra golpe) |

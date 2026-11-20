@@ -89,6 +89,13 @@ Uma fase só é "concluída" com: tela funcionando, validação, integração re
 - **Comentário ao não aprovar**: anúncio e reserva já pediam o motivo; cancelar uma solicitação agora exige comentário visível para o morador.
 - Rodapé **"Desenvolvido por Rafael Araújo"** nas telas principais.
 
+## Notificações no celular, instalar o app e editar anúncio (20/11/2026)
+
+- Ao entrar, janela para **permitir notificações** e **instalar o app**; notificações de verdade no celular (Web Push com service worker), mesmo com o portal fechado, nos principais acontecimentos (comunicados, anúncios, reservas, solicitações, visitas, enquetes e votação).
+- **Editar anúncio** nos classificados (volta para aprovação).
+- Painel do síndico: card **"Casas sem acesso"** (casas ativas sem login) completando a grade.
+- Início no celular: cartões de comunicado, endereço, PIX e ronda mais compactos.
+
 ## O que falta
 
 - **Login dos moradores**: pronto no código; falta testar no Firebase real com um morador de teste (o simulador já aceitou o e-mail sintético `.invalid`).

@@ -174,6 +174,28 @@ export async function meusAnuncios(ctx: Contexto, agora = new Date()): Promise<M
     }));
 }
 
+/** Um anúncio da própria pessoa (para editar). De outra pessoa ou inexistente → null. */
+export async function meuAnuncio(ctx: Contexto, id: string, agora = new Date()): Promise<MeuAnuncio | null> {
+  garantirPermissao(ctx, "classificados.usar");
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(id)) return null;
+  const d = await base(ctx).doc(id).get();
+  if (!d.exists || d.get("autorUid") !== ctx.uid) return null;
+  const a = paraClassificado(d.id, d.data(), ctx.condominioId);
+  return {
+    id: a.id,
+    titulo: a.titulo,
+    texto: a.texto,
+    categoria: a.categoria,
+    preco: a.preco,
+    contatoWhatsapp: a.contatoWhatsapp,
+    situacao: situacaoEfetiva(a.status, a.expiraEm, agora),
+    motivo: a.motivo,
+    criadoEm: a.criadoEm,
+    expiraEm: a.expiraEm,
+    fotos: fotosDe(a),
+  };
+}
+
 // ---------- Moderação ----------
 
 export type AnuncioModeracao = {

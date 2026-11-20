@@ -206,7 +206,7 @@ export default async function InicioMorador() {
           <IlustracaoCondominio />
         </section>
         {/* O endereço fica num cartão normal: assim acompanha o tema claro/escuro sem ficar estranho. */}
-        <Cartao aria-label="Endereço do condomínio" className="surgir order-3 flex flex-col justify-center p-4 sm:order-2">
+        <Cartao semEspaco aria-label="Endereço do condomínio" className="surgir order-3 flex flex-col justify-center p-3 sm:order-2 sm:p-4">
           <EnderecoCopiavel />
         </Cartao>
         <Suspense fallback={<BlocoCarregando altura="order-2 h-64 sm:order-3 sm:col-span-2 sm:h-96" />}>

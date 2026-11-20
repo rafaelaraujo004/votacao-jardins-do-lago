@@ -6,10 +6,13 @@ import { resumoDoCondominio } from "@/server/dados/gestao";
 import { numerosDasSolicitacoes } from "@/server/dados/solicitacoes";
 import { numerosClassificados } from "@/server/dados/classificados";
 import { numerosDaAgenda } from "@/server/dados/reservas";
+import { contarMoradoresPorUnidade } from "@/server/dados/pessoas";
+import { listarUnidades } from "@/server/dados/unidades";
 import { informacoesDoCondominio } from "@/server/dados/informacoes";
 import { configFinanceira, mesesComSaldo } from "@/server/dados/financeiro";
 import type { Permissao } from "@/lib/permissoes";
 import { hojeISO } from "@/lib/formato";
+import { cx } from "@/lib/cx";
 import { InformacoesUteisPainel } from "@/components/informacoes/informacoes-uteis-painel";
 import { ResumoFinanceiroPainel } from "@/components/financeiro/resumo-painel";
 import { Etiqueta, TituloPagina } from "@/components/ui/basicos";
@@ -54,11 +57,20 @@ async function semFalhar<T>(nome: string, ler: () => Promise<T>): Promise<T | nu
 }
 
 /** O que está esperando uma decisão da administração (só o que o perfil pode ver). */
+/** Casas ativas que ainda não têm nenhum login para entrar no portal (o síndico precisa gerar). */
+async function casasSemAcesso(ctx: Contexto): Promise<{ sem: number; ativas: number }> {
+  const [unidades, porCasa] = await Promise.all([listarUnidades(ctx), contarMoradoresPorUnidade(ctx)]);
+  const ativas = unidades.filter((u) => u.status === "ativa");
+  return { sem: ativas.filter((u) => (porCasa.get(u.id)?.comAcesso ?? 0) === 0).length, ativas: ativas.length };
+}
+
 async function pendenciasDo(ctx: Contexto): Promise<Pendencia[]> {
-  const [solicitacoes, classificados, agenda] = await Promise.all([
+  const podeDarAcesso = ctx.permissoes.has("moradores.gerenciar") && ctx.permissoes.has("unidades.ver");
+  const [solicitacoes, classificados, agenda, acesso] = await Promise.all([
     ctx.permissoes.has("solicitacoes.gerenciar") ? semFalhar("as solicitações", () => numerosDasSolicitacoes(ctx)) : null,
     ctx.permissoes.has("classificados.moderar") ? semFalhar("os classificados", () => numerosClassificados(ctx)) : null,
     ctx.permissoes.has("reservas.ver_todas") ? semFalhar("as reservas", () => numerosDaAgenda(ctx)) : null,
+    podeDarAcesso ? semFalhar("as casas sem acesso", () => casasSemAcesso(ctx)) : null,
   ]);
   const lista: Pendencia[] = [];
   if (solicitacoes) {
@@ -79,6 +91,9 @@ async function pendenciasDo(ctx: Contexto): Promise<Pendencia[]> {
       detalhe: `${classificados.publicados} no ar`,
       href: "/admin/classificados",
     });
+  }
+  if (acesso) {
+    lista.push({ rotulo: "Casas sem acesso", valor: acesso.sem, detalhe: `de ${acesso.ativas} casas ativas`, href: "/admin/pessoas" });
   }
   return lista;
 }
@@ -125,9 +140,11 @@ export default async function PainelGestao() {
       {pendencias.length ? (
         <section aria-labelledby="titulo-pendencias" className="flex flex-col gap-3">
           <TituloSecao id="titulo-pendencias">Esperando a administração</TituloSecao>
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {pendencias.map((p) => (
-              <li key={p.rotulo}>
+          {/* Sem buraco na grade: 4 cartões = 2×2 no celular e 4 lado a lado; número ímpar no
+              celular = o último ocupa a linha toda. */}
+          <ul className={cx("grid grid-cols-2 gap-3", pendencias.length === 4 ? "sm:grid-cols-4" : "sm:grid-cols-3")}>
+            {pendencias.map((p, i) => (
+              <li key={p.rotulo} className={cx(pendencias.length % 2 === 1 && i === pendencias.length - 1 && "col-span-2 sm:col-span-1")}>
                 <Link href={p.href} className="block rounded-[18px] transition-shadow active:shadow-afundado">
                   <BlocoNumero rotulo={p.rotulo} valor={p.valor} detalhe={p.detalhe} cor={p.valor > 0 ? "laranja" : "ink"} />
                 </Link>

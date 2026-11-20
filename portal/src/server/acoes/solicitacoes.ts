@@ -17,6 +17,7 @@ import { registrarAuditoria, type AcaoAuditada } from "../auditoria";
 import { consumirTentativa } from "../rate-limit";
 import { ErroDeNegocio, executar, lerFormulario, type Resultado } from "./resultado";
 import { hojeISO } from "@/lib/formato";
+import { avisarNoCelular } from "../push";
 import {
   ROTULO_STATUS_SOLICITACAO,
   formatarProtocolo,
@@ -132,6 +133,12 @@ export async function abrirSolicitacao(_: Resultado, dados: FormData): Promise<R
     });
 
     revalidar();
+    avisarNoCelular(
+      ctx.condominioId,
+      { permissao: "solicitacoes.gerenciar", papeis: ["admin", "conselheiro"] },
+      { titulo: `Nova solicitação ${protocolo}`, texto: `${ctx.unidadeRotulo ?? "Uma casa"} abriu uma solicitação.`, url: `/admin/solicitacoes/${ticketRef.id}` },
+      ctx.uid,
+    );
     return `Solicitação enviada. Seu protocolo é ${protocolo}.`;
   });
 }
@@ -224,7 +231,7 @@ export async function mudarStatusSolicitacao(_: Resultado, dados: FormData): Pro
     const ctx = garantirPermissao(await getContexto(), "solicitacoes.gerenciar");
     const v = lerFormulario(esquemaMudarStatusSolicitacao, dados);
     const db = adminDb();
-    const protocolo = await db.runTransaction(async (tx) => {
+    const { protocolo, unitId } = await db.runTransaction(async (tx) => {
       const { ref, s } = await lerNaTransacao(tx, db, ctx, v.id);
       if (s.status === v.status) throw new ErroDeNegocio("A solicitação já está nessa situação. Atualize a página.");
       if (!podeMudarStatus(s.status, v.status)) {
@@ -276,9 +283,14 @@ export async function mudarStatusSolicitacao(_: Resultado, dados: FormData): Pro
         alvo: `tickets/${s.id}`,
         detalhes: { protocolo: s.protocolo, de: s.status, para: v.status, comentario: !!v.comentario, comentarioInterno },
       });
-      return s.protocolo;
+      return { protocolo: s.protocolo, unitId: s.unitId };
     });
     revalidar(v.id);
+    avisarNoCelular(ctx.condominioId, { casa: unitId }, {
+      titulo: `Solicitação ${protocolo}: ${ROTULO_STATUS_SOLICITACAO[v.status]}`,
+      texto: v.publico && v.comentario ? v.comentario : "A administração atualizou a sua solicitação.",
+      url: `/solicitacoes/${v.id}`,
+    });
     return `Solicitação ${protocolo}: agora está "${ROTULO_STATUS_SOLICITACAO[v.status]}".`;
   });
 }
@@ -289,7 +301,7 @@ export async function responderSolicitacao(_: Resultado, dados: FormData): Promi
     const ctx = garantirPermissao(await getContexto(), "solicitacoes.gerenciar");
     const v = lerFormulario(esquemaResponderSolicitacao, dados);
     const db = adminDb();
-    const protocolo = await db.runTransaction(async (tx) => {
+    const { protocolo, unitId } = await db.runTransaction(async (tx) => {
       const { ref, s } = await lerNaTransacao(tx, db, ctx, v.id);
       tx.create(ref.collection("updates").doc(), {
         tipo: "comentario",
@@ -314,9 +326,12 @@ export async function responderSolicitacao(_: Resultado, dados: FormData): Promi
         alvo: `tickets/${s.id}`,
         detalhes: { protocolo: s.protocolo, publico: v.publico, origem: "administracao" },
       });
-      return s.protocolo;
+      return { protocolo: s.protocolo, unitId: s.unitId };
     });
     revalidar(v.id);
+    if (v.publico) {
+      avisarNoCelular(ctx.condominioId, { casa: unitId }, { titulo: `A administração respondeu: ${protocolo}`, texto: v.texto, url: `/solicitacoes/${v.id}` });
+    }
     return v.publico ? `Resposta enviada ao morador (${protocolo}).` : `Nota interna salva (${protocolo}).`;
   });
 }

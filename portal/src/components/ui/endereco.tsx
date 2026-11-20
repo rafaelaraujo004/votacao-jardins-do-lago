@@ -57,34 +57,34 @@ export function EnderecoCopiavel({ className }: { className?: string }) {
   }
 
   return (
-    <div className={cx("flex flex-col gap-3", className)}>
-      <div className="afundado flex gap-3 rounded-2xl px-4 py-3">
+    <div className={cx("flex flex-col gap-2.5 sm:gap-3", className)}>
+      <div className="afundado flex gap-2.5 rounded-2xl px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
         <MapPin aria-hidden className="mt-0.5 size-5 shrink-0 text-plum" />
         <div className="min-w-0">
           <span className="rotulo-caixa block">Endereço</span>
-          <p ref={refTexto} className="m-0 select-text text-[0.95rem] leading-snug text-ink [text-wrap:pretty]">
+          <p ref={refTexto} className="m-0 select-text text-[0.9rem] leading-snug text-ink [text-wrap:pretty] sm:text-[0.95rem]">
             {ENDERECO_LINHA}
             <br />
             {ENDERECO_CIDADE}
-            <span className="mt-1 block font-bold text-destaque">
+            <span className="mt-0.5 block font-bold text-destaque sm:mt-1">
               CEP <span ref={refCep}>{ENDERECO.cep}</span>
             </span>
           </p>
         </div>
       </div>
-      {/* Lado a lado quando cabem; um embaixo do outro em telas estreitas (sem quebrar o texto). */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(10.5rem,1fr))] gap-2.5">
+      {/* Lado a lado (no celular, botões mais baixos e texto menor para caberem na mesma linha). */}
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(8.75rem,1fr))] gap-2 sm:grid-cols-[repeat(auto-fit,minmax(10.5rem,1fr))] sm:gap-2.5">
         <button
           type="button"
           onClick={() => aoCopiar(ENDERECO.cep, "CEP", refCep.current)}
-          className="botao-verde inline-flex min-h-12 items-center justify-center gap-1.5 rounded-full px-3 text-[0.92rem] font-bold whitespace-nowrap active:shadow-afundado"
+          className="botao-verde inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full px-2.5 text-[0.86rem] font-bold whitespace-nowrap active:shadow-afundado sm:min-h-12 sm:px-3 sm:text-[0.92rem]"
         >
           <Copy aria-hidden className="size-[18px] shrink-0" /> Copiar CEP
         </button>
         <button
           type="button"
           onClick={() => aoCopiar(ENDERECO_COMPLETO, "Endereço", refTexto.current)}
-          className="saltado inline-flex min-h-12 items-center justify-center gap-1.5 rounded-full px-3 text-[0.92rem] font-bold whitespace-nowrap text-ink active:shadow-afundado"
+          className="saltado inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full px-2.5 text-[0.86rem] font-bold whitespace-nowrap text-ink active:shadow-afundado sm:min-h-12 sm:px-3 sm:text-[0.92rem]"
         >
           <Copy aria-hidden className="size-[18px] shrink-0" /> Copiar endereço
         </button>

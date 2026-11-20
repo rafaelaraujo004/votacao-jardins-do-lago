@@ -67,20 +67,20 @@ export function ChavePixCopiavel({
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="afundado flex items-start gap-3 rounded-2xl px-4 py-3">
+    <div className="flex flex-col gap-2.5 sm:gap-3">
+      <div className="afundado flex items-start gap-2.5 rounded-2xl px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
         <KeyRound aria-hidden className="mt-0.5 size-5 shrink-0 text-plum" />
         <div className="min-w-0">
           <span className="rotulo-caixa block">{rotulo}</span>
           <p
             ref={refChave}
-            className="m-0 select-text break-all font-display text-[1.15rem] font-extrabold tabular-nums text-destaque"
+            className="m-0 select-text break-all font-display text-[1.05rem] font-extrabold tabular-nums text-destaque sm:text-[1.15rem]"
           >
             {exibicao}
           </p>
         </div>
       </div>
-      <button type="button" onClick={aoCopiar} className={classesDoBotao("primario", "normal", true)}>
+      <button type="button" onClick={aoCopiar} className={`${classesDoBotao("primario", "pequeno", true)} sm:min-h-12`}>
         <Copy aria-hidden className="size-5" /> Copiar chave PIX
       </button>
     </div>

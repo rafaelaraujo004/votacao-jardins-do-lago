@@ -91,6 +91,22 @@ export function podeRemover(status: StatusClassificado, expiraEm: Date | null, a
   return contaComoAtivo(status, expiraEm, agora);
 }
 
+/**
+ * O autor pode editar? Enquanto aguarda, publicado (no prazo) ou não aprovado.
+ * Depois de editar, o anúncio SEMPRE volta para "aguardando aprovação" (a administração confere de novo).
+ * Removido ou expirado: não edita (cria outro).
+ */
+export function podeEditar(status: StatusClassificado, expiraEm: Date | null, agora: Date): boolean {
+  const s = situacaoEfetiva(status, expiraEm, agora);
+  return s === "pendente" || s === "aprovado" || s === "rejeitado";
+}
+
+/** Centavos → texto do campo de preço ("1.200,50"), para preencher o formulário de edição. */
+export function precoParaCampo(centavos: number | null): string {
+  if (centavos === null || centavos <= 0) return "";
+  return (centavos / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 /** Dias inteiros que faltam até sair do ar (0 = sai hoje). */
 export function diasRestantes(expiraEm: Date, agora: Date): number {
   return Math.max(0, Math.ceil((expiraEm.getTime() - agora.getTime()) / UM_DIA_MS));

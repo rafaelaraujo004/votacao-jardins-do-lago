@@ -85,10 +85,13 @@ votoCodigos/{sha256(código)}         condominioId, eleicaoId, unitId, senhaHash
                                      contatoWhatsapp (só dígitos, com 55)|null, autorUid, autorPrimeiroNome, unitId,
                                      status (pendente/aprovado/rejeitado/removido/expirado), motivo, criadoEm, decididoEm,
                                      expiraEm (30 dias após aprovar; vencido = "expirado" na leitura),
-                                     fotos[{caminho,tipo,tamanho}] (até 4) — nunca apagado
+                                     fotos[{caminho,tipo,tamanho}] (até 4), editadoEm (o autor editou: volta a "pendente")
+                                     — nunca apagado
   mapPoints/{id}  usefulInfo/{id}
   counters/solicitacoes-AAAA         {ultimo, ano, atualizadoEm} — numeração dos protocolos (só servidor, em transação)
   auditLogs/{id}                     uid, nome, papel, acao, alvo, detalhes, criadoEm — só acréscimo
+  pushInscricoes/{sha256(endpoint)}  uid, endpoint, keys{p256dh, auth}, navegador, atualizadoEm — aparelho que permitiu
+                                     notificações no celular (só servidor; apagada ao sair ou quando o serviço diz 404/410)
   sino/{uid}                         vistasEm: quando a pessoa abriu o sino de notificações pela última vez
                                      (só servidor; não entra na auditoria — é como marcar um e-mail como lido)
   sistema/sinais                     {portaria, reservas, financeiro, comunicados, solicitacoes, documentos,
@@ -101,6 +104,9 @@ votoCodigos/{sha256(código)}         condominioId, eleicaoId, unitId, senhaHash
 ```
 
 Coleções em inglês (padrão do Firebase e da sugestão inicial); campos em português (linguagem do projeto).
+
+Fora dos condomínios: `config/webpush` = chaves VAPID das notificações no celular (publicKey, privateKey), criadas
+sozinhas pelo servidor na primeira vez; ninguém lê pelo navegador.
 
 **Arquivos (Firebase Storage)** — ninguém lê direto pelo navegador:
 

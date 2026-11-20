@@ -28,6 +28,7 @@ import {
 } from "./resultado";
 import { dataHoraLocalParaDate } from "@/lib/enquetes";
 import { formatarDataHora } from "@/lib/formato";
+import { avisarNoCelular } from "../push";
 import {
   esquemaBloqueio,
   esquemaCedula,
@@ -92,6 +93,11 @@ export async function publicarEleicao(
     const agora = new Date();
     const e = await mudarStatusEleicao(adminDb(), ctx, id, "publicar", agora);
     revalidar(id);
+    avisarNoCelular(ctx.condominioId, { papeis: ["morador"] }, {
+      titulo: e.abreEm.getTime() > agora.getTime() ? "Votação oficial marcada" : "Votação oficial aberta: vote agora",
+      texto: e.abreEm.getTime() > agora.getTime() ? `${e.titulo}: abre ${formatarDataHora(e.abreEm, ctx.fuso)}.` : `${e.titulo}: um voto por casa, secreto.`,
+      url: `/votacao/${id}`,
+    });
     return e.abreEm.getTime() > agora.getTime()
       ? `Votação publicada. Os moradores podem votar a partir de ${formatarDataHora(e.abreEm, ctx.fuso)}.`
       : "Votação publicada e aberta. Os moradores já podem votar.";

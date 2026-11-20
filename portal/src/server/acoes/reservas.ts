@@ -17,6 +17,7 @@ import { registrarAuditoria } from "../auditoria";
 import { acaoReserva, gravarReserva, paraArea, paraReserva, podeSerResponsavel, type Reserva } from "../dados/reservas";
 import { ErroDeNegocio, executar, lerFormulario, type Resultado } from "./resultado";
 import { apagarFotos, fotosDoFormulario } from "../fotos";
+import { avisarNoCelular } from "../push";
 import { fotosRemovidas, lerFotos } from "@/lib/fotos";
 import {
   AREAS_SUGERIDAS,
@@ -159,6 +160,26 @@ export async function criarAreasSugeridas(): Promise<Resultado> {
   });
 }
 
+// ---------- Avisos no celular ----------
+
+/** Pedido novo: avisa o responsável pela área (ou o síndico, se a área não tiver um responsável que possa aprovar). */
+async function avisarPedidoDeReserva(ctx: Contexto, areaId: string, texto: string) {
+  try {
+    const db = adminDb();
+    const c = db.collection("condominiums").doc(ctx.condominioId);
+    const uid = (await c.collection("amenities").doc(areaId).get()).get("responsavelUid");
+    const valido = typeof uid === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(uid) && podeSerResponsavel((await c.collection("members").doc(uid).get()).data());
+    avisarNoCelular(
+      ctx.condominioId,
+      valido ? { uids: [uid as string] } : { permissao: "reservas.gerenciar", papeis: ["admin"] },
+      { titulo: "Reserva para aprovar", texto, url: "/admin/reservas", tag: "reservas-pendentes" },
+      ctx.uid,
+    );
+  } catch (erro) {
+    console.error("Reservas: não foi possível avisar o responsável", erro);
+  }
+}
+
 // ---------- Criar reservas ----------
 
 /** Pedido do morador. A casa vem do cadastro dele (nunca do formulário). */
@@ -177,6 +198,9 @@ export async function pedirReserva(_: Resultado, dados: FormData): Promise<Resul
       unitId: ctx.unitId,
     });
     revalidarReservas();
+    if (r.status === "pendente") {
+      await avisarPedidoDeReserva(ctx, v.areaId, `${r.areaNome} · ${dataISOParaBR(r.data)} (${r.faixa}) · ${ctx.unidadeRotulo ?? ""}`);
+    }
     return r.status === "pendente"
       ? `Pedido enviado: ${r.areaNome}, ${dataISOParaBR(r.data)} (${r.faixa}). Aguardando aprovação da administração.`
       : `Reserva confirmada: ${r.areaNome}, ${dataISOParaBR(r.data)} (${r.faixa}).`;
@@ -297,6 +321,9 @@ export async function aprovarReserva(_: Resultado, dados: FormData): Promise<Res
       if (r.data < hoje) throw new ErroDeNegocio("A data deste pedido já passou. Recuse-o informando o motivo.");
     }, ctx);
     revalidarReservas();
+    if (r.unitId) {
+      avisarNoCelular(ctx.condominioId, { casa: r.unitId }, { titulo: "Sua reserva foi confirmada", texto: `${r.areaNome} · ${dataISOParaBR(r.data)} (${r.faixaRotulo})`, url: "/reservas" });
+    }
     return `Reserva aprovada: ${r.areaNome}, ${dataISOParaBR(r.data)} — ${r.unidadeRotulo ?? ""}.`;
   });
 }
@@ -309,6 +336,9 @@ export async function recusarReserva(_: Resultado, dados: FormData): Promise<Res
       if (r.status !== "pendente") throw new ErroDeNegocio("Este pedido já foi decidido. Atualize a página.");
     }, ctx);
     revalidarReservas();
+    if (r.unitId) {
+      avisarNoCelular(ctx.condominioId, { casa: r.unitId }, { titulo: "Sua reserva foi recusada", texto: `${r.areaNome} · ${dataISOParaBR(r.data)} · Motivo: ${v.motivo}`, url: "/reservas" });
+    }
     return `Pedido recusado: ${r.areaNome}, ${dataISOParaBR(r.data)}. O horário ficou livre.`;
   });
 }

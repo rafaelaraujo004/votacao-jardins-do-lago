@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Assinatura } from "@/components/ui/assinatura";
+import { CancelarNotificacoesAoSair } from "@/components/app/ativar-app";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getContexto } from "@/server/contexto";
@@ -74,6 +75,8 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
               </div>
             </div>
 
+            {/* Quem saiu deixa de receber, neste aparelho, as notificações daquela conta. */}
+            {saiu ? <CancelarNotificacoesAoSair /> : null}
             {saiu ? (
               <Alerta tipo="sucesso" titulo="Você saiu do portal.">
                 Para voltar, é só entrar de novo.

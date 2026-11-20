@@ -45,12 +45,12 @@ function Cabecalho({
   children?: ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="grid size-11 shrink-0 place-items-center rounded-full bg-ok-soft text-pine">
-        <Icone aria-hidden className="size-6" />
+    <div className="flex items-center gap-2.5 sm:gap-3">
+      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-ok-soft text-pine sm:size-11">
+        <Icone aria-hidden className="size-5 sm:size-6" />
       </span>
       <div className="min-w-0 flex-1">
-        <h3 id={idTitulo} className="text-[1.1rem] font-bold text-destaque">
+        <h3 id={idTitulo} className="text-[1.02rem] font-bold leading-snug text-destaque sm:text-[1.1rem]">
           {titulo}
         </h3>
         {children}
@@ -63,8 +63,8 @@ function Cabecalho({
 function BotoesTelefone({ telefone, quem }: { telefone: string; quem: string }) {
   const celular = ehCelular(telefone);
   return (
-    <div className={celular ? "grid grid-cols-2 gap-2.5" : "grid"}>
-      <a href={linkLigar(telefone)} aria-label={`Ligar para ${quem}`} className={classesDoBotao("primario")}>
+    <div className={celular ? "grid grid-cols-2 gap-2 sm:gap-2.5" : "grid"}>
+      <a href={linkLigar(telefone)} aria-label={`Ligar para ${quem}`} className={`${classesDoBotao("primario", "pequeno")} sm:min-h-12`}>
         <Phone aria-hidden className="size-5" /> Ligar
       </a>
       {celular ? (
@@ -73,7 +73,7 @@ function BotoesTelefone({ telefone, quem }: { telefone: string; quem: string }) 
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`WhatsApp de ${quem} (abre em outra aba)`}
-          className={classesDoBotao("secundario")}
+          className={`${classesDoBotao("secundario", "pequeno")} sm:min-h-12`}
         >
           <MessageCircle aria-hidden className="size-5" /> WhatsApp
         </a>
@@ -86,9 +86,9 @@ function BotoesTelefone({ telefone, quem }: { telefone: string; quem: string }) 
 
 export function CartaoPix({ pix }: { pix: ChavePix }) {
   return (
-    <Cartao aria-labelledby="titulo-cartao-pix" className="flex flex-col gap-3">
+    <Cartao semEspaco aria-labelledby="titulo-cartao-pix" className="flex flex-col gap-2.5 p-4 sm:gap-3 sm:p-5">
       <Cabecalho icone={Landmark} titulo="PIX da taxa condominial" idTitulo="titulo-cartao-pix">
-        <p className="text-[0.95rem] text-ink-2">
+        <p className="text-[0.9rem] leading-snug text-ink-2 sm:text-[0.95rem]">
           Favorecido: <b className="text-ink">{pix.favorecido}</b>
         </p>
       </Cabecalho>
@@ -97,7 +97,7 @@ export function CartaoPix({ pix }: { pix: ChavePix }) {
         exibicao={formatarChavePix(pix)}
         paraCopiar={chavePixParaCopiar(pix)}
       />
-      <p className="text-[0.88rem] text-muted">
+      <p className="text-[0.82rem] leading-snug text-muted sm:text-[0.88rem]">
         {pix.tipo === "cnpj" || pix.tipo === "cpf" ? "O botão copia só os números, do jeito que o banco aceita. " : null}
         Antes de confirmar o pagamento, confira se o favorecido é <b>{pix.favorecido}</b>.
       </p>
@@ -109,9 +109,9 @@ export function CartaoPix({ pix }: { pix: ChavePix }) {
 
 export function CartaoRonda({ telefone }: { telefone: string }) {
   return (
-    <Cartao aria-labelledby="titulo-cartao-ronda" className="flex flex-col gap-3">
+    <Cartao semEspaco aria-labelledby="titulo-cartao-ronda" className="flex flex-col gap-2.5 p-4 sm:gap-3 sm:p-5">
       <Cabecalho icone={ShieldCheck} titulo="Ronda noturna" idTitulo="titulo-cartao-ronda">
-        <p className="text-[0.95rem] tabular-nums text-ink-2">{formatarTelefone(telefone)}</p>
+        <p className="text-[0.9rem] tabular-nums text-ink-2 sm:text-[0.95rem]">{formatarTelefone(telefone)}</p>
       </Cabecalho>
       <BotoesTelefone telefone={telefone} quem="a ronda noturna" />
     </Cartao>
@@ -122,7 +122,7 @@ export function CartaoRonda({ telefone }: { telefone: string }) {
 
 export function CartaoResponsavelReservas({ responsavel }: { responsavel: ResponsavelReservas }) {
   return (
-    <Cartao aria-labelledby="titulo-cartao-reservas" className="flex flex-col gap-3">
+    <Cartao semEspaco aria-labelledby="titulo-cartao-reservas" className="flex flex-col gap-2.5 p-4 sm:gap-3 sm:p-5">
       <Cabecalho icone={CalendarCheck} titulo="Responsável pelas reservas" idTitulo="titulo-cartao-reservas">
         <p className="text-[0.95rem] text-ink">
           <b>{responsavel.nome}</b>

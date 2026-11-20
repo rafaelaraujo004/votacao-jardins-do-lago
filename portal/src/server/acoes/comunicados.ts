@@ -14,9 +14,17 @@ import { registrarAuditoria } from "../auditoria";
 import { acaoComunicado, paraComunicadoGestao } from "../dados/comunicados";
 import { ErroDeNegocio, executar, lerFormulario, type Resultado } from "./resultado";
 import { apagarFotos, fotosDoFormulario } from "../fotos";
+import { avisarNoCelular } from "../push";
 import { fotosRemovidas, lerFotos } from "@/lib/fotos";
 import { conferirMudanca, statusDepois } from "@/lib/comunicados";
 import { esquemaComunicado, esquemaMudanca } from "@/lib/validacao-comunicados";
+
+/** Avisa no celular dos moradores (e da portaria) que saiu um comunicado. */
+function avisarComunicado(ctx: { condominioId: string; uid: string }, id: string, titulo: string, prioridade: string) {
+  const mensagem = { titulo: prioridade === "urgente" ? "⚠️ Comunicado urgente" : "Novo comunicado", texto: titulo, tag: `comunicado-${id}` };
+  avisarNoCelular(ctx.condominioId, { papeis: ["morador"] }, { ...mensagem, url: `/comunicados/${id}` }, ctx.uid);
+  avisarNoCelular(ctx.condominioId, { papeis: ["portaria"] }, { ...mensagem, url: `/portaria/comunicados/${id}` }, ctx.uid);
+}
 
 function revalidarComunicados(id?: string) {
   revalidatePath("/comunicados");
@@ -99,6 +107,7 @@ export async function salvarComunicado(_: Resultado, dados: FormData): Promise<R
     // Fotos que saíram do comunicado: apagadas do Storage (depois de salvar).
     await apagarFotos(fotosRemovidas(fotosAntes, fotos));
     revalidarComunicados(ref.id);
+    if (final.publicando) avisarComunicado(ctx, ref.id, v.titulo, v.prioridade);
     if (final.publicando) return `Comunicado publicado: "${v.titulo}". Os moradores já podem ler.`;
     if (final.novo) return `Rascunho salvo: "${v.titulo}". Ele ainda não aparece para os moradores.`;
     return final.status === "publicado"
@@ -115,7 +124,7 @@ export async function mudarComunicado(_: Resultado, dados: FormData): Promise<Re
     const db = adminDb();
     const ref = db.collection("condominiums").doc(ctx.condominioId).collection("announcements").doc(id);
 
-    const titulo = await db.runTransaction(async (tx) => {
+    const { titulo, prioridade } = await db.runTransaction(async (tx) => {
       const doc = await tx.get(ref);
       if (!doc.exists) throw new ErroDeNegocio("Comunicado não encontrado. Atualize a página.");
       const atual = paraComunicadoGestao(doc.id, doc.data());
@@ -142,10 +151,11 @@ export async function mudarComunicado(_: Resultado, dados: FormData): Promise<Re
         alvo: `announcements/${id}`,
         detalhes: { titulo: atual.titulo, mudanca, de: atual.status, para: status },
       });
-      return atual.titulo;
+      return { titulo: atual.titulo, prioridade: atual.prioridade };
     });
 
     revalidarComunicados(id);
+    if (mudanca === "publicar") avisarComunicado(ctx, id, titulo, prioridade);
     switch (mudanca) {
       case "publicar":
         return `Comunicado publicado: "${titulo}".`;

@@ -15,6 +15,7 @@ import { ErroDeNegocio, executar, lerFormulario, type Resultado } from "./result
 import { dataHoraLocalParaDate } from "@/lib/enquetes";
 import { formatarDataHora } from "@/lib/formato";
 import { esquemaEnquete, esquemaIdEnquete, esquemaVoto } from "@/lib/validacao-enquetes";
+import { avisarNoCelular } from "../push";
 
 function revalidarEnquetes(id?: string) {
   revalidatePath("/admin/enquetes");
@@ -65,6 +66,7 @@ export async function publicarEnquete(_: Resultado, dados: FormData): Promise<Re
     const agora = new Date();
     const e = await mudarStatusEnquete(adminDb(), ctx, id, "publicar", agora);
     revalidarEnquetes(id);
+    avisarNoCelular(ctx.condominioId, { papeis: ["morador"] }, { titulo: "Nova enquete: dê sua opinião", texto: e.pergunta, url: `/enquetes/${id}` });
     return e.abreEm.getTime() > agora.getTime()
       ? `Enquete publicada. A votação abre em ${formatarDataHora(e.abreEm, ctx.fuso)}.`
       : "Enquete publicada. Os moradores já podem votar.";

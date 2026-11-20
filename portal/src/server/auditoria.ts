@@ -88,6 +88,7 @@ export const ACOES_AUDITADAS = [
   "eleicao.foto",
   // Classificados
   "classificado.criar",
+  "classificado.editar",
   "classificado.aprovar",
   "classificado.rejeitar",
   "classificado.remover",

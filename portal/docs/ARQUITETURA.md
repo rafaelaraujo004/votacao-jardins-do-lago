@@ -138,8 +138,28 @@ Regras puras em `src/lib/notificacoes.ts` (testadas em `tests/unit/notificacoes.
 - **Portaria**: visitas autorizadas que ainda valem e comunicados.
 - O sino busca `/api/notificacoes` ao abrir a tela, ao ser tocado e quando o `<Sincronizar>` avisa que um módulo do sino mudou. Lista completa em `/notificacoes`, `/admin/notificacoes` e `/portaria/notificacoes`.
 
+## Notificações no celular e instalar o app
+
+Regras puras em `src/lib/push.ts`; servidor em `src/server/push.ts` e `src/server/acoes/push.ts`; tela em `src/components/app/ativar-app.tsx`; service worker em `public/sw.js`.
+
+- **Ao entrar** (morador, gestão e portaria), uma janela pede para **permitir as notificações** e mostra como **instalar o app** (no Android/Chrome/Edge, o botão usa o pedido de instalação do navegador; no iPhone, explica "Compartilhar → Adicionar à Tela de Início" — lá as notificações só funcionam com o app instalado). Volta em toda sessão até as duas coisas estarem feitas; "Agora não" esconde até a próxima entrada. O sino também tem o botão "Receber no celular".
+- Ao permitir, o navegador cria a inscrição do aparelho (serviço do Google, Mozilla ou Apple) e o portal guarda em `condominiums/{c}/pushInscricoes/{hash}` com o `uid` de quem está logado. Já permitido: a inscrição é atualizada em silêncio a cada entrada. **Ao sair**, a tela de entrada cancela a inscrição do aparelho (celular dividido não recebe avisos da conta de outra pessoa).
+- As **chaves VAPID** (a assinatura do portal) são criadas sozinhas na primeira vez e guardadas em `config/webpush` (só o servidor; nenhuma variável de ambiente nova).
+- **Quando chega** (o envio roda depois de responder à pessoa, com `after`, e nunca derruba a ação):
+  - comunicado publicado → moradores e portaria;
+  - anúncio enviado ou editado → quem modera; anúncio aprovado, não aprovado ou removido → o autor;
+  - pedido de reserva → o responsável pela área (ou o síndico); reserva confirmada ou recusada → a casa;
+  - solicitação aberta → quem atende; mudança de situação ou resposta pública → a casa;
+  - visita autorizada → portaria;
+  - enquete publicada e votação oficial publicada → moradores.
+- Inscrição que o serviço diz não existir mais (404/410) é apagada no envio.
+
 ## Responsável pelas reservas
 
 - Perfil de equipe **`reservas`** ("Responsável pelas reservas"): entra com e-mail e senha e cai direto em `/admin/reservas` (sem o painel geral). Só vê a agenda e aprova/recusa pedidos.
 - Em **Configurar áreas**, o síndico escolhe **"Quem aprova os pedidos"** de cada área (síndico ou uma pessoa com perfil `reservas` ativa). Os pedidos daquela área vão para o sino dessa pessoa; na agenda aparece "Quem aprova: Shirley (você)". Se a pessoa for suspensa, os pedidos voltam a ir para o síndico.
 - Recusar um pedido (reserva, anúncio) exige um comentário para o morador; cancelar (não atender) uma solicitação também exige comentário, sempre visível para o morador.
+
+## Editar anúncio (classificados)
+
+O autor edita o próprio anúncio enquanto ele está aguardando, publicado ou não aprovado (`/classificados/{id}/editar`, botão em "Meus anúncios"). Ao salvar, o anúncio **sempre volta para "aguardando aprovação"** (sai do ar se estava publicado) e quem modera recebe o aviso — assim ninguém troca o texto de um anúncio já aprovado. Removido ou expirado não edita (cria outro).

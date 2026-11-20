@@ -4,6 +4,8 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  podeEditar,
+  precoParaCampo,
   DIAS_VALIDADE,
   calcularExpiraEm,
   contaComoAtivo,
@@ -171,5 +173,27 @@ describe("categoria Aluguel", () => {
     const r = esquemaAnuncio.safeParse({ titulo: "Casa para alugar", texto: "Dois quartos, perto da portaria.", categoria: "aluguel", preco: "900" });
     expect(r.success).toBe(true);
     if (r.success) expect(r.data.preco).toBe(90000);
+  });
+});
+
+describe("edição do anúncio", () => {
+  const agora = new Date("2026-11-20T12:00:00Z");
+  const futuro = new Date("2026-12-10T12:00:00Z");
+  const passado = new Date("2026-11-01T12:00:00Z");
+  it("edita enquanto aguarda, publicado no prazo ou não aprovado", () => {
+    expect(podeEditar("pendente", null, agora)).toBe(true);
+    expect(podeEditar("aprovado", futuro, agora)).toBe(true);
+    expect(podeEditar("rejeitado", null, agora)).toBe(true);
+  });
+  it("não edita removido nem expirado", () => {
+    expect(podeEditar("removido", null, agora)).toBe(false);
+    expect(podeEditar("aprovado", passado, agora)).toBe(false);
+    expect(podeEditar("expirado", null, agora)).toBe(false);
+  });
+  it("preço volta para o campo no formato brasileiro", () => {
+    expect(precoParaCampo(120050)).toBe("1.200,50");
+    expect(precoParaCampo(35000)).toBe("350,00");
+    expect(precoParaCampo(null)).toBe("");
+    expect(precoParaCampo(0)).toBe("");
   });
 });

@@ -13,6 +13,7 @@ import { FaixaPetalas } from "@/components/ui/painel";
 import { ENDERECO_LINHA } from "@/lib/condominio";
 import { Sino } from "@/components/notificacoes/sino";
 import { Assinatura } from "@/components/ui/assinatura";
+import { AtivarApp } from "@/components/app/ativar-app";
 
 type Item = ItemMenuSerializavel & { permissao: Permissao };
 
@@ -141,6 +142,7 @@ export default async function LayoutGestao({ children }: LayoutProps<"/">) {
         <Assinatura className="mt-10 lg:hidden" />
       </main>
       <Sincronizar montadaEm={horaDaMontagem()} />
+      <AtivarApp />
     </div>
   );
 }

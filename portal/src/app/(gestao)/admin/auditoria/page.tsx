@@ -99,6 +99,7 @@ const DESCRICAO: Record<string, { texto: string; icone: LucideIcon }> = {
   "enquete.votar": { texto: "Casa votou em enquete (opção não registrada)", icone: Vote },
   // Classificados
   "classificado.criar": { texto: "Enviou anúncio para aprovação", icone: Store },
+  "classificado.editar": { texto: "Editou anúncio (voltou para aprovação)", icone: Store },
   "classificado.aprovar": { texto: "Aprovou anúncio", icone: CircleCheck },
   "classificado.rejeitar": { texto: "Não aprovou anúncio", icone: CircleX },
   "classificado.remover": { texto: "Removeu anúncio", icone: Archive },

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Ban, ChevronRight, Megaphone, Plus, ShieldCheck, Store, UserRound } from "lucide-react";
+import { Ban, ChevronRight, Megaphone, Pencil, Plus, ShieldCheck, Store, UserRound } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { anunciosPublicados, meusAnuncios, type MeuAnuncio } from "@/server/dados/classificados";
 import { removerMeuAnuncio } from "@/server/acoes/classificados";
@@ -10,6 +10,7 @@ import {
   ROTULO_CATEGORIA,
   ehCategoria,
   formatarWhatsapp,
+  podeEditar,
   podeRemover,
   primeiroNome,
 } from "@/lib/classificados";
@@ -251,8 +252,17 @@ function MeusAnuncios({ anuncios, fuso, agora }: { anuncios: MeuAnuncio[]; fuso:
                     {a.situacao === "expirado" ? (
                       <p className="text-[0.88rem] text-ink-2">Quer anunciar de novo? Crie um anúncio novo em “Anunciar”.</p>
                     ) : null}
-                    {podeRemover(a.situacao, a.expiraEm, agora) ? (
-                      <div>
+                    {podeEditar(a.situacao, a.expiraEm, agora) || podeRemover(a.situacao, a.expiraEm, agora) ? (
+                      <div className="flex flex-wrap gap-2">
+                        {podeEditar(a.situacao, a.expiraEm, agora) ? (
+                          <Link
+                            href={`/classificados/${a.id}/editar`}
+                            className="saltado inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-[0.9rem] font-bold text-pine active:shadow-afundado"
+                          >
+                            <Pencil aria-hidden className="size-4" /> {a.situacao === "rejeitado" ? "Corrigir e reenviar" : "Editar"}
+                          </Link>
+                        ) : null}
+                        {podeRemover(a.situacao, a.expiraEm, agora) ? (
                         <AcaoConfirmada
                           acao={removerMeuAnuncio}
                           campos={{ id: a.id }}
@@ -263,6 +273,7 @@ function MeusAnuncios({ anuncios, fuso, agora }: { anuncios: MeuAnuncio[]; fuso:
                         >
                           <Ban aria-hidden className="size-4" /> Remover
                         </AcaoConfirmada>
+                        ) : null}
                       </div>
                     ) : null}
                   </>

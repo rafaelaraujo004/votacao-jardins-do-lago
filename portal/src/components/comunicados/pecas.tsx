@@ -117,24 +117,25 @@ export function CartaoComunicado({
     <Link
       href={href}
       className={cx(
-        "flex items-start gap-3 rounded-[var(--radius-card)] border p-4 shadow-card transition-shadow active:shadow-afundado",
+        // Celular: mais compacto (menos espaço, resumo em 2 linhas); telas maiores como antes.
+        "flex items-start gap-2.5 rounded-[var(--radius-card)] border p-3 shadow-card transition-shadow active:shadow-afundado sm:gap-3 sm:p-4",
         urgente ? "border-danger bg-danger-soft" : "border-borda-luz bg-surface",
       )}
     >
       {foto ? (
         // eslint-disable-next-line @next/next/no-img-element -- foto protegida do portal (sem otimizador de imagem)
-        <img src={foto} alt="" loading="lazy" decoding="async" className="size-16 shrink-0 rounded-[14px] bg-surface-2 object-cover" />
+        <img src={foto} alt="" loading="lazy" decoding="async" className="size-12 shrink-0 rounded-[12px] bg-surface-2 object-cover sm:size-16 sm:rounded-[14px]" />
       ) : (
         <span
           className={cx(
-            "grid size-11 shrink-0 place-items-center rounded-[14px]",
+            "grid size-9 shrink-0 place-items-center rounded-[12px] sm:size-11 sm:rounded-[14px]",
             urgente ? "bg-surface text-danger" : "bg-sand text-texto-areia",
           )}
         >
-          {urgente ? <TriangleAlert aria-hidden className="size-6" /> : <Megaphone aria-hidden className="size-6" />}
+          {urgente ? <TriangleAlert aria-hidden className="size-5 sm:size-6" /> : <Megaphone aria-hidden className="size-5 sm:size-6" />}
         </span>
       )}
-      <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+      <span className="flex min-w-0 flex-1 flex-col gap-1 sm:gap-1.5">
         {extra || urgente || fixado || novo ? (
           <span className="flex flex-wrap gap-1.5">
             {extra}
@@ -143,11 +144,11 @@ export function CartaoComunicado({
             {novo ? <EtiquetaNovo /> : null}
           </span>
         ) : null}
-        <b className="break-words font-display text-[1.08rem] leading-snug text-ink">{titulo}</b>
-        <span className="break-words text-[0.95rem] text-ink-2">{resumir(texto, 140)}</span>
-        {data ? <span className="text-[0.84rem] text-muted">{data}</span> : null}
+        <b className="break-words font-display text-[1rem] leading-snug text-ink sm:text-[1.08rem]">{titulo}</b>
+        <span className="line-clamp-2 break-words text-[0.9rem] leading-snug text-ink-2 sm:line-clamp-none sm:text-[0.95rem]">{resumir(texto, 140)}</span>
+        {data ? <span className="text-[0.8rem] text-muted sm:text-[0.84rem]">{data}</span> : null}
       </span>
-      <ChevronRight aria-hidden className="mt-1 size-5 shrink-0 text-muted" />
+      <ChevronRight aria-hidden className="mt-0.5 size-5 shrink-0 text-muted sm:mt-1" />
     </Link>
   );
 }

@@ -73,7 +73,11 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
-    return [{ source: "/:path*", headers: cabecalhosDeSeguranca }];
+    return [
+      { source: "/:path*", headers: cabecalhosDeSeguranca },
+      // Service worker das notificações: o navegador sempre confere se há versão nova.
+      { source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache, max-age=0" }] },
+    ];
   },
 };
 
