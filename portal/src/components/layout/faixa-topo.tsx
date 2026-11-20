@@ -68,11 +68,12 @@ export function FaixaTopo({
         </p>
       ) : null}
       {/*
-        Celular: a marca (logo + nome) ocupa a linha de cima inteira e os botões
-        descem para uma segunda linha, à direita. Assim o nome nunca fica espremido.
-        Telas maiores: tudo numa linha só.
+        Celular: em cima a marca (logo + nome, endereço e "Portal dos moradores");
+        embaixo uma barra de largura inteira, separada por um fio: "Casa 12" à
+        esquerda e os botões redondos (sino, tema, sair) à direita.
+        Telas maiores: tudo numa linha só, com "Casa 12" logo antes do "Sair".
       */}
-      <div className={cx("relative mx-auto flex flex-wrap items-center gap-x-3 gap-y-2.5 px-4 pb-16", demo ? "pt-2" : "pt-4", largura)}>
+      <div className={cx("relative mx-auto flex flex-wrap items-center gap-x-3 gap-y-3 px-4 pb-16", demo ? "pt-2" : "pt-4", largura)}>
         <div className="flex min-w-0 flex-1 basis-[15rem] items-center gap-3">
           <Logo largura={64} className="shrink-0" />
           <div className="flex min-w-0 flex-1 flex-col leading-tight">
@@ -81,17 +82,19 @@ export function FaixaTopo({
             {subtitulo ? <span className="mt-0.5 truncate text-[0.84rem] font-bold text-band-fg/90">{subtitulo}</span> : null}
           </div>
         </div>
-        <div className="ml-auto flex shrink-0 items-center gap-2">
-        {botoes}
-        {contaHref ? (
-          <Link href={contaHref} title="Trocar senha" className={cx("grid size-11 place-items-center rounded-full", classeBotaoFaixa)}>
-            <KeyRound aria-hidden className="size-5" />
-            <span className="sr-only">Trocar senha</span>
-          </Link>
-        ) : null}
-        <BotaoTema className={classeBotaoFaixa} />
-        {sessao ? <ChipCasa rotulo={sessao.rotulo} /> : null}
-        <BotaoSair redondo className={classeBotaoFaixa} />
+        <div className="flex w-full items-center justify-end gap-2 border-t border-white/15 pt-3 sm:ml-auto sm:w-auto sm:shrink-0 sm:border-0 sm:pt-0">
+          {sessao ? <ChipCasa rotulo={sessao.rotulo} className="mr-auto sm:order-1 sm:mr-0" /> : null}
+          {botoes}
+          {contaHref ? (
+            <Link href={contaHref} title="Trocar senha" className={cx("grid size-11 place-items-center rounded-full", classeBotaoFaixa)}>
+              <KeyRound aria-hidden className="size-5" />
+              <span className="sr-only">Trocar senha</span>
+            </Link>
+          ) : null}
+          <BotaoTema className={classeBotaoFaixa} />
+          <div className="sm:order-2">
+            <BotaoSair redondo className={classeBotaoFaixa} />
+          </div>
         </div>
       </div>
       {children}
@@ -100,14 +103,14 @@ export function FaixaTopo({
 }
 
 /** "Casa 12": mostra de quem é a sessão aberta neste aparelho. Toque → "Minha conta" (trocar senha). */
-function ChipCasa({ rotulo }: { rotulo: string }) {
+function ChipCasa({ rotulo, className }: { rotulo: string; className?: string }) {
   return (
     <Link
       href="/conta/senha"
       title="Minha conta (trocar senha)"
-      className={cx("flex min-h-11 min-w-0 max-w-[9.5rem] items-center gap-1.5 rounded-full px-3 text-[0.9rem] font-bold", classeBotaoFaixa)}
+      className={cx("flex min-h-11 min-w-0 max-w-[12rem] items-center gap-1.5 rounded-full px-3.5 text-[0.95rem] font-bold sm:max-w-[9.5rem]", classeBotaoFaixa, className)}
     >
-      <House aria-hidden className="size-4 shrink-0 max-[380px]:hidden" />
+      <House aria-hidden className="size-4 shrink-0" />
       <span className="truncate">
         <span className="sr-only">Você entrou como </span>
         {rotulo}
