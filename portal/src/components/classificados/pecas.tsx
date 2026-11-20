@@ -10,6 +10,7 @@ import {
   Clock,
   Gift,
   Hourglass,
+  KeyRound,
   MessageCircle,
   Search,
   ShoppingBag,
@@ -33,6 +34,7 @@ type Tom = "ok" | "info" | "aviso" | "erro" | "neutro" | "destaque";
 
 export const ICONE_CATEGORIA: Record<CategoriaClassificado, LucideIcon> = {
   venda: ShoppingBag,
+  aluguel: KeyRound,
   servico: Wrench,
   doacao: Gift,
   procura: Search,
@@ -41,6 +43,7 @@ export const ICONE_CATEGORIA: Record<CategoriaClassificado, LucideIcon> = {
 
 const TOM_CATEGORIA: Record<CategoriaClassificado, Tom> = {
   venda: "info",
+  aluguel: "info",
   servico: "destaque",
   doacao: "ok",
   procura: "aviso",

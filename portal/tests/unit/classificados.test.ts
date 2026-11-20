@@ -165,3 +165,11 @@ describe("esquemas de moderação", () => {
     expect(esquemaMotivoAnuncio.safeParse({ id: "abc", motivo: "Produto proibido" }).success).toBe(true);
   });
 });
+
+describe("categoria Aluguel", () => {
+  it("é aceita, com preço (valor do aluguel)", () => {
+    const r = esquemaAnuncio.safeParse({ titulo: "Casa para alugar", texto: "Dois quartos, perto da portaria.", categoria: "aluguel", preco: "900" });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.preco).toBe(90000);
+  });
+});

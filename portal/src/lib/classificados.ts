@@ -10,11 +10,12 @@
 
 // ---------- Tipos e rótulos ----------
 
-export const CATEGORIAS_CLASSIFICADO = ["venda", "servico", "doacao", "procura", "outro"] as const;
+export const CATEGORIAS_CLASSIFICADO = ["venda", "aluguel", "servico", "doacao", "procura", "outro"] as const;
 export type CategoriaClassificado = (typeof CATEGORIAS_CLASSIFICADO)[number];
 
 export const ROTULO_CATEGORIA: Record<CategoriaClassificado, string> = {
   venda: "Venda",
+  aluguel: "Aluguel",
   servico: "Serviço",
   doacao: "Doação",
   procura: "Procura-se",
@@ -24,6 +25,7 @@ export const ROTULO_CATEGORIA: Record<CategoriaClassificado, string> = {
 /** Explicação curta de cada categoria (aparece no formulário). */
 export const DICA_CATEGORIA: Record<CategoriaClassificado, string> = {
   venda: "Algo que você quer vender",
+  aluguel: "Casa, quarto ou algo que você aluga (diga o valor e o período)",
   servico: "Um serviço que você oferece (aulas, consertos, bolos…)",
   doacao: "Algo que você quer doar de graça",
   procura: "Algo ou alguém que você está procurando",
