@@ -4,7 +4,6 @@ import Link from "next/link";
 import {
   CalendarDays,
   CalendarX2,
-  ChevronRight,
   FlaskConical,
 } from "lucide-react";
 import { exigirPermissao, type Contexto } from "@/server/contexto";
@@ -18,13 +17,15 @@ import { WidgetDocumentos } from "@/components/documentos/widget-inicio";
 import { WidgetClassificados } from "@/components/classificados/widget-inicio";
 import { mesesPublicados } from "@/server/dados/morador";
 import { eventosDoMes } from "@/server/dados/agenda";
-import { formatarMoeda, hojeISO, saudacao } from "@/lib/formato";
-import { nomeDoMes, type MesComSaldo } from "@/lib/financeiro";
+import { hojeISO, saudacao } from "@/lib/formato";
+import type { MesComSaldo } from "@/lib/financeiro";
 import { COR_EVENTO, mesCurto } from "@/lib/agenda";
 import { cx } from "@/lib/cx";
 import { Cartao, EstadoVazio, Etiqueta } from "@/components/ui/basicos";
 import { IlustracaoCondominio } from "@/components/ui/ilustracao-condominio";
-import { BlocoNumero, FaixaPetalas, TituloSecao, type TomModulo } from "@/components/ui/painel";
+import { FaixaPetalas, TituloSecao, type TomModulo } from "@/components/ui/painel";
+import { ResumoFinanceiroPainel } from "@/components/financeiro/resumo-painel";
+import { ResumoContasInicio } from "@/components/financeiro/resumo-inicio";
 import { EnderecoCopiavel } from "@/components/ui/endereco";
 import { Calendario } from "@/components/ui/calendario";
 import { AtalhoComAjuda } from "@/components/ui/atalho-com-ajuda";
@@ -61,12 +62,12 @@ const ATALHOS: {
   { icone: "KeyRound", titulo: "Trocar senha", href: "/conta/senha", tom: "lago", permissao: "area.morador", ajuda: "Troque a senha que você usa para entrar no portal. Use uma senha fácil de lembrar e difícil de adivinhar, e não passe para outras pessoas.", rotuloAbrir: "Trocar agora" },
 ];
 
-/** Último mês PUBLICADO, ou null se ainda não houver. */
-async function ultimoMesPublicado(ctx: Contexto): Promise<MesComSaldo | null | "erro"> {
+/** Meses PUBLICADOS (com saldo), para os valores e o gráfico do Início. null = o perfil não vê as contas. */
+async function mesesDoInicio(ctx: Contexto): Promise<MesComSaldo[] | null | "erro"> {
   // Perfil sem acesso à prestação de contas: o resumo simplesmente não aparece.
   if (!ctx.permissoes.has("financeiro.ver_publicado")) return null;
   try {
-    return (await mesesPublicados(ctx)).at(-1) ?? null;
+    return await mesesPublicados(ctx);
   } catch (erro) {
     // Se o financeiro falhar, a página inicial continua abrindo.
     console.error("Início: não foi possível carregar o resumo financeiro", erro);
@@ -79,44 +80,38 @@ function BlocoCarregando({ altura }: { altura: string }) {
   return <div aria-hidden className={cx("esqueleto w-full rounded-[var(--radius-card)]", altura)} />;
 }
 
-/** Resumo do último mês publicado (chega logo depois do resto da tela). */
-async function ResumoInicio({ ctx }: { ctx: Contexto }) {
-  const resumo = await ultimoMesPublicado(ctx);
-  return (
-  <section aria-labelledby="titulo-resumo">
-    {resumo && resumo !== "erro" ? (
-      <Link
-        href="/financeiro"
-        className="block rounded-[var(--radius-card)] border border-borda-luz bg-surface p-4 shadow-card transition-shadow active:shadow-afundado"
-      >
-        <div className="mb-3 flex items-baseline justify-between gap-3">
-          <h2 id="titulo-resumo" className="text-[1.1rem] font-bold text-destaque">
-            Resumo de {nomeDoMes(resumo.mes)}
-          </h2>
-          <span className="inline-flex shrink-0 items-center text-[0.88rem] font-bold text-pine">
-            Ver contas <ChevronRight aria-hidden className="size-4" />
-          </span>
-        </div>
-        {/* Em telas pequenas o saldo ocupa a linha toda; receitas e despesas ficam lado a lado. */}
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-          <BlocoNumero rotulo="Saldo" valor={formatarMoeda(resumo.saldoFinalCentavos)} cor="pine" className="col-span-2 sm:col-span-1" />
-          <BlocoNumero rotulo="Receitas" valor={formatarMoeda(resumo.receitasCentavos)} cor="lake" />
-          <BlocoNumero rotulo="Despesas" valor={formatarMoeda(resumo.despesasCentavos)} cor="plum" />
-        </div>
-      </Link>
-    ) : (
-      <Cartao className="p-4">
-        <h2 id="titulo-resumo" className="text-[1.1rem] font-bold text-destaque">
-          Prestação de contas
-        </h2>
-        <p className="mt-1 text-ink-2">
-          {resumo === "erro"
-            ? "Não foi possível carregar o resumo agora. Tente novamente mais tarde."
-            : "A primeira prestação de contas ainda não foi publicada."}
-        </p>
+/**
+ * Prestação de contas no Início: os valores do último mês PUBLICADO (saldo,
+ * receitas, despesas) e o gráfico do saldo dos últimos meses, só com o que os
+ * moradores podem ver. No celular, um cartão compacto que cabe na primeira tela;
+ * em telas maiores, o mesmo bloco do painel do síndico.
+ */
+async function ResumoInicio({ ctx, className }: { ctx: Contexto; className?: string }) {
+  const meses = await mesesDoInicio(ctx);
+  if (meses === null) return null;
+  if (meses === "erro") {
+    return (
+      <Cartao className={cx("p-4", className)}>
+        <h2 className="text-[1.1rem] font-bold text-destaque">Prestação de contas</h2>
+        <p className="mt-1 text-ink-2">Não foi possível carregar as contas agora. Tente novamente mais tarde.</p>
       </Cartao>
-    )}
-  </section>
+    );
+  }
+  return (
+    <div className={className}>
+      {/* Celular: cartão compacto (saldo, entradas, saídas e minigráfico) que cabe na primeira tela. */}
+      <ResumoContasInicio meses={meses} className="sm:hidden" />
+      {/* Telas maiores: o bloco completo, com os quatro números e o gráfico grande. */}
+      <div className="hidden sm:block">
+      <ResumoFinanceiroPainel
+        meses={meses}
+        mesAtual={hojeISO(new Date(), ctx.fuso).slice(0, 7)}
+        saldoInicialCentavos={meses[0]?.saldoAnteriorCentavos ?? 0}
+        visaoCompleta={false}
+        href="/financeiro"
+      />
+      </div>
+    </div>
   );
 }
 
@@ -200,19 +195,23 @@ export default async function InicioMorador() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Identidade: ilustração do condomínio + endereço */}
+      {/* Identidade (ilustração + endereço) e a PRESTAÇÃO DE CONTAS com gráfico, na primeira tela.
+          Celular: ilustração → contas → endereço. Telas maiores: ilustração | endereço e as contas embaixo. */}
       <div className="grid gap-4 sm:grid-cols-2">
         <section
           aria-label={ctx.condominioNome}
-          className="surgir overflow-hidden rounded-[var(--radius-card)] border border-borda-luz shadow-card"
+          className="surgir order-1 overflow-hidden rounded-[var(--radius-card)] border border-borda-luz shadow-card"
         >
           <FaixaPetalas />
           <IlustracaoCondominio />
         </section>
         {/* O endereço fica num cartão normal: assim acompanha o tema claro/escuro sem ficar estranho. */}
-        <Cartao aria-label="Endereço do condomínio" className="surgir flex flex-col justify-center p-4">
+        <Cartao aria-label="Endereço do condomínio" className="surgir order-3 flex flex-col justify-center p-4 sm:order-2">
           <EnderecoCopiavel />
         </Cartao>
+        <Suspense fallback={<BlocoCarregando altura="order-2 h-64 sm:order-3 sm:col-span-2 sm:h-96" />}>
+          <ResumoInicio ctx={ctx} className="order-2 sm:order-3 sm:col-span-2" />
+        </Suspense>
       </div>
 
       {/* Saudação */}
@@ -233,11 +232,6 @@ export default async function InicioMorador() {
       {/* Comunicados recentes (o urgente aparece cedo) */}
       <Suspense fallback={<BlocoCarregando altura="h-28" />}>
         <WidgetComunicados ctx={ctx} />
-      </Suspense>
-
-      {/* Resumo do último mês publicado */}
-      <Suspense fallback={<BlocoCarregando altura="h-40" />}>
-        <ResumoInicio ctx={ctx} />
       </Suspense>
 
       {/* Atalhos dos módulos */}
