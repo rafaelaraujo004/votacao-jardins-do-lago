@@ -1,0 +1,231 @@
+/**
+ * Lança a prestação de contas de UM MÊS a partir de um arquivo JSON (o relatório mensal
+ * passado a limpo), do mesmo jeito que a tela "Lançar no caixa": cada lançamento + total do
+ * mês + auditoria na mesma transação. Nada é apagado; o mês fica NÃO PUBLICADO (a
+ * administração confere na tela e publica). Com --publicar, publica também.
+ *
+ * Antes de gravar, confere as contas: subtotais e saldo final precisam bater com o relatório
+ * (saldo inicial + receitas − despesas = "saldoEsperado"). Se o mês já tiver lançamentos, recusa
+ * (evita lançar duas vezes).
+ *
+ * Os arquivos ficam em scripts/dados-financeiro/ (fora do git: o repositório é público).
+ *
+ * Uso (na pasta portal):
+ *   Simulador:  FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npx tsx scripts/lancar-prestacao.ts --arquivo scripts/dados-financeiro/2026-10.json --id jardins-do-lago-demo
+ *   Real:       npx tsx scripts/lancar-prestacao.ts --arquivo scripts/dados-financeiro/2026-10.json --conferir
+ *               npx tsx scripts/lancar-prestacao.ts --arquivo scripts/dados-financeiro/2026-10.json
+ */
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
+import { parseArgs } from "node:util";
+import { cert, initializeApp } from "firebase-admin/app";
+import { FieldValue, getFirestore, Timestamp } from "firebase-admin/firestore";
+import { CATEGORIAS_PADRAO, CHAVES_FORMA, REGEX_MES, type FormaPagamento, type TipoLancamento } from "../src/lib/financeiro";
+import { formatarMoeda, reaisParaCentavos } from "../src/lib/formato";
+
+const { values } = parseArgs({
+  options: { arquivo: { type: "string" }, id: { type: "string" }, conferir: { type: "boolean" }, publicar: { type: "boolean" } },
+});
+const ID = values.id ?? "jardins-do-lago";
+const SO_CONFERIR = values.conferir === true;
+const PUBLICAR = values.publicar === true;
+const SIMULADOR = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
+const QUEM = { uid: "script:lancar-prestacao", nome: "Prestação de contas lançada do relatório mensal (a pedido da administração)", papel: "admin" };
+
+function falhar(mensagem: string): never {
+  console.error(`\n✖ ${mensagem}\n`);
+  process.exit(1);
+}
+
+type Linha = { tipo: TipoLancamento; categoria: string; data: string; forma: FormaPagamento; valor: string; descricao: string };
+type Arquivo = {
+  fonte: string;
+  mes: string;
+  saldoInicial?: { valor: string; explicacao?: string };
+  saldoEsperado: string;
+  lancamentos: Linha[];
+  conferencia?: Record<string, string>;
+};
+
+function centavos(texto: string, onde: string): number {
+  const v = reaisParaCentavos(texto);
+  if (v === null) falhar(`Valor inválido em ${onde}: "${texto}"`);
+  return v;
+}
+
+// ---- Lê e confere o arquivo (antes de tocar no banco) ----
+if (!values.arquivo) falhar("Informe o arquivo: --arquivo scripts/dados-financeiro/2026-10.json");
+const dados = JSON.parse(readFileSync(path.resolve(values.arquivo), "utf8")) as Arquivo;
+if (!REGEX_MES.test(dados.mes)) falhar(`Mês inválido: ${dados.mes}`);
+const categoriasConhecidas = new Map(CATEGORIAS_PADRAO.map((c) => [c.id, c]));
+const linhas = dados.lancamentos.map((l, i) => {
+  const onde = `lançamento ${i + 1} ("${l.descricao}")`;
+  const cat = categoriasConhecidas.get(l.categoria) ?? falhar(`Categoria desconhecida em ${onde}: ${l.categoria}`);
+  if (cat.tipo !== l.tipo) falhar(`A categoria "${cat.nome}" não é de ${l.tipo} (${onde}).`);
+  if (!l.data.startsWith(dados.mes) || !/^\d{4}-\d{2}-\d{2}$/.test(l.data)) falhar(`Data fora do mês em ${onde}: ${l.data}`);
+  if (!(CHAVES_FORMA as readonly string[]).includes(l.forma)) falhar(`Forma de pagamento inválida em ${onde}: ${l.forma}`);
+  const descricao = l.descricao.trim();
+  if (descricao.length < 3 || descricao.length > 200) falhar(`Descrição com tamanho inválido em ${onde}.`);
+  const valor = centavos(l.valor, onde);
+  if (valor <= 0) falhar(`Valor precisa ser maior que zero em ${onde}.`);
+  return { ...l, descricao, valorCentavos: valor, categoriaNome: cat.nome };
+});
+const soma = (filtro: (l: (typeof linhas)[number]) => boolean) => linhas.filter(filtro).reduce((s, l) => s + l.valorCentavos, 0);
+const receitas = soma((l) => l.tipo === "receita");
+const despesas = soma((l) => l.tipo === "despesa");
+const saldoInicial = dados.saldoInicial ? centavos(dados.saldoInicial.valor, "saldoInicial") : null;
+const esperado = centavos(dados.saldoEsperado, "saldoEsperado");
+
+const conf = dados.conferencia ?? {};
+const checar = (rotulo: string, calculado: number, texto?: string) => {
+  if (texto === undefined) return;
+  const doRelatorio = centavos(texto, rotulo);
+  if (doRelatorio !== calculado) falhar(`${rotulo} não bate: relatório ${formatarMoeda(doRelatorio)}, somado ${formatarMoeda(calculado)}.`);
+};
+checar("Subtotal das despesas ordinárias", soma((l) => l.categoria === "despesas-ordinarias"), conf.subtotalOrdinarias);
+checar("Subtotal das despesas extraordinárias", soma((l) => l.categoria === "despesas-extraordinarias"), conf.subtotalExtraordinarias);
+checar("Total das despesas", despesas, conf.totalDespesas);
+checar("Total das receitas", receitas, conf.totalReceitas);
+
+// ---- Conecta (simulador ou Firebase real) ----
+let projectId: string;
+if (SIMULADOR) {
+  projectId = "demo-jardins";
+  initializeApp({ projectId });
+} else {
+  const ARQUIVO_ENV = path.resolve(import.meta.dirname, "..", ".env.production.local");
+  if (existsSync(ARQUIVO_ENV)) process.loadEnvFile?.(ARQUIVO_ENV);
+  projectId = process.env.FIREBASE_PROJECT_ID ?? "";
+  if (!projectId || projectId.startsWith("demo-")) falhar("Configure o Firebase real (.env.production.local).");
+  initializeApp({
+    projectId,
+    credential: cert({
+      projectId,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+    }),
+  });
+}
+const db = getFirestore();
+
+async function main() {
+  const c = db.collection("condominiums").doc(ID);
+  const mes = dados.mes;
+
+  const resultado = await db.runTransaction(async (tx) => {
+    const condominio = await tx.get(c);
+    if (!condominio.exists) falhar(`O condomínio "${ID}" não existe no projeto ${projectId}.`);
+    if (!SIMULADOR && condominio.get("demo") === true) falhar(`"${ID}" é uma demonstração; este uso é para o condomínio real.`);
+
+    const [resumo, publicados, doMes] = await Promise.all([
+      tx.get(c.collection("monthlySummaries").doc(mes)),
+      tx.get(c.collection("monthlySummaries").where("publicado", "==", true)),
+      tx.get(c.collection("financialEntries").where("mes", "==", mes)),
+    ]);
+    if (resumo.get("publicado") === true) falhar(`A prestação de ${mes} já foi publicada.`);
+    const posterior = publicados.docs.find((d) => d.id > mes);
+    if (posterior) falhar(`${posterior.id} já foi publicado; ${mes} está fechado.`);
+    if (!doMes.empty) falhar(`${mes} já tem ${doMes.size} lançamento(s). Para não lançar duas vezes, nada foi gravado.`);
+
+    // Saldo inicial: grava se ainda não existe; se existe, precisa ser o mesmo.
+    const atualSaldo = condominio.get("financeiro.saldoInicialCentavos") as number | undefined;
+    const atualMes = condominio.get("financeiro.mesInicial") as string | undefined;
+    let gravarSaldo = false;
+    if (saldoInicial !== null) {
+      if (atualMes === undefined) {
+        if (!publicados.empty) falhar("Já existe mês publicado; o saldo inicial não pode mais mudar.");
+        const anteriores = await tx.get(c.collection("financialEntries").where("mes", "<", mes).limit(1));
+        if (!anteriores.empty) falhar(`Há lançamentos antes de ${mes}: o saldo inicial não pode começar em ${mes}.`);
+        gravarSaldo = true;
+      } else if (atualMes !== mes || atualSaldo !== saldoInicial) {
+        falhar(`O saldo inicial já está configurado (${formatarMoeda(atualSaldo ?? 0)} a partir de ${atualMes}); o arquivo diz ${formatarMoeda(saldoInicial)} em ${mes}.`);
+      }
+    }
+    const saldoAnterior = saldoInicial ?? atualSaldo ?? 0;
+    const saldoFinal = saldoAnterior + receitas - despesas;
+    // Só confere com o relatório quando este é o primeiro mês (sem meses anteriores no portal).
+    const primeiroMes = (atualMes ?? mes) === mes;
+    if (primeiroMes && saldoFinal !== esperado) {
+      falhar(`Saldo final não bate: calculado ${formatarMoeda(saldoFinal)}, relatório ${formatarMoeda(esperado)}.`);
+    }
+
+    // Categorias usadas: cria as que faltam (mesmos nomes da tela).
+    const usadas = [...new Set(linhas.map((l) => l.categoria))].map((id) => categoriasConhecidas.get(id)!);
+    const docsCat = await tx.getAll(...usadas.map((cat) => c.collection("financialCategories").doc(cat.id)));
+    const criar = usadas.filter((_, i) => !docsCat[i].exists);
+    const inativas = usadas.filter((_, i) => docsCat[i].exists && docsCat[i].get("ativa") === false);
+    if (inativas.length) falhar(`Categoria desativada: ${inativas.map((x) => x.nome).join(", ")}.`);
+
+    console.log(`\nProjeto ${projectId}${SIMULADOR ? " (SIMULADOR)" : ""} · condomínio ${ID} · mês ${mes}`);
+    console.log(`Fonte: ${dados.fonte}`);
+    console.log(`Saldo inicial: ${formatarMoeda(saldoAnterior)}${gravarSaldo ? " (será configurado agora)" : " (já configurado)"}`);
+    console.log(`Receitas: ${formatarMoeda(receitas)} · Despesas: ${formatarMoeda(despesas)} · Saldo final: ${formatarMoeda(saldoFinal)}`);
+    console.log(`Lançamentos: ${linhas.length} · categorias a criar: ${criar.map((x) => x.nome).join(", ") || "nenhuma"}`);
+    console.log(PUBLICAR ? "Depois de lançar: PUBLICA o mês para os moradores." : "O mês fica NÃO PUBLICADO (a administração confere e publica na tela).");
+    if (SO_CONFERIR) return { gravou: false };
+
+    const audit = (acao: string, alvo: string | null, detalhes: Record<string, string | number | boolean | null>) =>
+      tx.create(c.collection("auditLogs").doc(), {
+        condominioId: ID,
+        uid: QUEM.uid,
+        nome: QUEM.nome,
+        papel: QUEM.papel,
+        acao,
+        alvo,
+        detalhes,
+        criadoEm: FieldValue.serverTimestamp(),
+      });
+
+    for (const cat of criar) {
+      tx.create(c.collection("financialCategories").doc(cat.id), { nome: cat.nome, tipo: cat.tipo, ordem: cat.ordem, ativa: true });
+    }
+    if (criar.length) audit("financeiro.categoria", null, { criadas: criar.length });
+    if (gravarSaldo) {
+      tx.set(c, { financeiro: { saldoInicialCentavos: saldoInicial, mesInicial: mes } }, { merge: true });
+      audit("financeiro.configurar", null, { saldoInicialCentavos: saldoInicial, mesInicial: mes });
+    }
+    // A lista do portal mostra do mais novo para o mais antigo (mesma data → hora do lançamento).
+    // Um segundo de diferença entre eles mantém a ordem do relatório (o 1º do arquivo aparece primeiro).
+    const agora = Date.now();
+    for (const [i, l] of linhas.entries()) {
+      const ref = c.collection("financialEntries").doc();
+      tx.create(ref, {
+        tipo: l.tipo,
+        categoriaId: l.categoria,
+        categoriaNome: l.categoriaNome,
+        valorCentavos: l.valorCentavos,
+        data: l.data,
+        mes,
+        forma: l.forma,
+        descricao: l.descricao,
+        publicado: PUBLICAR,
+        estornaId: null,
+        estornadoPor: null,
+        criadoPor: QUEM.uid,
+        criadoPorNome: QUEM.nome,
+        criadoEm: Timestamp.fromMillis(agora - i * 1000),
+      });
+      audit("financeiro.lancar", `financialEntries/${ref.id}`, { tipo: l.tipo, valorCentavos: l.valorCentavos, data: l.data, categoria: l.categoria });
+    }
+    tx.set(
+      c.collection("monthlySummaries").doc(mes),
+      {
+        receitasCentavos: FieldValue.increment(receitas),
+        despesasCentavos: FieldValue.increment(despesas),
+        quantidade: FieldValue.increment(linhas.length),
+        publicado: PUBLICAR,
+        atualizadoEm: FieldValue.serverTimestamp(),
+        ...(PUBLICAR ? { publicadoEm: FieldValue.serverTimestamp(), publicadoPor: QUEM.uid } : {}),
+      },
+      { merge: true },
+    );
+    if (PUBLICAR) audit("financeiro.publicar", `monthlySummaries/${mes}`, { mes, lancamentos: linhas.length });
+    // Avisa as telas abertas que o financeiro mudou (mesmo documento que o portal usa).
+    tx.set(c.collection("sistema").doc("sinais"), { financeiro: FieldValue.serverTimestamp() }, { merge: true });
+    return { gravou: true };
+  });
+
+  console.log(resultado.gravou ? `\n✔ ${linhas.length} lançamentos gravados em ${mes}.\n` : "\n(Só conferência: nada foi gravado.)\n");
+}
+
+main().catch((e) => falhar(e instanceof Error ? e.message : String(e)));

@@ -50,3 +50,6 @@ ui-debug.log
 # acessos gerados pelos scripts (contêm senha)
 .acesso-inicial.txt
 .acesso-demo.txt
+
+# relatórios financeiros reais (o repositório é público: os valores ficam só neste computador)
+scripts/dados-financeiro/

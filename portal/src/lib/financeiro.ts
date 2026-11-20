@@ -8,6 +8,9 @@ export const CATEGORIAS_PADRAO: { id: string; nome: string; tipo: TipoLancamento
   { id: "contribuicoes", nome: "Contribuições dos moradores", tipo: "receita", ordem: 1 },
   { id: "taxas-extras", nome: "Taxas extras", tipo: "receita", ordem: 2 },
   { id: "outras-receitas", nome: "Outras receitas", tipo: "receita", ordem: 3 },
+  // As duas colunas do relatório mensal do Jardins do Lago (ordinária × extraordinária).
+  { id: "despesas-ordinarias", nome: "Despesas ordinárias", tipo: "despesa", ordem: 4 },
+  { id: "despesas-extraordinarias", nome: "Despesas extraordinárias", tipo: "despesa", ordem: 5 },
   { id: "energia", nome: "Energia elétrica", tipo: "despesa", ordem: 10 },
   { id: "agua", nome: "Água", tipo: "despesa", ordem: 11 },
   { id: "limpeza", nome: "Limpeza", tipo: "despesa", ordem: 12 },

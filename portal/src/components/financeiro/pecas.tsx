@@ -251,7 +251,9 @@ export function ListaLancamentos({ lancamentos, acao }: { lancamentos: Lancament
                 </span>
               </div>
               <p className="mt-0.5 text-[0.86rem] text-muted">
-                {dataISOParaBR(l.data)} · {l.categoriaNome} · {FORMAS_PAGAMENTO[l.forma] ?? l.forma}
+                {dataISOParaBR(l.data)} · {l.categoriaNome}
+                {/* "Outro" não diz nada a quem lê: só mostra a forma quando ela é conhecida. */}
+                {l.forma !== "outro" ? ` · ${FORMAS_PAGAMENTO[l.forma] ?? l.forma}` : ""}
                 {l.criadoPorNome ? ` · lançado por ${l.criadoPorNome}` : ""}
               </p>
               <span className="sr-only">{entrada ? "Entrada de dinheiro" : "Saída de dinheiro"}</span>

@@ -96,6 +96,12 @@ Uma fase só é "concluída" com: tela funcionando, validação, integração re
 - Painel do síndico: card **"Casas sem acesso"** (casas ativas sem login) completando a grade.
 - Início no celular: cartões de comunicado, endereço, PIX e ronda mais compactos.
 
+## Prestação de contas do relatório mensal (20/11/2026)
+
+- Categorias **Despesas ordinárias** e **Despesas extraordinárias** (as duas colunas do relatório mensal do Jardins do Lago).
+- `scripts/lancar-prestacao.ts`: lança um mês inteiro a partir do relatório passado a limpo (JSON em `scripts/dados-financeiro/`, fora do git porque o repositório é público). Confere subtotais e saldo antes de gravar e recusa mês que já tem lançamentos. Outubro/2026 lançado (não publicado).
+- Topo no celular reorganizado; textos dizem "Residencial Jardins do Lago" em vez de "condomínio".
+
 ## O que falta
 
 - **Login dos moradores**: pronto no código; falta testar no Firebase real com um morador de teste (o simulador já aceitou o e-mail sintético `.invalid`).
