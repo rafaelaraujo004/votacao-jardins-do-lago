@@ -155,11 +155,18 @@ function Desenho({ pontos, m, rotulo, className }: { pontos: PontoSaldo[]; m: Me
 }
 
 /** Gráfico em cartão afundado. Com menos de 2 meses mostra só uma mensagem. */
-export function GraficoSaldo({ pontos }: { pontos: PontoSaldo[] }) {
+export function GraficoSaldo({
+  pontos,
+  mensagemVazia = "O gráfico aparece quando houver pelo menos dois meses publicados.",
+}: {
+  pontos: PontoSaldo[];
+  /** Texto quando ainda não há meses suficientes (o painel da gestão conta também os não publicados). */
+  mensagemVazia?: string;
+}) {
   if (pontos.length < 2) {
     return (
       <div className="afundado rounded-[var(--radius-card)] px-4 py-6 text-center text-ink-2">
-        O gráfico aparece quando houver pelo menos dois meses publicados.
+        {mensagemVazia}
       </div>
     );
   }

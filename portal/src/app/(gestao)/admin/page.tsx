@@ -6,7 +6,12 @@ import { resumoDoCondominio } from "@/server/dados/gestao";
 import { numerosDasSolicitacoes } from "@/server/dados/solicitacoes";
 import { numerosClassificados } from "@/server/dados/classificados";
 import { numerosDaAgenda } from "@/server/dados/reservas";
+import { informacoesDoCondominio } from "@/server/dados/informacoes";
+import { configFinanceira, mesesComSaldo } from "@/server/dados/financeiro";
 import type { Permissao } from "@/lib/permissoes";
+import { hojeISO } from "@/lib/formato";
+import { InformacoesUteisPainel } from "@/components/informacoes/informacoes-uteis-painel";
+import { ResumoFinanceiroPainel } from "@/components/financeiro/resumo-painel";
 import { Etiqueta, TituloPagina } from "@/components/ui/basicos";
 import { BlocoNumero, TituloSecao, type TomModulo } from "@/components/ui/painel";
 import { AtalhoComAjuda } from "@/components/ui/atalho-com-ajuda";
@@ -78,9 +83,30 @@ async function pendenciasDo(ctx: Contexto): Promise<Pendencia[]> {
   return lista;
 }
 
+/** Prestação de contas do painel: completa para quem vê tudo, só os meses publicados para os demais. */
+async function financeiroDo(ctx: Contexto) {
+  const completa = ctx.permissoes.has("financeiro.ver");
+  if (!completa && !ctx.permissoes.has("financeiro.ver_publicado")) return null;
+  const [meses, config] = await Promise.all([mesesComSaldo(ctx), configFinanceira(ctx)]);
+  return {
+    meses,
+    saldoInicialCentavos: config.saldoInicialCentavos,
+    completa,
+    // A tela completa (/admin/financeiro) exige "financeiro.ver"; sem ela, o painel não mostra o link.
+    href: completa ? "/admin/financeiro" : null,
+  };
+}
+
 export default async function PainelGestao() {
   const ctx = await exigirPermissao("area.gestao");
-  const [resumo, pendencias] = await Promise.all([resumoDoCondominio(ctx), pendenciasDo(ctx)]);
+  const [resumo, pendencias, info, financeiro] = await Promise.all([
+    resumoDoCondominio(ctx),
+    pendenciasDo(ctx),
+    // Se uma destas leituras falhar, o painel continua abrindo sem o bloco.
+    ctx.permissoes.has("informacoes.ver") ? semFalhar("as informações do condomínio", () => informacoesDoCondominio(ctx)) : null,
+    semFalhar("a prestação de contas", () => financeiroDo(ctx)),
+  ]);
+  const mesAtual = hojeISO(new Date(), ctx.fuso).slice(0, 7);
   const somenteConsulta = !ctx.permissoes.has("unidades.gerenciar");
   // Só mostra os atalhos que o perfil pode usar.
   const atalhos = ATALHOS.filter((a) => ctx.permissoes.has(a.permissao) && (!a.alemDe || ctx.permissoes.has(a.alemDe)));
@@ -128,6 +154,18 @@ export default async function PainelGestao() {
           />
         </div>
       </section>
+
+      {info ? <InformacoesUteisPainel info={info} podeEditar={ctx.permissoes.has("informacoes.gerenciar")} /> : null}
+
+      {financeiro ? (
+        <ResumoFinanceiroPainel
+          meses={financeiro.meses}
+          mesAtual={mesAtual}
+          saldoInicialCentavos={financeiro.saldoInicialCentavos}
+          visaoCompleta={financeiro.completa}
+          href={financeiro.href}
+        />
+      ) : null}
 
       {atalhos.length ? (
         <section aria-labelledby="titulo-atalhos" className="flex flex-col gap-3">
