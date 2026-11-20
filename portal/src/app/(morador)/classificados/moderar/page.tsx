@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { LinkVoltarFaixa } from "@/components/ui/link-voltar";
 import { exigirPermissao } from "@/server/contexto";
 import { filaModeracao } from "@/server/dados/classificados";
 import { CabecalhoPagina } from "@/components/ui/painel";
@@ -19,9 +18,7 @@ export default async function ModerarClassificados() {
 
   return (
     <div className="flex flex-col gap-5">
-      <Link href="/classificados" className="flex min-h-11 w-fit items-center gap-1.5 font-bold text-lake">
-        <ArrowLeft aria-hidden className="size-4" /> Classificados
-      </Link>
+      <LinkVoltarFaixa href="/classificados">Classificados</LinkVoltarFaixa>
       <CabecalhoPagina
         sobretitulo="Moderação"
         titulo="Moderar classificados"

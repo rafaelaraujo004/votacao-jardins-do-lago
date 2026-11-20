@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { LinkVoltarFaixa } from "@/components/ui/link-voltar";
 import { notFound } from "next/navigation";
-import { ArrowLeft, CalendarDays } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { obterPublicado } from "@/server/dados/comunicados";
 import { idDocumento } from "@/lib/validacao";
@@ -24,9 +24,7 @@ export default async function ComunicadoMorador({ params }: { params: Promise<{ 
 
   return (
     <div className="flex flex-col gap-5">
-      <Link href="/comunicados" className="flex min-h-11 w-fit items-center gap-1.5 font-bold text-lake">
-        <ArrowLeft aria-hidden className="size-4" /> Todos os comunicados
-      </Link>
+      <LinkVoltarFaixa href="/comunicados">Todos os comunicados</LinkVoltarFaixa>
 
       <Cartao className={cx(c.prioridade === "urgente" && "border-danger")}>
         <article className="flex flex-col gap-3">

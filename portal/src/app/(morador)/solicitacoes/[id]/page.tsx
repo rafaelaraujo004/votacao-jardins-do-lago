@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { LinkVoltarFaixa } from "@/components/ui/link-voltar";
 import { notFound } from "next/navigation";
-import { ArrowLeft, XCircle } from "lucide-react";
+import { XCircle } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { solicitacaoDaMinhaCasa } from "@/server/dados/solicitacoes";
 import { cancelarSolicitacao } from "@/server/acoes/solicitacoes";
@@ -26,9 +26,7 @@ export default async function SolicitacaoMorador({ params }: { params: Promise<{
 
   return (
     <div className="flex flex-col gap-5">
-      <Link href="/solicitacoes" className="flex min-h-11 w-fit items-center gap-1.5 font-bold text-lake">
-        <ArrowLeft aria-hidden className="size-4" /> Minhas solicitações
-      </Link>
+      <LinkVoltarFaixa href="/solicitacoes">Minhas solicitações</LinkVoltarFaixa>
 
       <CabecalhoPagina sobretitulo="Solicitação" titulo={`Protocolo ${s.protocolo}`} subtitulo="Guarde este número para falar com a administração." />
 

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LinkVoltarFaixa } from "@/components/ui/link-voltar";
 import {
   AlarmClock,
-  ArrowLeft,
   CalendarRange,
   CalendarX2,
   ChevronRight,
@@ -224,9 +224,7 @@ export default async function ReservasMorador({ searchParams }: PageProps<"/rese
 
   return (
     <div className="flex flex-col gap-5">
-      <Link href="/reservas" className="flex min-h-11 w-fit items-center gap-1.5 font-bold text-lake">
-        <ArrowLeft aria-hidden className="size-4" /> Todas as áreas
-      </Link>
+      <LinkVoltarFaixa href="/reservas">Todas as áreas</LinkVoltarFaixa>
       {cabecalho}
       {semCasa}
       {aviso}

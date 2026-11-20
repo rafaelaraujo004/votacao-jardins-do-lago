@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { LinkVoltarFaixa } from "@/components/ui/link-voltar";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Download, EyeOff } from "lucide-react";
+import { Download, EyeOff } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { obterEleicaoMorador } from "@/server/dados/eleicoes";
 import { casas, diaMes, participacao } from "@/lib/enquetes";
@@ -45,12 +45,7 @@ export default async function EleicaoMoradorPagina({
 
   return (
     <div className="flex flex-col gap-5">
-      <Link
-        href="/votacao"
-        className="flex min-h-11 w-fit items-center gap-1.5 font-bold text-lake"
-      >
-        <ArrowLeft aria-hidden className="size-4" /> Votação oficial
-      </Link>
+      <LinkVoltarFaixa href="/votacao">Votação oficial</LinkVoltarFaixa>
 
       <CabecalhoPagina
         sobretitulo={e.cargo}

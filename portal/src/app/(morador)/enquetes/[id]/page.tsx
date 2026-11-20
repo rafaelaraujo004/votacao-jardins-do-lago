@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { LinkVoltarFaixa } from "@/components/ui/link-voltar";
 import { notFound } from "next/navigation";
-import { ArrowLeft, CalendarClock, EyeOff } from "lucide-react";
+import { CalendarClock, EyeOff } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { obterEnqueteMorador } from "@/server/dados/enquetes";
 import { diaMes } from "@/lib/enquetes";
@@ -31,9 +31,7 @@ export default async function EnqueteMoradorPagina({ params }: { params: Promise
 
   return (
     <div className="flex flex-col gap-5">
-      <Link href="/enquetes" className="flex min-h-11 w-fit items-center gap-1.5 font-bold text-lake">
-        <ArrowLeft aria-hidden className="size-4" /> Enquetes
-      </Link>
+      <LinkVoltarFaixa href="/enquetes">Enquetes</LinkVoltarFaixa>
 
       <CabecalhoPagina sobretitulo="Enquete" titulo={e.pergunta} subtitulo={e.descricao || undefined}>
         <div className="mt-3 flex flex-wrap items-center gap-2">
