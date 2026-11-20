@@ -293,6 +293,10 @@ export async function importarMoradoresDaLista(_: Resultado, dados: FormData): P
             permissoesExtras: [],
             permissoesNegadas: [],
             origem: "lista-contatos",
+            // Casa e nome como vieram da lista: se o síndico corrigir e depois excluir,
+            // a anotação de "excluído" ainda bate com a lista.
+            listaUnitId: p.unitId,
+            listaChave: normalizarNome(p.nome),
             criadoPor: ctx.uid,
             criadoEm: FieldValue.serverTimestamp(),
           });
@@ -400,20 +404,33 @@ export async function excluirPessoa(_: Resultado, dados: FormData): Promise<Resu
         const expira = (d.get("expiraEm") as { toMillis?: () => number } | null)?.toMillis?.() ?? 0;
         return status === "pendente" || (status === "aprovado" && expira > agora);
       });
+      // Áreas de reserva em que ela era a responsável por aprovar: voltam para a administração.
+      const areas = await tx.get(cond.collection("amenities").where("responsavelUid", "==", v.uid));
 
       const nome = String(membro.get("nome") ?? "");
       const unitId = typeof membro.get("unitId") === "string" ? (membro.get("unitId") as string) : null;
 
       tx.delete(refMembro);
       if (refCodigo && indice?.exists && indice.get("uid") === v.uid) tx.delete(refCodigo);
-      // Morador excluído: anota a casa e o nome para "Trazer moradores da lista" não trazer de volta.
-      if (papel === "morador" && unitId) {
+      // Morador excluído: anota a casa e o nome (os atuais e, se veio da lista, os da lista)
+      // para "Trazer moradores da lista" não trazer de volta.
+      const anotar = new Map<string, Set<string>>();
+      const juntar = (casa: unknown, chave: unknown) => {
+        if (typeof casa !== "string" || !casa || typeof chave !== "string" || !chave) return;
+        anotar.set(casa, (anotar.get(casa) ?? new Set<string>()).add(chave));
+      };
+      if (papel === "morador") {
+        juntar(unitId, normalizarNome(nome));
+        juntar(membro.get("listaUnitId"), membro.get("listaChave"));
+      }
+      if (anotar.size) {
         tx.set(
           cond.collection("sistema").doc("importacaoMoradores"),
-          { excluidosPorCasa: { [unitId]: FieldValue.arrayUnion(normalizarNome(nome)) } },
+          { excluidosPorCasa: Object.fromEntries([...anotar].map(([casa, chaves]) => [casa, FieldValue.arrayUnion(...chaves)])) },
           { merge: true },
         );
       }
+      for (const a of areas.docs) tx.update(a.ref, { responsavelUid: null, responsavelNome: "" });
       for (const d of anunciosAtivos) {
         tx.update(d.ref, { status: "removido", motivo: "Cadastro excluído pela administração.", decididoEm: FieldValue.serverTimestamp() });
       }
@@ -447,9 +464,9 @@ export async function excluirPessoa(_: Resultado, dados: FormData): Promise<Resu
         papel: ctx.papel,
         acao: "membro.excluir",
         alvo: `members/${v.uid}`,
-        detalhes: { nome, papel, unitId },
+        detalhes: { nome, papel, unitId, anunciosRemovidos: anunciosAtivos.length, areasSemResponsavel: areas.size },
       });
-      return { nome, unitId, apagarConta };
+      return { nome, unitId, apagarConta, mexeuEmAreas: areas.size > 0 };
     });
 
     // Depois da transação: a conta de acesso some (ou, se estiver em outro condomínio, só é desconectada).
@@ -466,6 +483,9 @@ export async function excluirPessoa(_: Resultado, dados: FormData): Promise<Resu
     revalidatePath("/admin/pessoas");
     revalidatePath("/admin/unidades");
     if (r.unitId) revalidatePath(`/admin/unidades/${r.unitId}`);
-    return `Cadastro de ${r.nome || "pessoa"} excluído.`;
+    if (r.mexeuEmAreas) revalidatePath("/admin/reservas");
+    return r.mexeuEmAreas
+      ? `Cadastro de ${r.nome || "pessoa"} excluído. As áreas que essa pessoa aprovava voltaram para a administração.`
+      : `Cadastro de ${r.nome || "pessoa"} excluído.`;
   });
 }

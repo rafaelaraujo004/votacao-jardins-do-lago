@@ -23,7 +23,7 @@ export const metadata: Metadata = { title: "Painel" };
 const ATALHOS: { titulo: string; icone: NomeIconeAtalho; tom: TomModulo; permissao: Permissao; alemDe?: Permissao; href: string; ajuda: string }[] = [
   { titulo: "Votação oficial", icone: "Award", tom: "vinho", permissao: "eleicoes.gerenciar", href: "/admin/votacao", ajuda: "Eleição do condomínio com voto secreto. Aqui a comissão cria a votação, cadastra a chapa, publica, envia os links de voto pelo WhatsApp, bloqueia casas e acompanha no mapa quem já votou. O resultado aparece só depois do encerramento." },
   { titulo: "Unidades", icone: "Building2", tom: "verde", permissao: "unidades.ver", href: "/admin/unidades", ajuda: "Lista das casas do condomínio (número, quadra e se está ativa). É a base para moradores, votação, portaria e cobranças." },
-  { titulo: "Moradores e equipe", icone: "Users", tom: "lago", permissao: "moradores.ver", href: "/admin/pessoas", ajuda: "Quem tem acesso ao portal: moradores de cada casa, portaria, conselho e administração. Aqui você cria acessos, gera senha nova e ajusta permissões." },
+  { titulo: "Moradores e equipe", icone: "Users", tom: "lago", permissao: "moradores.ver", href: "/admin/pessoas", ajuda: "Moradores de cada casa (com ou sem acesso ao portal), portaria, conselho e administração. Aqui você edita e exclui cadastros, traz a lista de contatos, cria acessos, gera senha nova e ajusta permissões." },
   { titulo: "Lançar no caixa", icone: "ReceiptText", tom: "areia", permissao: "financeiro.lancar", href: "/admin/financeiro/novo", ajuda: "Atalho para registrar uma receita ou despesa do condomínio agora mesmo (taxa recebida, conta paga, compra)." },
   { titulo: "Prestação de contas", icone: "Landmark", tom: "areia", permissao: "financeiro.ver", href: "/admin/financeiro", ajuda: "Entradas e saídas de cada mês, saldo e categorias. Quando o mês estiver conferido, publique para os moradores verem." },
   { titulo: "Relatórios", icone: "ChartColumn", tom: "lago", permissao: "relatorios.ver", href: "/admin/relatorios", ajuda: "Gráficos e números do condomínio: financeiro, solicitações, reservas e portaria. Dá para baixar planilha." },
@@ -142,7 +142,12 @@ export default async function PainelGestao() {
         <h2 id="titulo-numeros" className="sr-only">Números do cadastro</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <BlocoNumero rotulo="Unidades" valor={resumo.unidades} detalhe="cadastradas" cor="pine" />
-          <BlocoNumero rotulo="Moradores" valor={resumo.pessoasPorPapel.morador} detalhe="com acesso" cor="lake" />
+          <BlocoNumero
+            rotulo="Moradores"
+            valor={resumo.pessoasPorPapel.morador}
+            detalhe={`cadastrados · ${resumo.moradoresComAcesso} com acesso`}
+            cor="lake"
+          />
           <BlocoNumero rotulo="Portaria" valor={resumo.pessoasPorPapel.portaria} detalhe="pessoas da equipe" cor="ink" />
           <BlocoNumero rotulo="Gestão" valor={gestao} detalhe="administração e conselho" cor="plum" />
           <BlocoNumero

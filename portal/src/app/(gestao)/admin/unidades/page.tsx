@@ -27,7 +27,8 @@ export default async function PaginaUnidades({ searchParams }: PageProps<"/admin
     : unidades;
 
   const ativas = unidades.filter((u) => u.status === "ativa").length;
-  const semMorador = unidades.filter((u) => u.status === "ativa" && !moradores.get(u.id)).length;
+  const semMorador = unidades.filter((u) => u.status === "ativa" && !moradores.get(u.id)?.cadastrados).length;
+  const semAcesso = unidades.filter((u) => u.status === "ativa" && !moradores.get(u.id)?.comAcesso).length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -36,7 +37,7 @@ export default async function PaginaUnidades({ searchParams }: PageProps<"/admin
         titulo="Unidades"
         descricao={
           unidades.length
-            ? `${unidades.length} unidades cadastradas · ${ativas} ativas · ${semMorador} sem morador com acesso`
+            ? `${unidades.length} unidades cadastradas · ${ativas} ativas · ${semMorador} sem morador cadastrado · ${semAcesso} sem ninguém com acesso ao portal`
             : "Cadastre as casas do condomínio para depois ligar os moradores a elas."
         }
       />
@@ -98,7 +99,7 @@ export default async function PaginaUnidades({ searchParams }: PageProps<"/admin
           ) : (
             <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {filtradas.map((u) => {
-                const qtd = moradores.get(u.id) ?? 0;
+                const { cadastrados: qtd, comAcesso } = moradores.get(u.id) ?? { cadastrados: 0, comAcesso: 0 };
                 return (
                   <li key={u.id}>
                     <Link
@@ -109,7 +110,9 @@ export default async function PaginaUnidades({ searchParams }: PageProps<"/admin
                         <p className="truncate font-bold">{u.rotulo}</p>
                         <p className="flex items-center gap-1 text-[0.9rem] text-muted">
                           <Users aria-hidden className="size-4" />
-                          {qtd === 0 ? "Sem morador com acesso" : qtd === 1 ? "1 morador" : `${qtd} moradores`}
+                          {qtd === 0
+                            ? "Sem morador cadastrado"
+                            : `${qtd === 1 ? "1 morador" : `${qtd} moradores`} · ${comAcesso === 0 ? "sem acesso" : `${comAcesso} com acesso`}`}
                         </p>
                       </div>
                       {u.status === "ativa" ? (

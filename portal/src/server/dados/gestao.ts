@@ -11,11 +11,14 @@ import type { Timestamp } from "firebase-admin/firestore";
 import { adminDb } from "../firebase-admin";
 import { garantirPermissao, type Contexto } from "../contexto";
 import { PAPEIS, type Papel } from "@/lib/permissoes";
+import { ehUsuarioValido } from "@/lib/usuario-morador";
 
 export type ResumoCondominio = {
   unidades: number;
   pessoasPorPapel: Record<Papel, number>;
   suspensos: number;
+  /** Moradores ativos que já têm usuário para entrar no portal (os outros só estão cadastrados). */
+  moradoresComAcesso: number;
 };
 
 export async function resumoDoCondominio(ctx: Contexto): Promise<ResumoCondominio> {
@@ -23,17 +26,20 @@ export async function resumoDoCondominio(ctx: Contexto): Promise<ResumoCondomini
   const base = adminDb().collection("condominiums").doc(ctx.condominioId);
   const membros = base.collection("members");
 
-  const [unidades, suspensos, ...porPapel] = await Promise.all([
+  const [unidades, suspensos, moradoresAtivos, ...porPapel] = await Promise.all([
     base.collection("units").count().get(),
     membros.where("status", "!=", "ativo").count().get(),
+    // Só o campo "usuario": diz se o morador já recebeu usuário para entrar.
+    membros.where("status", "==", "ativo").where("papel", "==", "morador").select("usuario").get(),
     ...PAPEIS.map((p) => membros.where("status", "==", "ativo").where("papel", "==", p).count().get()),
   ]);
 
   const pessoasPorPapel = Object.fromEntries(
     PAPEIS.map((p, i) => [p, porPapel[i].data().count]),
   ) as Record<Papel, number>;
+  const moradoresComAcesso = moradoresAtivos.docs.filter((d) => ehUsuarioValido(d.get("usuario"))).length;
 
-  return { unidades: unidades.data().count, pessoasPorPapel, suspensos: suspensos.data().count };
+  return { unidades: unidades.data().count, pessoasPorPapel, suspensos: suspensos.data().count, moradoresComAcesso };
 }
 
 export type LinhaAuditoria = {

@@ -3,6 +3,7 @@ import { adminDb } from "../firebase-admin";
 import { garantirPermissao, type Contexto } from "../contexto";
 import { paraUnidade } from "./unidades";
 import { ehPapel, ehPermissao, type Papel, type Permissao } from "@/lib/permissoes";
+import { ehUsuarioValido } from "@/lib/usuario-morador";
 import { planejarImportacao, type ContatoDaLista, type PlanoImportacao } from "@/lib/importar-moradores";
 
 export type Pessoa = {
@@ -111,14 +112,24 @@ export async function planoDeImportacao(ctx: Contexto): Promise<PlanoImportacao>
   });
 }
 
-/** Quantos moradores ativos cada casa tem (para a lista de unidades). */
-export async function contarMoradoresPorUnidade(ctx: Contexto): Promise<Map<string, number>> {
+export type MoradoresDaCasa = { cadastrados: number; comAcesso: number };
+
+/**
+ * Quantos moradores ativos cada casa tem (para a lista de unidades), separando quem já
+ * tem usuário para entrar no portal ("com acesso") de quem só está cadastrado (ex.: veio
+ * da lista de contatos e ainda não recebeu usuário e senha).
+ */
+export async function contarMoradoresPorUnidade(ctx: Contexto): Promise<Map<string, MoradoresDaCasa>> {
   garantirPermissao(ctx, "unidades.ver");
-  const snap = await membros(ctx).where("papel", "==", "morador").where("status", "==", "ativo").select("unitId").get();
-  const mapa = new Map<string, number>();
+  const snap = await membros(ctx).where("papel", "==", "morador").where("status", "==", "ativo").select("unitId", "usuario").get();
+  const mapa = new Map<string, MoradoresDaCasa>();
   for (const d of snap.docs) {
     const u = d.get("unitId");
-    if (typeof u === "string") mapa.set(u, (mapa.get(u) ?? 0) + 1);
+    if (typeof u !== "string") continue;
+    const atual = mapa.get(u) ?? { cadastrados: 0, comAcesso: 0 };
+    atual.cadastrados++;
+    if (ehUsuarioValido(d.get("usuario"))) atual.comAcesso++;
+    mapa.set(u, atual);
   }
   return mapa;
 }
