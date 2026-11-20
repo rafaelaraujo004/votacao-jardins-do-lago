@@ -61,7 +61,15 @@ function Integrante({
       dados.set("id", eleicaoId);
       dados.set("candidato", c.id);
       dados.set("foto", imagem);
-      const r = await salvarFotoIntegrante(null, dados);
+      let r: Awaited<ReturnType<typeof salvarFotoIntegrante>>;
+      try {
+        r = await salvarFotoIntegrante(null, dados);
+      } catch {
+        // Sem internet ou site atualizado com a página aberta.
+        avisar("erro", "Não deu para confirmar se a foto foi salva. Confira a internet e atualize a página para ver como ficou.");
+        setPrevia(null);
+        return;
+      }
       if (r?.ok) {
         avisar("sucesso", r.mensagem);
         router.refresh();

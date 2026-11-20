@@ -3,9 +3,11 @@
 /**
  * Confirmação antes de ações importantes.
  * Abre uma janela com o que vai acontecer e dois botões claros.
+ * Se a ação nem chegar ao servidor (internet caiu, ou o site foi atualizado com a
+ * página aberta), a janela avisa e oferece "Atualizar a página" — nunca fica muda.
  */
 import { useRef, useState, type ReactNode } from "react";
-import { TriangleAlert } from "lucide-react";
+import { RotateCw, TriangleAlert } from "lucide-react";
 import { Botao } from "./botao";
 
 export function BotaoComConfirmacao({
@@ -27,20 +29,31 @@ export function BotaoComConfirmacao({
 }) {
   const janela = useRef<HTMLDialogElement>(null);
   const [carregando, setCarregando] = useState(false);
+  const [falhou, setFalhou] = useState(false);
 
   async function confirmar() {
     setCarregando(true);
+    setFalhou(false);
     try {
       await aoConfirmar();
       janela.current?.close();
+    } catch (erro) {
+      // A ação não respondeu (sem internet ou versão nova do site): avisa em vez de ficar parada.
+      console.error("Confirmação: a ação não foi concluída", erro);
+      setFalhou(true);
     } finally {
       setCarregando(false);
     }
   }
 
+  function abrir() {
+    setFalhou(false);
+    janela.current?.showModal();
+  }
+
   return (
     <>
-      <Botao variante={variante} onClick={() => janela.current?.showModal()}>
+      <Botao variante={variante} onClick={abrir}>
         {children}
       </Botao>
       <dialog
@@ -58,6 +71,26 @@ export function BotaoComConfirmacao({
             {titulo}
           </h2>
           <div className="text-ink-2">{mensagem}</div>
+          {falhou ? (
+            <div
+              role="alert"
+              className="flex flex-col gap-3 rounded-2xl bg-danger-soft p-4 text-danger"
+            >
+              <p className="font-bold">
+                Não deu para confirmar se foi concluído.
+              </p>
+              <p className="text-ink-2">
+                Confira a internet e atualize a página para ver como ficou. Se
+                ainda não mudou, faça de novo.
+              </p>
+              <Botao
+                variante="secundario"
+                onClick={() => window.location.reload()}
+              >
+                <RotateCw aria-hidden className="size-4" /> Atualizar a página
+              </Botao>
+            </div>
+          ) : null}
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Botao variante="secundario" onClick={() => janela.current?.close()} disabled={carregando}>
               Voltar
