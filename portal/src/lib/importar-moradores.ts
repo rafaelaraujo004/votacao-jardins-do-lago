@@ -9,6 +9,7 @@
  * - telefones: o 1º telefone vai para o 1º nome, o 2º para o 2º nome. Se a linha tem
  *   um nome só, ele fica com os dois telefones (principal e outro);
  * - nomes escritos TODOS EM MAIÚSCULAS ficam no jeito normal ("Maria das Graças");
+ * - anotações junto do nome saem do nome ("MARIA SILVA ALUGADA" → "Maria Silva");
  * - ninguém é repetido: cada pessoa da lista tem um identificador fixo (casa + nome), e
  *   quem já está na casa com o mesmo nome também não entra de novo;
  * - casa inativa ou que não existe no cadastro fica de fora (o síndico resolve em Unidades);
@@ -83,6 +84,20 @@ export function normalizarNome(nome: string): string {
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
     .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Tira anotações que a lista do Word põe junto do nome e que não são parte dele.
+ * Ex.: "MARIA SILVA ALUGADA" (casa alugada) → "MARIA SILVA". A pessoa continua cadastrada
+ * na casa; só o nome fica limpo.
+ */
+export function tirarAnotacoes(nome: string): string {
+  return nome
+    .replace(/[([{]?\s*\b(alugad[ao]s?)\b\s*[)\]}]?/giu, " ")
+    .replace(/\s*[-–—:,]\s*$/u, "")
+    .replace(/^\s*[-–—:,]\s*/u, "")
+    .replace(/\s+/gu, " ")
     .trim();
 }
 
@@ -178,7 +193,7 @@ export function planejarImportacao(entrada: {
     // passa o telefone dele para o vizinho.
     const partes = separarNomes(contato.nome);
     const aproveitaveis = partes
-      .map((bruto, posicao) => ({ nome: nomeApresentavel(bruto), posicao }))
+      .map((bruto, posicao) => ({ nome: nomeApresentavel(tirarAnotacoes(bruto)), posicao }))
       .filter((p) => nomeAproveitavel(p.nome));
     // Linha sem nome aproveitável: entra um contato com o nome da casa (o síndico corrige depois).
     const lista = aproveitaveis.length ? aproveitaveis : [{ nome: `Contato da ${casa.rotulo}`, posicao: 0 }];

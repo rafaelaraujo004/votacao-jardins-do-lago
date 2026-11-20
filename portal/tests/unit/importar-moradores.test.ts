@@ -6,6 +6,7 @@ import {
   planejarImportacao,
   rotuloCasas,
   separarNomes,
+  tirarAnotacoes,
   telefoneNacional,
   telefonesDaPessoa,
   uidDaLista,
@@ -37,6 +38,33 @@ describe("nomeApresentavel", () => {
 
   it("corta em 80 caracteres", () => {
     expect(nomeApresentavel("A".repeat(100)).length).toBe(80);
+  });
+});
+
+describe("tirarAnotacoes", () => {
+  it("tira 'alugada/alugado' que a lista põe junto do nome", () => {
+    expect(tirarAnotacoes("MARIA SILVA ALUGADA")).toBe("MARIA SILVA");
+    expect(tirarAnotacoes("JOÃO (ALUGADO)")).toBe("JOÃO");
+    expect(tirarAnotacoes("ALUGADA - ANA LIMA")).toBe("ANA LIMA");
+    expect(tirarAnotacoes("Rita alugada")).toBe("Rita");
+  });
+
+  it("não mexe em nomes normais (nem em palavras que só começam igual)", () => {
+    expect(tirarAnotacoes("Maria das Graças")).toBe("Maria das Graças");
+    expect(tirarAnotacoes("Alugadinho Souza")).toBe("Alugadinho Souza");
+  });
+
+  it("no plano: 'NOME ALUGADA' vira só o nome; 'ALUGADA' sozinho vira contato da casa", () => {
+    const plano = planejarImportacao({
+      condominioId: "jardins-do-lago",
+      casas: [casa(21), casa(22)],
+      pessoas: [],
+      contatos: [
+        { unitId: "casa-021", nome: "MARIA SILVA ALUGADA", telefones: ["5594911111111"] },
+        { unitId: "casa-022", nome: " / ALUGADA / ", telefones: [] },
+      ],
+    });
+    expect(plano.novos.map((p) => p.nome)).toEqual(["Maria Silva", "Contato da Casa 22"]);
   });
 });
 
