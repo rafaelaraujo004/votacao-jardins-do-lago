@@ -14,6 +14,9 @@
  *   Simulador:  FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npx tsx scripts/lancar-prestacao.ts --arquivo scripts/dados-financeiro/2026-10.json --id jardins-do-lago-demo
  *   Real:       npx tsx scripts/lancar-prestacao.ts --arquivo scripts/dados-financeiro/2026-10.json --conferir
  *               npx tsx scripts/lancar-prestacao.ts --arquivo scripts/dados-financeiro/2026-10.json
+ *   Publicar um mês JÁ lançado (o mesmo que o botão "Publicar" da tela; antes confere se os
+ *   totais gravados batem com o arquivo):
+ *               npx tsx scripts/lancar-prestacao.ts --arquivo scripts/dados-financeiro/2026-10.json --so-publicar
  */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -24,11 +27,18 @@ import { CATEGORIAS_PADRAO, CHAVES_FORMA, REGEX_MES, type FormaPagamento, type T
 import { formatarMoeda, reaisParaCentavos } from "../src/lib/formato";
 
 const { values } = parseArgs({
-  options: { arquivo: { type: "string" }, id: { type: "string" }, conferir: { type: "boolean" }, publicar: { type: "boolean" } },
+  options: {
+    arquivo: { type: "string" },
+    id: { type: "string" },
+    conferir: { type: "boolean" },
+    publicar: { type: "boolean" },
+    "so-publicar": { type: "boolean" },
+  },
 });
 const ID = values.id ?? "jardins-do-lago";
 const SO_CONFERIR = values.conferir === true;
 const PUBLICAR = values.publicar === true;
+const SO_PUBLICAR = values["so-publicar"] === true;
 const SIMULADOR = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
 const QUEM = { uid: "script:lancar-prestacao", nome: "Prestação de contas lançada do relatório mensal (a pedido da administração)", papel: "admin" };
 
@@ -228,4 +238,56 @@ async function main() {
   console.log(resultado.gravou ? `\n✔ ${linhas.length} lançamentos gravados em ${mes}.\n` : "\n(Só conferência: nada foi gravado.)\n");
 }
 
-main().catch((e) => falhar(e instanceof Error ? e.message : String(e)));
+/** Publica (e fecha) um mês já lançado — mesmas regras de publicarMes (src/server/acoes/financeiro.ts). */
+async function soPublicar() {
+  const c = db.collection("condominiums").doc(ID);
+  const mes = dados.mes;
+  const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Belem", year: "numeric", month: "2-digit" }).format(new Date());
+  if (mes >= hoje.slice(0, 7)) falhar("Só é possível publicar meses que já terminaram.");
+
+  const total = await db.runTransaction(async (tx) => {
+    const resumoRef = c.collection("monthlySummaries").doc(mes);
+    const [resumo, pendentes, lancamentos] = await Promise.all([
+      tx.get(resumoRef),
+      tx.get(c.collection("monthlySummaries").where("publicado", "==", false)),
+      tx.get(c.collection("financialEntries").where("mes", "==", mes)),
+    ]);
+    if (!resumo.exists) falhar(`${mes} não tem lançamentos.`);
+    if (resumo.get("publicado") === true) falhar(`${mes} já está publicado.`);
+    const anterior = pendentes.docs.find((d) => d.id < mes);
+    if (anterior) falhar(`Publique antes ${anterior.id}. Os meses são publicados em ordem.`);
+    if (lancamentos.size > 450) falhar("Mês com lançamentos demais para publicar de uma vez.");
+
+    // Confere o que está gravado contra o relatório antes de mostrar aos moradores.
+    const gravado = (tipo: TipoLancamento) =>
+      lancamentos.docs.filter((d) => d.get("tipo") === tipo).reduce((s, d) => s + Number(d.get("valorCentavos")), 0);
+    if (gravado("receita") !== receitas || gravado("despesa") !== despesas) {
+      falhar(`Os totais gravados (receitas ${formatarMoeda(gravado("receita"))}, despesas ${formatarMoeda(gravado("despesa"))}) não batem com o arquivo.`);
+    }
+    if (Number(resumo.get("receitasCentavos")) !== receitas || Number(resumo.get("despesasCentavos")) !== despesas) {
+      falhar("O resumo do mês não bate com os lançamentos gravados.");
+    }
+
+    console.log(`\nProjeto ${projectId}${SIMULADOR ? " (SIMULADOR)" : ""} · condomínio ${ID} · mês ${mes}`);
+    console.log(`Gravado: ${lancamentos.size} lançamentos · receitas ${formatarMoeda(receitas)} · despesas ${formatarMoeda(despesas)} (bate com o arquivo)`);
+    if (SO_CONFERIR) return null;
+
+    lancamentos.docs.forEach((d) => tx.update(d.ref, { publicado: true }));
+    tx.set(resumoRef, { publicado: true, publicadoEm: FieldValue.serverTimestamp(), publicadoPor: QUEM.uid, quantidade: lancamentos.size }, { merge: true });
+    tx.create(c.collection("auditLogs").doc(), {
+      condominioId: ID,
+      uid: QUEM.uid,
+      nome: QUEM.nome,
+      papel: QUEM.papel,
+      acao: "financeiro.publicar",
+      alvo: `monthlySummaries/${mes}`,
+      detalhes: { lancamentos: lancamentos.size },
+      criadoEm: FieldValue.serverTimestamp(),
+    });
+    tx.set(c.collection("sistema").doc("sinais"), { financeiro: FieldValue.serverTimestamp() }, { merge: true });
+    return lancamentos.size;
+  });
+  console.log(total === null ? "\n(Só conferência: nada foi publicado.)\n" : `\n✔ ${mes} publicado com ${total} lançamentos. Os moradores já podem ver.\n`);
+}
+
+(SO_PUBLICAR ? soPublicar() : main()).catch((e) => falhar(e instanceof Error ? e.message : String(e)));
