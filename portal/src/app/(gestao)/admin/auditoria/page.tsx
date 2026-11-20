@@ -55,7 +55,8 @@ const DESCRICAO: Record<string, { texto: string; icone: LucideIcon }> = {
   "membro.importar": { texto: "Trouxe pessoas da lista de contatos (um lote)", icone: Settings },
   // Acesso com senha (equipe)
   "acesso.criar_senha": { texto: "Criou o acesso com senha de alguém da equipe", icone: KeyRound },
-  "acesso.criar_morador": { texto: "Criou o usuário e a senha de um morador", icone: KeyRound },
+  "acesso.criar_morador": { texto: "Criou o login de uma casa (usuário e senha)", icone: KeyRound },
+  "acesso.remover_morador": { texto: "Removeu o login de uma casa", icone: KeyRound },
   "acesso.redefinir_senha": { texto: "Gerou nova senha provisória", icone: KeyRound },
   "acesso.trocar_senha": { texto: "Trocou a própria senha", icone: KeyRound },
   // Portaria

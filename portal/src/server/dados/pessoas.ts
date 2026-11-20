@@ -55,6 +55,26 @@ export async function obterPessoa(ctx: Contexto, uid: string): Promise<Pessoa | 
   return d.exists ? paraPessoa(d.id, d.data() ?? {}) : null;
 }
 
+/**
+ * Quem tem o login da casa (o login é um só por casa). null = a casa ainda não tem login.
+ * `preferir`: se esta pessoa tiver login, é ela que volta (assim, se um dia houver dois
+ * logins na casa, a página de cada dono mostra o próprio login, e não o do outro).
+ * `status` suspenso = ninguém da casa entra até reativar.
+ */
+export async function loginDaCasa(
+  ctx: Contexto,
+  unitId: string,
+  preferir?: string,
+): Promise<{ uid: string; nome: string; status: "ativo" | "suspenso" } | null> {
+  garantirPermissao(ctx, "moradores.ver");
+  const snap = await membros(ctx).where("unitId", "==", unitId).select("nome", "usuario", "papel", "status").get();
+  const donos = snap.docs.filter((d) => d.get("papel") === "morador" && ehUsuarioValido(d.get("usuario")));
+  const dono = donos.find((d) => d.id === preferir) ?? donos[0];
+  return dono
+    ? { uid: dono.id, nome: String(dono.get("nome") ?? ""), status: dono.get("status") === "ativo" ? "ativo" : "suspenso" }
+    : null;
+}
+
 export async function moradoresDaUnidade(ctx: Contexto, unitId: string): Promise<Pessoa[]> {
   garantirPermissao(ctx, "moradores.ver");
   const snap = await membros(ctx).where("unitId", "==", unitId).get();

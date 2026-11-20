@@ -50,7 +50,7 @@ Não existe área pública. Todas as páginas, ações e exportações exigem se
 | `/admin/reservas` | `reservas.ver_todas` para ver; `reservas.gerenciar` para aprovar, recusar, reservar, bloquear e cancelar |
 | `/admin/reservas/areas` | `areas.configurar` (inclui escolher **quem aprova os pedidos** de cada área — só síndico ou responsável pelas reservas ativos — e as fotos da área) |
 | Acesso com senha da equipe (página da pessoa) | `equipe.gerenciar` |
-| Usuário e senha do morador (página da pessoa e da unidade) | `moradores.gerenciar` (só o admin) |
+| Usuário e senha do morador (página da pessoa e da unidade) | `moradores.gerenciar` (só o admin). **Um login por casa**: se alguém da casa já tem usuário, o portal não cria outro (conferido de novo na transação); "Remover login" (`removerAcessoMorador`) libera a casa para criar em nome de outra pessoa e derruba na hora as sessões abertas da casa (marca `loginRemovido`). Quem tem o login não muda de perfil nem de casa (a família entraria como equipe ou como outra casa): é preciso "Remover login" antes. Suspender quem tem o login bloqueia a casa inteira |
 | `/admin/pessoas` (lista) e página da pessoa | `moradores.ver` = consulta; **editar** nome, perfil, casa e telefones: `moradores.gerenciar` (morador) ou `equipe.gerenciar` (portaria, conselho e administração) |
 | `/admin/pessoas/importar` (trazer a lista de contatos da votação) | `moradores.gerenciar` (só o admin) |
 | **Excluir cadastro** (página da pessoa) | só o **papel admin**, com a gerência do perfil da pessoa; nunca o próprio cadastro nem o último admin ativo. Apaga o cadastro, o usuário do morador e a conta de acesso (não dá para desfazer: para algo temporário use "Suspender") |
@@ -84,6 +84,7 @@ Não existe área pública. Todas as páginas, ações e exportações exigem se
 - `tests/regras/firestore.test.ts` — o que cada perfil consegue ler/gravar direto no banco.
 - `tests/integracao/contexto.test.ts` — vínculo suspenso, condomínio suspenso, condomínio que não é da pessoa.
 - `tests/integracao/usuario-morador.test.ts` — login do morador no simulador (e-mail sintético, usuário em minúsculas, senha errada, suspenso).
+- `tests/integracao/login-por-casa.test.ts` — um login por casa (inclusive dois cliques ao mesmo tempo), remover o login (sessão cai na hora), dono do login não muda de perfil nem de casa.
 - `tests/unit/destino-seguro.test.ts` — o `?volta=` só aceita caminhos internos e que combinam com o perfil.
 - `tests/integracao/enquetes.test.ts` — 1 voto por casa (inclusive dois ao mesmo tempo), casa inativa, auditoria sem a opção.
 - `tests/integracao/eleicoes.test.ts` — votação oficial: 1 voto por casa (inclusive simultâneo), nenhuma cédula guardada, auditoria sem a escolha, publicada imutável.

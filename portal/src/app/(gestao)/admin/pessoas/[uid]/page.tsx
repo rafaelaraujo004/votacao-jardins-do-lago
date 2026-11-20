@@ -3,9 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, CirclePause, CirclePlay, KeyRound, ShieldCheck, Trash2 } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
-import { obterPessoa } from "@/server/dados/pessoas";
+import { loginDaCasa, obterPessoa } from "@/server/dados/pessoas";
 import { situacaoAcessoMorador, situacaoDoAcesso } from "@/server/dados/acesso";
-import { listarUnidades } from "@/server/dados/unidades";
+import { listarUnidades, obterUnidade } from "@/server/dados/unidades";
+import { removerAcessoMorador } from "@/server/acoes/acesso";
 import { alterarSituacao, salvarPermissoes, salvarPessoa } from "@/server/acoes/pessoas";
 import { idDocumento } from "@/lib/validacao";
 import {
@@ -48,12 +49,49 @@ export default async function PaginaPessoa({ params, searchParams }: PageProps<"
   const podeCriarSenha = ehEquipe && !ehVoce && pessoa.status === "ativo" && ctx.permissoes.has("equipe.gerenciar");
   const situacaoSenha = podeCriarSenha ? await situacaoDoAcesso(ctx, pessoa.uid) : null;
   // Morador entra com usuário (código) + senha; quem cuida dos moradores cria esse acesso.
-  const podeCriarAcessoMorador =
-    pessoa.papel === "morador" && !ehVoce && pessoa.status === "ativo" && ctx.permissoes.has("moradores.gerenciar");
+  // O LOGIN É UM SÓ POR CASA: se outra pessoa da casa já tem, este cadastro só mostra com quem está.
+  const ehMorador = pessoa.papel === "morador";
+  const gerenciaMoradores = ctx.permissoes.has("moradores.gerenciar");
+  const donoDoLogin = ehMorador && pessoa.unitId ? await loginDaCasa(ctx, pessoa.unitId, pessoa.uid) : null;
+  const ehDonoDoLogin = donoDoLogin?.uid === pessoa.uid;
+  const loginComOutro = donoDoLogin && !ehDonoDoLogin ? donoDoLogin : null;
+  const rotuloDaCasa =
+    ehMorador && pessoa.unitId && ctx.permissoes.has("unidades.ver")
+      ? ((await obterUnidade(ctx, pessoa.unitId))?.rotulo ?? "casa")
+      : "casa";
+  const podeCriarAcessoMorador = ehMorador && !ehVoce && pessoa.status === "ativo" && gerenciaMoradores && !loginComOutro;
   const situacaoMorador = podeCriarAcessoMorador ? await situacaoAcessoMorador(ctx, pessoa.uid) : null;
+  // Remover o login: de quem tem o login da casa (mesmo suspenso), para passar a outra pessoa.
+  const podeRemoverLogin = ehMorador && !ehVoce && gerenciaMoradores && ehDonoDoLogin;
   const efetivas = calcularPermissoes(pessoa.papel, pessoa.permissoesExtras, pessoa.permissoesNegadas);
   // Excluir de vez: só a administração (síndico), nunca o próprio cadastro.
   const podeExcluir = ctx.papel === "admin" && podeEditar && !ehVoce;
+
+  // Suspender: o login é da casa toda, então o efeito depende de quem tem o login.
+  const textoSuspender = ehDonoDoLogin
+    ? `${pessoa.nome} tem o login da ${rotuloDaCasa}: suspender bloqueia o login na hora e desconecta todos da casa de todos os aparelhos. Os registros continuam guardados.`
+    : loginComOutro
+      ? `${pessoa.nome} não tem login próprio: entra com o login da casa, que está com ${loginComOutro.nome}. Suspender só marca este cadastro; a casa continua entrando. Para bloquear a entrada da casa, suspenda o cadastro de ${loginComOutro.nome}.`
+      : ehMorador
+        ? "A casa ainda não tem login. Suspender marca este cadastro como suspenso (enquanto isso, não dá para criar o login em nome desta pessoa). Os registros continuam guardados."
+        : "Suspender impede o acesso na hora e desconecta a pessoa de todos os aparelhos. Os registros dela continuam guardados.";
+  const mensagemSuspender = ehDonoDoLogin
+    ? `Ninguém da ${rotuloDaCasa} vai conseguir entrar até o acesso ser reativado. Para só passar o login a outra pessoa da casa, use “Remover login”.`
+    : loginComOutro
+      ? `O cadastro fica suspenso, mas a casa continua entrando com o login que está com ${loginComOutro.nome}.`
+      : ehMorador
+        ? "O cadastro fica suspenso até ser reativado."
+        : "A pessoa não vai mais conseguir entrar no portal até que o acesso seja reativado.";
+  const textoReativar = ehDonoDoLogin
+    ? `O acesso está suspenso: o login da ${rotuloDaCasa} está bloqueado para todos da casa. Reative para a casa voltar a entrar.`
+    : ehMorador
+      ? "Este cadastro está suspenso. Reative para voltar ao normal."
+      : "O acesso está suspenso. Reative para a pessoa voltar a entrar.";
+  const mensagemReativar = ehDonoDoLogin
+    ? `Todos da ${rotuloDaCasa} voltam a entrar com o login da casa.`
+    : ehMorador
+      ? "O cadastro volta a ficar ativo."
+      : "A pessoa volta a entrar no portal com o mesmo perfil de antes.";
 
   return (
     <div className="flex flex-col gap-6">
@@ -70,7 +108,7 @@ export default async function PaginaPessoa({ params, searchParams }: PageProps<"
         <Alerta tipo="sucesso" titulo="Pessoa adicionada.">
           {ehEquipe
             ? "O cadastro está pronto. Agora crie o acesso com e-mail e senha no cartão “Entrar com e-mail e senha”."
-            : "O cadastro está pronto. Agora crie o usuário e a senha no cartão “Usuário e senha do morador” e envie pelo WhatsApp."}
+            : "O cadastro está pronto. Se a casa ainda não tem login, crie no cartão “Login da casa” e envie pelo WhatsApp."}
         </Alerta>
       ) : null}
 
@@ -101,13 +139,13 @@ export default async function PaginaPessoa({ params, searchParams }: PageProps<"
               <h2 className="text-lg font-bold">Acesso ao portal</h2>
               {pessoa.status === "ativo" ? (
                 <>
-                  <p className="text-ink-2">Suspender impede o acesso na hora e desconecta a pessoa de todos os aparelhos. Os registros dela continuam guardados.</p>
+                  <p className="text-ink-2">{textoSuspender}</p>
                   <div>
                     <AcaoConfirmada
                       acao={alterarSituacao}
                       campos={{ uid: pessoa.uid, status: "suspenso" }}
                       titulo={`Suspender o acesso de ${pessoa.nome}?`}
-                      mensagem="A pessoa não vai mais conseguir entrar no portal até que o acesso seja reativado."
+                      mensagem={mensagemSuspender}
                       textoConfirmar="Sim, suspender"
                       perigo
                       variante="perigo"
@@ -118,13 +156,13 @@ export default async function PaginaPessoa({ params, searchParams }: PageProps<"
                 </>
               ) : (
                 <>
-                  <p className="text-ink-2">O acesso está suspenso. Reative para a pessoa voltar a entrar.</p>
+                  <p className="text-ink-2">{textoReativar}</p>
                   <div>
                     <AcaoConfirmada
                       acao={alterarSituacao}
                       campos={{ uid: pessoa.uid, status: "ativo" }}
                       titulo={`Reativar o acesso de ${pessoa.nome}?`}
-                      mensagem="A pessoa volta a entrar no portal com o mesmo perfil de antes."
+                      mensagem={mensagemReativar}
                       textoConfirmar="Sim, reativar"
                       variante="primario"
                     >
@@ -145,12 +183,60 @@ export default async function PaginaPessoa({ params, searchParams }: PageProps<"
             </Cartao>
           ) : null}
 
-          {situacaoMorador ? (
+          {ehMorador && pessoa.unitId && (situacaoMorador || donoDoLogin) ? (
             <Cartao id="acesso-morador" className="flex scroll-mt-24 flex-col gap-3">
               <h2 className="flex items-center gap-2 text-lg font-bold">
-                <KeyRound aria-hidden className="size-5 text-pine" /> Usuário e senha do morador
+                <KeyRound aria-hidden className="size-5 text-pine" /> Login da casa
               </h2>
-              <AcessoMorador uid={pessoa.uid} nome={pessoa.nome} situacao={situacaoMorador} />
+              <p className="text-[0.92rem] text-muted">
+                O login é um só por casa: todos da {rotuloDaCasa} entram com o mesmo usuário e senha.
+              </p>
+              {loginComOutro ? (
+                <>
+                  <p className="text-ink-2">
+                    O login da {rotuloDaCasa} está com{" "}
+                    <Link href={`/admin/pessoas/${loginComOutro.uid}`} className="font-bold text-lake underline">
+                      {loginComOutro.nome}
+                    </Link>
+                    . {pessoa.nome} entra com ele.
+                  </p>
+                  {loginComOutro.status !== "ativo" ? (
+                    <p className="font-bold text-danger">
+                      O cadastro de {loginComOutro.nome} está suspenso: ninguém da casa consegue entrar até reativar ou passar o
+                      login para outra pessoa.
+                    </p>
+                  ) : null}
+                  {gerenciaMoradores ? (
+                    <p className="text-[0.92rem] text-ink-2">
+                      Para passar o login para {pessoa.nome}: abra o cadastro de {loginComOutro.nome}, use “Remover login” e
+                      depois volte aqui para criar o login.
+                    </p>
+                  ) : null}
+                </>
+              ) : situacaoMorador ? (
+                <AcessoMorador uid={pessoa.uid} nome={pessoa.nome} situacao={situacaoMorador} />
+              ) : ehDonoDoLogin && pessoa.status !== "ativo" ? (
+                <p className="font-bold text-danger">
+                  O login da {rotuloDaCasa} está em nome de {pessoa.nome}, e este cadastro está suspenso: ninguém da casa
+                  consegue entrar até reativar.
+                </p>
+              ) : ehDonoDoLogin ? (
+                <p className="text-ink-2">O login da {rotuloDaCasa} está em nome de {pessoa.nome}.</p>
+              ) : null}
+              {podeRemoverLogin ? (
+                <div className="border-t border-line pt-3">
+                  <AcaoConfirmada
+                    acao={removerAcessoMorador}
+                    campos={{ uid: pessoa.uid }}
+                    titulo={`Remover o login da ${rotuloDaCasa}?`}
+                    mensagem={`O cadastro de ${pessoa.nome} continua na casa, mas o usuário e a senha deixam de funcionar na hora, para todos da casa. Depois você pode criar o login para outra pessoa da casa e enviar pelo WhatsApp.`}
+                    textoConfirmar="Sim, remover o login"
+                    perigo
+                  >
+                    <KeyRound aria-hidden className="size-4" /> Remover login
+                  </AcaoConfirmada>
+                </div>
+              ) : null}
             </Cartao>
           ) : null}
 
@@ -220,7 +306,9 @@ export default async function PaginaPessoa({ params, searchParams }: PageProps<"
                 <Trash2 aria-hidden className="size-5" /> Excluir cadastro
               </h2>
               <p className="text-ink-2">
-                Apaga o cadastro e o acesso de {pessoa.nome}. Não dá para desfazer.{" "}
+                {ehDonoDoLogin
+                  ? `Apaga o cadastro de ${pessoa.nome} e o login da ${rotuloDaCasa}: ninguém da casa entra até você criar o login para outra pessoa. Não dá para desfazer.`
+                  : `Apaga o cadastro e o acesso de ${pessoa.nome}. Não dá para desfazer.`}{" "}
                 {pessoa.status === "suspenso"
                   ? "O acesso já está suspenso: só exclua se este cadastro não deve mais existir."
                   : "Para afastar a pessoa só por um tempo, use “Suspender acesso”."}

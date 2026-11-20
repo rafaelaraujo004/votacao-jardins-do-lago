@@ -71,6 +71,8 @@ export async function carregarContexto(db: Firestore, uid: string): Promise<Cont
 
   const papel = membro.get("papel");
   if (!ehPapel(papel)) return null;
+  // Morador cujo login da casa foi removido ("Remover login"): as sessões abertas param na hora.
+  if (papel === "morador" && membro.get("loginRemovido") === true) return null;
 
   const unitId = typeof membro.get("unitId") === "string" ? (membro.get("unitId") as string) : null;
   let unidadeRotulo: string | null = null;

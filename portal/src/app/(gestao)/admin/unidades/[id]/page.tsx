@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, UserPlus, Users } from "lucide-react";
+import { ArrowLeft, KeyRound, UserPlus, Users } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { obterUnidade } from "@/server/dados/unidades";
 import { moradoresDaUnidade } from "@/server/dados/pessoas";
@@ -30,6 +30,10 @@ export default async function PaginaUnidade({ params }: PageProps<"/admin/unidad
     ? await Promise.all([moradoresDaUnidade(ctx, id), situacoesLoginMoradores(ctx)])
     : [[], new Map<string, never>()];
   const podeCriarAcesso = ctx.permissoes.has("moradores.gerenciar");
+  // O login é um só por casa: quem já tem (se alguém tiver). Dono suspenso = ninguém da casa entra.
+  const temLogin = (p: (typeof moradores)[number]) => p.papel === "morador" && (logins.get(p.uid) ?? "sem-acesso") !== "sem-acesso";
+  const donoDoLogin = moradores.find(temLogin) ?? null;
+  const loginSuspenso = donoDoLogin?.status === "suspenso";
 
   return (
     <div className="flex flex-col gap-6">
@@ -81,17 +85,30 @@ export default async function PaginaUnidade({ params }: PageProps<"/admin/unidad
                 </BotaoLink>
               ) : null}
             </div>
+            {moradores.length > 0 ? (
+              <p className="text-[0.92rem] text-muted">
+                {donoDoLogin && loginSuspenso
+                  ? `O login é um só por casa e está em nome de ${donoDoLogin.nome}, cujo cadastro está suspenso: ninguém da casa consegue entrar. Reative o cadastro ou use “Remover login” nele para criar o login de outra pessoa.`
+                  : donoDoLogin
+                    ? `O login é um só por casa: todos entram com o login que está em nome de ${donoDoLogin.nome}.`
+                    : `A casa ainda não tem login.${podeCriarAcesso ? " O login é um só por casa: escolha em nome de quem criar." : ""}`}
+              </p>
+            ) : null}
             {moradores.length === 0 ? (
               <EstadoVazio icone={Users} titulo="Nenhum morador ligado a esta casa" />
             ) : (
               <ul className="flex flex-col divide-y divide-line">
                 {moradores.map((p) => (
                   <li key={p.uid} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2">
-                    <Link href={`/admin/pessoas/${p.uid}`} className="flex min-h-11 min-w-0 flex-1 items-center font-bold transition-colors hover:text-pine">
+                    {/* basis: o nome fica com a linha inteira e o botão desce (nunca espremido). */}
+                    <Link href={`/admin/pessoas/${p.uid}`} className="flex min-h-11 min-w-0 flex-1 basis-[11rem] items-center gap-2 font-bold transition-colors hover:text-pine">
+                      {temLogin(p) ? <KeyRound aria-hidden className="size-4 shrink-0 text-pine" /> : null}
                       <span className="truncate">{p.nome}</span>
                     </Link>
                     {p.status !== "ativo" ? (
                       <EtiquetaSituacaoPessoa status={p.status} />
+                    ) : donoDoLogin && !temLogin(p) ? (
+                      <span className="text-[0.86rem] text-muted">{loginSuspenso ? "login da casa suspenso" : "entra com o login da casa"}</span>
                     ) : p.papel === "morador" && podeCriarAcesso ? (
                       // Atalho "Criar acesso" (ou a situação, se já tiver). Fica sempre montado para
                       // o usuário e a senha continuarem na tela depois que a página atualizar.

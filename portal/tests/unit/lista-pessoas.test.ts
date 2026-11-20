@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { contarCasas, ehOrdemPessoas, numeroDoRotulo, ordenarPessoas } from "@/lib/lista-pessoas";
+import { agruparPorCasa, contarCasas, ehOrdemPessoas, numeroDoRotulo, ordenarPessoas } from "@/lib/lista-pessoas";
 
 const pessoas = [
   { nome: "Zélia", unitId: "casa-010" },
@@ -23,6 +23,31 @@ describe("ordenarPessoas", () => {
     const copia = [...pessoas];
     ordenarPessoas(pessoas, "casa", numero);
     expect(pessoas).toEqual(copia);
+  });
+});
+
+describe("agruparPorCasa", () => {
+  const gente = [
+    { nome: "Zélia", unitId: "casa-010", papel: "morador", login: false },
+    { nome: "Bruno", unitId: "casa-010", papel: "morador", login: true },
+    { nome: "ana", unitId: "casa-002", papel: "morador", login: false },
+    { nome: "Carlos", unitId: null, papel: "portaria", login: false },
+    { nome: "Marta", unitId: null, papel: "admin", login: false },
+  ];
+  const temLogin = (p: (typeof gente)[number]) => p.login;
+
+  it("uma casa por linha; quem tem o login vem primeiro; equipe fica separada", () => {
+    const { casas, semCasa } = agruparPorCasa(gente, "casa", numero, temLogin);
+    expect(casas.map((c) => c.unitId)).toEqual(["casa-002", "casa-010"]);
+    expect(casas[1].pessoas.map((p) => p.nome)).toEqual(["Bruno", "Zélia"]);
+    expect(casas[1].comLogin?.nome).toBe("Bruno");
+    expect(casas[0].comLogin).toBeNull();
+    expect(semCasa.map((p) => p.nome)).toEqual(["Carlos", "Marta"]);
+  });
+
+  it("por nome: as casas seguem o nome da primeira pessoa", () => {
+    const { casas } = agruparPorCasa(gente, "nome", numero, temLogin);
+    expect(casas.map((c) => c.pessoas[0].nome)).toEqual(["ana", "Bruno"]);
   });
 });
 

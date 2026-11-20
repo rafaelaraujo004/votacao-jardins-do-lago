@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronRight, ClipboardList, House, Pencil, Search, UserPlus, Users } from "lucide-react";
+import { ChevronRight, CirclePause, ClipboardList, House, KeyRound, Pencil, Search, UserPlus, UserRound, Users } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { listarPessoas, totalDeContatosDaLista } from "@/server/dados/pessoas";
 import { listarUnidades, rotulosDasUnidades } from "@/server/dados/unidades";
 import { situacoesLoginMoradores } from "@/server/dados/acesso";
 import { ehPapel, NOME_DO_PAPEL, PAPEIS, type Papel } from "@/lib/permissoes";
 import { rotuloCasas } from "@/lib/importar-moradores";
-import { contarCasas, ehOrdemPessoas, numeroDoRotulo, ordenarPessoas, type OrdemPessoas } from "@/lib/lista-pessoas";
+import { agruparPorCasa, ehOrdemPessoas, numeroDoRotulo, ordenarPessoas, type OrdemPessoas } from "@/lib/lista-pessoas";
 import { BuscaAoDigitar } from "./busca-ao-digitar";
-import { Cartao, EstadoVazio, TituloPagina } from "@/components/ui/basicos";
+import { Cartao, EstadoVazio, Etiqueta, TituloPagina } from "@/components/ui/basicos";
 import { Botao, BotaoLink } from "@/components/ui/botao";
 import { SegmentoLinks } from "@/components/ui/painel";
 import { EtiquetaSenhaProvisoria, EtiquetaSituacaoPessoa } from "./etiquetas";
@@ -47,6 +47,7 @@ export default async function PaginaPessoas({ searchParams }: PageProps<"/admin/
   const busca = typeof buscaBruta === "string" ? buscaBruta.trim().slice(0, 60) : "";
   const ordem: OrdemPessoas = ehOrdemPessoas(ordemBruta) ? ordemBruta : "nome";
   const podeAdicionar = gerenciaMoradores || ctx.permissoes.has("equipe.gerenciar");
+  const podeVerCasa = ctx.permissoes.has("unidades.ver");
   const gerencia = (p: Papel) => ctx.permissoes.has(p === "morador" ? "moradores.gerenciar" : "equipe.gerenciar");
 
   // Número de cada casa (para ordenar "Casa 2" antes de "Casa 10").
@@ -60,12 +61,27 @@ export default async function PaginaPessoas({ searchParams }: PageProps<"/admin/
     (buscaNumero !== null
       ? !!p.unitId && numeroDaCasa(p.unitId) === buscaNumero
       : normalizar(`${p.nome} ${p.unitId ? rotulos.get(p.unitId) ?? "" : ""}`).includes(normalizar(busca)));
-  const filtradas = ordenarPessoas(
-    pessoas.filter((p) => (!papel || p.papel === papel) && confereBusca(p)),
-    ordem,
+  // Moradores: UMA linha por casa, com as pessoas dentro (a casa inteira aparece quando
+  // alguém dela bate com a busca). Equipe: uma linha por pessoa, à parte.
+  const doPerfil = pessoas.filter((p) => !papel || p.papel === papel);
+  const ehMoradorDeCasa = (p: (typeof pessoas)[number]) => p.papel === "morador" && !!p.unitId;
+  const casasQueBatem = new Set(doPerfil.filter((p) => ehMoradorDeCasa(p) && confereBusca(p)).map((p) => p.unitId));
+  const moradoresMostrados = doPerfil.filter((p) => ehMoradorDeCasa(p) && casasQueBatem.has(p.unitId));
+  const temLogin = (p: (typeof pessoas)[number]) => (logins.get(p.uid) ?? "sem-acesso") !== "sem-acesso";
+  const { casas } = agruparPorCasa(moradoresMostrados, ordem, numeroDaCasa, temLogin);
+  const equipe = ordenarPessoas(
+    doPerfil.filter((p) => !ehMoradorDeCasa(p) && confereBusca(p)),
+    "nome",
     numeroDaCasa,
   );
-  const casasNaLista = contarCasas(filtradas);
+  const nadaNaLista = casas.length === 0 && equipe.length === 0;
+  const resumoLista = [
+    casas.length ? (casas.length === 1 ? "1 casa" : `${casas.length} casas`) : null,
+    moradoresMostrados.length ? (moradoresMostrados.length === 1 ? "1 morador" : `${moradoresMostrados.length} moradores`) : null,
+    equipe.length ? (equipe.length === 1 ? "1 pessoa da equipe" : `${equipe.length} pessoas da equipe`) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   /** Link da lista mantendo filtro, busca e ordem (só muda o que for passado). */
   const linkLista = (muda: { papel?: Papel | null; ordem?: OrdemPessoas }) => {
@@ -135,17 +151,14 @@ export default async function PaginaPessoas({ searchParams }: PageProps<"/admin/
         </Botao>
       </form>
 
-      {filtradas.length === 0 ? (
+      {nadaNaLista ? (
         <EstadoVazio icone={Users} titulo={pessoas.length ? "Ninguém encontrado" : "Ninguém cadastrado ainda"}>
-          {pessoas.length ? "Tente outro nome ou outro filtro." : "Comece adicionando os moradores de cada casa."}
+          {pessoas.length ? "Tente outro nome, outro número de casa ou outro filtro." : "Comece adicionando os moradores de cada casa."}
         </EstadoVazio>
       ) : (
         <Cartao semEspaco className="overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-line px-4 py-2.5">
-            <h2 className="text-[0.9rem] font-bold text-muted">
-              {filtradas.length === 1 ? "1 pessoa" : `${filtradas.length} pessoas`}
-              {casasNaLista > 0 ? ` · ${casasNaLista === 1 ? "1 casa" : `${casasNaLista} casas`}` : ""}
-            </h2>
+            <h2 className="text-[0.9rem] font-bold text-muted">{resumoLista}</h2>
             <div className="flex items-center gap-2">
               <span className="text-[0.86rem] font-bold text-muted">Ordenar por</span>
               <SegmentoLinks
@@ -158,48 +171,131 @@ export default async function PaginaPessoas({ searchParams }: PageProps<"/admin/
               />
             </div>
           </div>
-          <ul className="divide-y divide-line">
-            {filtradas.map((p) => (
-              <li key={p.uid}>
-                <Link
-                  href={`/admin/pessoas/${p.uid}`}
-                  className="flex min-h-16 flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 transition-colors hover:bg-surface-2"
-                >
-                  {/* basis: no celular o nome fica com a linha de cima e as etiquetas descem (nunca espremido). */}
-                  <div className="min-w-0 flex-1 basis-[13rem]">
-                    {/* Ordem por casa: a casa vem antes do nome, para achar pelo número. */}
-                    {ordem === "casa" && p.unitId ? (
-                      <p className="text-[0.86rem] font-bold text-pine">{rotulos.get(p.unitId) ?? p.unitId}</p>
-                    ) : null}
-                    <p className="truncate font-bold">{p.nome}</p>
-                    <p className="text-[0.9rem] text-muted">
-                      {NOME_DO_PAPEL[p.papel]}
-                      {p.unitId && ordem !== "casa" ? ` · ${rotulos.get(p.unitId) ?? p.unitId}` : ""}
-                    </p>
-                  </div>
-                  {/* Morador: situação do login (Sem acesso / Senha provisória / Acesso ativo). Equipe: só a senha provisória. */}
-                  {p.papel === "morador" ? (
-                    p.status === "ativo" ? <EtiquetaLoginMorador situacao={logins.get(p.uid) ?? "sem-acesso"} /> : null
-                  ) : p.precisaTrocarSenha && p.status === "ativo" ? (
-                    <EtiquetaSenhaProvisoria />
-                  ) : null}
-                  <EtiquetaSituacaoPessoa status={p.status} />
-                  {/* Deixa claro que a linha abre o cadastro (e que dá para editar, se o perfil puder). */}
-                  <span className="ml-auto inline-flex shrink-0 items-center gap-1 text-[0.9rem] font-bold text-lake">
-                    {gerencia(p.papel) ? (
-                      <>
-                        <Pencil aria-hidden className="size-4" />
-                        <span className="max-sm:sr-only">Editar</span>
-                      </>
-                    ) : (
-                      <span className="sr-only">Ver cadastro</span>
-                    )}
-                    <ChevronRight aria-hidden className="size-5" />
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          {/* Uma linha por CASA, com as pessoas dentro. O login é um só por casa (chave). */}
+          {casas.length ? (
+            <ul className="divide-y divide-line">
+              {casas.map((c) => {
+                const rotulo = rotulos.get(c.unitId) ?? c.unitId;
+                const cabecalhoCasa = (
+                  <>
+                    <House aria-hidden className="size-5 shrink-0 text-pine" />
+                    <span className="font-display text-[1.05rem] font-bold">{rotulo}</span>
+                    <span className="text-[0.86rem] text-muted">
+                      {c.pessoas.length === 1 ? "1 pessoa" : `${c.pessoas.length} pessoas`}
+                    </span>
+                  </>
+                );
+                return (
+                  <li key={c.unitId} className="px-4 py-3">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                      {/* A página da casa exige unidades.ver: sem ela, o nome da casa não é link. */}
+                      {podeVerCasa ? (
+                        <Link
+                          href={`/admin/unidades/${c.unitId}`}
+                          className="flex min-h-11 min-w-0 flex-1 basis-[12rem] items-center gap-2 transition-colors hover:text-pine"
+                        >
+                          {cabecalhoCasa}
+                        </Link>
+                      ) : (
+                        <div className="flex min-h-11 min-w-0 flex-1 basis-[12rem] items-center gap-2">{cabecalhoCasa}</div>
+                      )}
+                      {/* Situação do login da casa (de quem tem a chave). Dono suspenso = ninguém da casa entra. */}
+                      {c.comLogin && c.comLogin.status !== "ativo" ? (
+                        <Etiqueta tom="aviso" icone={CirclePause}>
+                          Login suspenso
+                        </Etiqueta>
+                      ) : (
+                        <EtiquetaLoginMorador situacao={c.comLogin ? (logins.get(c.comLogin.uid) ?? "sem-acesso") : "sem-acesso"} />
+                      )}
+                    </div>
+                    <ul className="mt-1.5 flex flex-col gap-0.5 border-l-2 border-line pl-3" aria-label={`Pessoas da ${rotulo}`}>
+                      {c.pessoas.map((p) => {
+                        // Chave em quem tem login (deveria ser um só; se houver dois, os dois aparecem).
+                        const dono = temLogin(p);
+                        return (
+                          <li key={p.uid}>
+                            <Link
+                              href={`/admin/pessoas/${p.uid}`}
+                              className="flex min-h-11 flex-wrap items-center gap-x-2 gap-y-1 rounded-xl px-2 py-1 transition-colors hover:bg-surface-2"
+                            >
+                              {dono ? (
+                                <KeyRound aria-hidden className="size-4 shrink-0 text-pine" />
+                              ) : (
+                                <UserRound aria-hidden className="size-4 shrink-0 text-muted" />
+                              )}
+                              <span className="min-w-0 flex-1 basis-[10rem] truncate font-bold">{p.nome}</span>
+                              {dono ? (
+                                <span className="text-[0.82rem] font-bold text-pine">
+                                  <span className="sr-only">tem o </span>login da casa
+                                </span>
+                              ) : null}
+                              {p.status !== "ativo" ? <EtiquetaSituacaoPessoa status={p.status} /> : null}
+                              <span className="ml-auto inline-flex shrink-0 items-center gap-1 text-[0.9rem] font-bold text-lake">
+                                {gerencia(p.papel) ? (
+                                  <>
+                                    <Pencil aria-hidden className="size-4" />
+                                    <span className="max-sm:sr-only">Editar</span>
+                                  </>
+                                ) : (
+                                  <span className="sr-only">Ver cadastro</span>
+                                )}
+                                <ChevronRight aria-hidden className="size-5" />
+                              </span>
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+
+          {/* Equipe (portaria, administração, conselho...): uma linha por pessoa. */}
+          {equipe.length ? (
+            <>
+              {casas.length ? (
+                <h3 className="border-y border-line bg-surface-2 px-4 py-2 text-[0.86rem] font-bold text-muted">Equipe</h3>
+              ) : null}
+              <ul className="divide-y divide-line">
+                {equipe.map((p) => (
+                  <li key={p.uid}>
+                    <Link
+                      href={`/admin/pessoas/${p.uid}`}
+                      className="flex min-h-16 flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 transition-colors hover:bg-surface-2"
+                    >
+                      {/* basis: no celular o nome fica com a linha de cima e as etiquetas descem (nunca espremido). */}
+                      <div className="min-w-0 flex-1 basis-[13rem]">
+                        <p className="truncate font-bold">{p.nome}</p>
+                        <p className="text-[0.9rem] text-muted">
+                          {NOME_DO_PAPEL[p.papel]}
+                          {p.unitId ? ` · ${rotulos.get(p.unitId) ?? p.unitId}` : ""}
+                        </p>
+                      </div>
+                      {p.papel === "morador" ? (
+                        p.status === "ativo" ? <EtiquetaLoginMorador situacao={logins.get(p.uid) ?? "sem-acesso"} /> : null
+                      ) : p.precisaTrocarSenha && p.status === "ativo" ? (
+                        <EtiquetaSenhaProvisoria />
+                      ) : null}
+                      <EtiquetaSituacaoPessoa status={p.status} />
+                      <span className="ml-auto inline-flex shrink-0 items-center gap-1 text-[0.9rem] font-bold text-lake">
+                        {gerencia(p.papel) ? (
+                          <>
+                            <Pencil aria-hidden className="size-4" />
+                            <span className="max-sm:sr-only">Editar</span>
+                          </>
+                        ) : (
+                          <span className="sr-only">Ver cadastro</span>
+                        )}
+                        <ChevronRight aria-hidden className="size-5" />
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
         </Cartao>
       )}
 

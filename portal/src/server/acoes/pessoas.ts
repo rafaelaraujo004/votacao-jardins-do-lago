@@ -126,6 +126,18 @@ export async function salvarPessoa(_: Resultado, dados: FormData): Promise<Resul
     const unitId = await validarUnidade(ctx, v.papel, v.unitId);
 
     await db.runTransaction(async (tx) => {
+      // O LOGIN É UM SÓ POR CASA e é usado pela família inteira (conferido aqui dentro):
+      // quem tem o login não muda de perfil nem de casa. Se mudasse, a família continuaria
+      // entrando com ele, mas como equipe ou como moradora de OUTRA casa.
+      const agora = await tx.get(ref);
+      const temLogin = agora.get("papel") === "morador" && ehUsuarioValido(agora.get("usuario"));
+      const casaAntes = typeof agora.get("unitId") === "string" ? (agora.get("unitId") as string) : null;
+      if (temLogin && (v.papel !== "morador" || unitId !== casaAntes)) {
+        throw new ErroDeNegocio(
+          `${v.nome} tem o login da casa, que todos da casa usam. Para mudar o perfil ou a casa, use antes “Remover login” ` +
+            "no cartão “Login da casa” (depois, crie o login para outra pessoa da casa, se precisar).",
+        );
+      }
       tx.update(ref, {
         nome: v.nome,
         papel: v.papel,

@@ -19,8 +19,14 @@ condominiums/{c}                     nome, status, fuso, moeda, (portalPublico: 
                                      repete ninguém, mesmo se a lista mudar a ordem dos nomes),
                                      precisaTrocarSenha?, senhaProvisoriaValidaDesde? (ms, marca do Firebase),
                                      senhaProvisoriaEm?, senhaProvisoriaPor?, senhaTrocadaEm?,
-                                     usuario? (só morador: código de 6 caracteres, ex. "K7M4PX"), usuarioCriadoEm?
-                                     (nenhuma senha nem e-mail fica no Firestore: o e-mail fica só no Authentication)
+                                     usuario? (só morador: código de 6 caracteres, ex. "K7M4PX"; UM por casa — todos da
+                                     casa entram com o login de quem tem o usuário; ao remover, o e-mail da conta vira
+                                     sem-login-…@morador.<c>.portal.invalid e a senha, uma que ninguém sabe), usuarioCriadoEm?
+                                     (nenhuma senha nem e-mail fica no Firestore: o e-mail fica só no Authentication),
+                                     loginRemovido? (true depois de "Remover login": carregarContexto recusa este morador,
+                                     então as sessões abertas da casa param na hora; criar o login de novo apaga a marca).
+                                     Quem tem o usuário não muda de perfil nem de casa (salvarPessoa recusa): antes,
+                                     "Remover login"
   usernames/{codigo}                 uid, criadoEm, criadoPor — índice "um usuário, uma pessoa" (criado em transação;
                                      só o servidor lê e grava)
   units/{unitId}                     rotulo, numero, quadra, titularUid, status

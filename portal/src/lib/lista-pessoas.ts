@@ -35,3 +35,37 @@ export function ordenarPessoas<T extends { nome: string; unitId: string | null }
 export function contarCasas(lista: readonly { unitId: string | null }[]): number {
   return new Set(lista.map((p) => p.unitId).filter(Boolean)).size;
 }
+
+/** Uma casa na lista: as pessoas dela e quem tem o login da casa (um só por casa). */
+export type CasaDaLista<T> = { unitId: string; pessoas: T[]; comLogin: T | null };
+
+/**
+ * Agrupa os MORADORES por casa (uma linha por casa, com as pessoas dentro).
+ * Na casa, quem tem o login vem primeiro, depois os outros por nome.
+ * As casas seguem a ordem pedida: por número da casa, ou pelo nome da primeira pessoa.
+ * Quem não é morador (equipe) ou não tem casa fica em `semCasa`, por nome.
+ */
+export function agruparPorCasa<T extends { nome: string; unitId: string | null; papel: string }>(
+  lista: readonly T[],
+  ordem: OrdemPessoas,
+  numeroDaCasa: (unitId: string) => number | null,
+  temLogin: (p: T) => boolean,
+): { casas: CasaDaLista<T>[]; semCasa: T[] } {
+  const porCasa = new Map<string, T[]>();
+  const semCasa: T[] = [];
+  for (const p of lista) {
+    if (p.papel === "morador" && p.unitId) porCasa.set(p.unitId, [...(porCasa.get(p.unitId) ?? []), p]);
+    else semCasa.push(p);
+  }
+  const casas: CasaDaLista<T>[] = [...porCasa].map(([unitId, pessoas]) => {
+    const ordenadas = [...pessoas].sort((a, b) => Number(temLogin(b)) - Number(temLogin(a)) || porNome(a.nome, b.nome));
+    return { unitId, pessoas: ordenadas, comLogin: ordenadas.find(temLogin) ?? null };
+  });
+  const numero = (c: CasaDaLista<T>) => numeroDaCasa(c.unitId) ?? Number.POSITIVE_INFINITY;
+  casas.sort((a, b) =>
+    ordem === "casa"
+      ? numero(a) - numero(b)
+      : porNome(a.pessoas[0]?.nome ?? "", b.pessoas[0]?.nome ?? "") || numero(a) - numero(b),
+  );
+  return { casas, semCasa: [...semCasa].sort((a, b) => porNome(a.nome, b.nome)) };
+}

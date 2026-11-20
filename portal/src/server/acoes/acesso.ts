@@ -9,6 +9,7 @@
  * 2. concluirTrocaDeSenha: depois que a própria pessoa troca a senha no
  *    navegador, o servidor confere e tira a obrigação de trocar.
  */
+import { createHash, randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
@@ -21,7 +22,7 @@ import { IDADE_MAXIMA_LOGIN_S, NOME_COOKIE_SESSAO } from "../sessao";
 import { ErroDeNegocio, executar, lerFormulario, type Resultado } from "./resultado";
 import { idDocumento, pedidoSessao } from "@/lib/validacao";
 import { codigoDoErro, esquemaEmail, gerarSenhaProvisoria, mascararEmail } from "@/lib/senha";
-import { ehEmailDeMorador, ehUsuarioValido, emailDoMorador, gerarCodigoUsuario } from "@/lib/usuario-morador";
+import { ehEmailDeMorador, ehUsuarioValido, emailDoMorador, gerarCodigoUsuario, SUFIXO_EMAIL_MORADOR } from "@/lib/usuario-morador";
 import { enderecoDoPortal, linkEntrarMorador } from "../dados/acesso";
 
 // Ações da auditoria usadas aqui (todas estão em ACOES_AUDITADAS).
@@ -29,6 +30,7 @@ const ACAO_CRIAR = "acesso.criar_senha" satisfies AcaoAuditada;
 const ACAO_REDEFINIR = "acesso.redefinir_senha" satisfies AcaoAuditada;
 const ACAO_TROCAR = "acesso.trocar_senha" satisfies AcaoAuditada;
 const ACAO_CRIAR_MORADOR = "acesso.criar_morador" satisfies AcaoAuditada;
+const ACAO_REMOVER_MORADOR = "acesso.remover_morador" satisfies AcaoAuditada;
 
 /** Perfis que entram com e-mail e senha. Morador entra com usuário (código) e senha: veja abaixo. */
 const PAPEIS_COM_SENHA = ["admin", "conselheiro", "portaria", "reservas"];
@@ -211,6 +213,13 @@ async function gerarAcessoMorador(modo: "criar" | "redefinir", dados: FormData):
     if (modo === "criar" && ehUsuarioValido(existente)) {
       throw new ErroDeNegocio("Este morador já tem usuário. Para mandar outra senha, use “Gerar nova senha provisória”.");
     }
+    // UM LOGIN POR CASA: se outra pessoa da casa já tem usuário, não cria outro.
+    const unitId = typeof membro.get("unitId") === "string" ? (membro.get("unitId") as string) : null;
+    const refMembrosDaCasa = unitId ? db.collection(`condominiums/${ctx.condominioId}/members`).where("unitId", "==", unitId) : null;
+    if (modo === "criar" && refMembrosDaCasa) {
+      const outro = (await refMembrosDaCasa.get()).docs.find((d) => d.id !== v.uid && ehUsuarioValido(d.get("usuario")));
+      if (outro) throw new ErroDeNegocio(mensagemLoginJaExiste(String(outro.get("nome") ?? "outra pessoa")));
+    }
     if (modo === "redefinir" && !ehUsuarioValido(existente)) {
       throw new ErroDeNegocio("Este morador ainda não tem usuário. Use “Criar acesso do morador”.");
     }
@@ -251,10 +260,19 @@ async function gerarAcessoMorador(modo: "criar" | "redefinir", dados: FormData):
     const refIndice = db.doc(`condominiums/${ctx.condominioId}/usernames/${codigo}`);
 
     await db.runTransaction(async (tx) => {
-      const [m, indice] = await Promise.all([tx.get(refMembro), tx.get(refIndice)]);
-      if (!m.exists || m.get("papel") !== "morador" || m.get("status") !== "ativo") {
+      const [m, indice, daCasa] = await Promise.all([
+        tx.get(refMembro),
+        tx.get(refIndice),
+        modo === "criar" && refMembrosDaCasa ? tx.get(refMembrosDaCasa) : Promise.resolve(null),
+      ]);
+      // A casa também é conferida de novo: a trava "um login por casa" olhou a casa lida antes.
+      const casaAgora = typeof m.get("unitId") === "string" ? (m.get("unitId") as string) : null;
+      if (!m.exists || m.get("papel") !== "morador" || m.get("status") !== "ativo" || casaAgora !== unitId) {
         throw new ErroDeNegocio("O cadastro deste morador mudou. Atualize a página e tente de novo.");
       }
+      // De novo dentro da transação: dois cliques ao mesmo tempo, em duas pessoas da casa, não criam dois logins.
+      const outroNaCasa = daCasa?.docs.find((d) => d.id !== v.uid && ehUsuarioValido(d.get("usuario")));
+      if (outroNaCasa) throw new ErroDeNegocio(mensagemLoginJaExiste(String(outroNaCasa.get("nome") ?? "outra pessoa")));
       const usuarioAgora: unknown = m.get("usuario");
       if (modo === "criar" && ehUsuarioValido(usuarioAgora)) {
         throw new ErroDeNegocio("Este morador acabou de receber um usuário. Atualize a página.");
@@ -271,7 +289,7 @@ async function gerarAcessoMorador(modo: "criar" | "redefinir", dados: FormData):
       }
       tx.update(refMembro, {
         usuario: codigo,
-        ...(modo === "criar" ? { usuarioCriadoEm: FieldValue.serverTimestamp() } : {}),
+        ...(modo === "criar" ? { usuarioCriadoEm: FieldValue.serverTimestamp(), loginRemovido: FieldValue.delete() } : {}),
         precisaTrocarSenha: true,
         senhaProvisoriaValidaDesde: validaDesde,
         senhaProvisoriaEm: FieldValue.serverTimestamp(),
@@ -300,16 +318,104 @@ async function gerarAcessoMorador(modo: "criar" | "redefinir", dados: FormData):
     };
     revalidatePath(`/admin/pessoas/${v.uid}`);
     revalidatePath("/admin/pessoas");
-    const unitId = membro.get("unitId");
-    if (typeof unitId === "string" && unitId) revalidatePath(`/admin/unidades/${unitId}`);
+    if (unitId) revalidatePath(`/admin/unidades/${unitId}`);
     return modo === "criar"
-      ? `Acesso criado para ${nome}.`
+      ? `Login da casa criado (em nome de ${nome}). Todos da casa entram com ele.`
       : `Nova senha provisória gerada para ${nome}. A anterior deixou de funcionar.`;
   });
 
   const dadosAcesso = extra as DadosDoAcessoMorador | null;
   if (resultado?.ok && dadosAcesso) return { ...resultado, ...dadosAcesso };
   return resultado?.ok ? { ok: false, erro: "Não foi possível criar o acesso agora. Tente de novo.", vez: resultado.vez } : resultado;
+}
+
+/** Explica por que não dá para criar outro login na mesma casa. */
+function mensagemLoginJaExiste(dono: string): string {
+  return `Esta casa já tem login (em nome de ${dono}). O login é um só por casa: todos da casa entram com ele. Para passar o login para outra pessoa, remova antes o acesso de ${dono}.`;
+}
+
+/** E-mail que fica na conta depois de tirar o login: não corresponde a nenhum usuário de morador. */
+function emailSemLogin(uid: string, condominioId: string): string {
+  const resumo = createHash("sha256").update(uid).digest("hex").slice(0, 20);
+  return `sem-login-${resumo}@morador.${condominioId}.${SUFIXO_EMAIL_MORADOR}`;
+}
+
+/**
+ * Tira o LOGIN de um morador (ele continua cadastrado na casa, sem forma de entrar).
+ * Serve para passar o login da casa para outra pessoa (o login é um só por casa).
+ * 1. numa transação: apaga o índice do usuário e os campos de login do cadastro e marca
+ *    `loginRemovido`, com auditoria. A partir daí carregarContexto recusa este morador:
+ *    quem estiver com o portal aberto (todos da casa) para de usar NA HORA;
+ * 2. na conta do Firebase: troca o e-mail do usuário por um que não corresponde a nenhum
+ *    usuário e a senha por uma que ninguém sabe; derruba as sessões abertas.
+ * Se o passo 2 falhar, a marca do passo 1 já impede a entrada (e o próximo login apaga a marca).
+ * Permissão: moradores.gerenciar.
+ */
+export async function removerAcessoMorador(_: Resultado, dados: FormData): Promise<Resultado> {
+  return executar(async () => {
+    const ctx = garantirPermissao(await getContexto(), "moradores.gerenciar");
+    const v = lerFormulario(esquemaUid, dados);
+    if (v.uid === ctx.uid) throw new ErroDeNegocio("Você não pode remover o seu próprio acesso.");
+    const db = adminDb();
+    const refMembro = db.doc(`condominiums/${ctx.condominioId}/members/${v.uid}`);
+    const [membro, usuarioDoc] = await Promise.all([refMembro.get(), db.doc(`users/${v.uid}`).get()]);
+    if (!membro.exists) throw new ErroDeNegocio("Pessoa não encontrada. Atualize a página.");
+    if (membro.get("papel") !== "morador") throw new ErroDeNegocio("Aqui só dá para remover o login de morador.");
+    const codigo: unknown = membro.get("usuario");
+    if (!ehUsuarioValido(codigo)) throw new ErroDeNegocio("Esta pessoa não tem login. Atualize a página.");
+    const lista = usuarioDoc.get("condominioIds");
+    if (Array.isArray(lista) && lista.some((c) => c !== ctx.condominioId)) {
+      throw new ErroDeNegocio("Esta pessoa também tem acesso a outro condomínio. O acesso dela só pode ser mudado pelo suporte do portal.");
+    }
+    const nome = String(membro.get("nome") ?? "");
+
+    // 1) Cadastro: tira o usuário e o índice "um usuário, uma pessoa" e marca o login como removido.
+    const refIndice = db.doc(`condominiums/${ctx.condominioId}/usernames/${codigo}`);
+    await db.runTransaction(async (tx) => {
+      const [m, indice] = await Promise.all([tx.get(refMembro), tx.get(refIndice)]);
+      if (!m.exists || m.get("usuario") !== codigo) throw new ErroDeNegocio("O cadastro desta pessoa mudou. Atualize a página.");
+      if (indice.exists && indice.get("uid") === v.uid) tx.delete(refIndice);
+      tx.update(refMembro, {
+        usuario: FieldValue.delete(),
+        usuarioCriadoEm: FieldValue.delete(),
+        precisaTrocarSenha: FieldValue.delete(),
+        senhaProvisoriaValidaDesde: FieldValue.delete(),
+        senhaProvisoriaEm: FieldValue.delete(),
+        senhaProvisoriaPor: FieldValue.delete(),
+        loginRemovido: true,
+        atualizadoEm: FieldValue.serverTimestamp(),
+      });
+      registrarAuditoria(db, tx, {
+        condominioId: ctx.condominioId,
+        uid: ctx.uid,
+        nome: ctx.nome,
+        papel: ctx.papel,
+        acao: ACAO_REMOVER_MORADOR,
+        alvo: `members/${v.uid}`,
+        detalhes: { nome, usuario: codigo },
+      });
+    });
+
+    // 2) Firebase Authentication: o e-mail e a senha antigos deixam de existir.
+    try {
+      if (await contaOuNada(v.uid)) {
+        await adminAuth().updateUser(v.uid, {
+          email: emailSemLogin(v.uid, ctx.condominioId),
+          password: randomBytes(32).toString("base64url"),
+        });
+        await adminAuth().revokeRefreshTokens(v.uid);
+      }
+    } catch (erro) {
+      // O login já não funciona (marca loginRemovido); só registra para conferência.
+      console.error("removerAcessoMorador: falha ao limpar a conta no Auth", erro);
+    }
+
+    revalidatePath(`/admin/pessoas/${v.uid}`);
+    revalidatePath("/admin/pessoas");
+    const unitId = membro.get("unitId");
+    if (typeof unitId === "string" && unitId) revalidatePath(`/admin/unidades/${unitId}`);
+    return `O login de ${nome} foi removido. Agora dá para criar o login da casa para outra pessoa.`;
+  });
 }
 
 /** Cria o usuário e a senha provisória do morador. Permissão: moradores.gerenciar. */

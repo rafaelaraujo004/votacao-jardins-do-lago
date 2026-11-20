@@ -44,6 +44,7 @@ export const MODULO_DA_ACAO: Record<AcaoAuditada, ModuloSinc | null> = {
   "sessao.sair": null,
   "acesso.criar_senha": "pessoas",
   "acesso.criar_morador": "pessoas",
+  "acesso.remover_morador": "pessoas",
   "acesso.redefinir_senha": "pessoas",
   "acesso.trocar_senha": "pessoas",
   "condominio.criar": null,

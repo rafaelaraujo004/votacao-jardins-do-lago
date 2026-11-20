@@ -23,6 +23,7 @@ export const ACOES_AUDITADAS = [
   "sessao.sair",
   "acesso.criar_senha",
   "acesso.criar_morador",
+  "acesso.remover_morador",
   "acesso.redefinir_senha",
   "acesso.trocar_senha",
   "condominio.criar",

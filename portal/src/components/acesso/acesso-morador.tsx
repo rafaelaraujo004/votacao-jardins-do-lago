@@ -94,7 +94,7 @@ export function AcessoMorador({
         {alertaErro}
         <form action={criar}>
           <input type="hidden" name="uid" value={uid} />
-          <BotaoEnviarAcesso texto="Criar acesso" textoCarregando="Criando…" pequeno />
+          <BotaoEnviarAcesso texto="Criar o login da casa" textoCarregando="Criando…" pequeno />
         </form>
       </div>
     );
@@ -109,12 +109,12 @@ export function AcessoMorador({
           <EtiquetaLoginMorador situacao="sem-acesso" />
         </div>
         <p className="text-ink-2">
-          {nome} ainda não tem como entrar. O portal gera um <strong className="text-ink">usuário</strong> (código de 6
-          letras e números) e uma <strong className="text-ink">senha provisória</strong> para você enviar pelo WhatsApp.
-          No primeiro acesso, o morador escolhe a própria senha.
+          A casa ainda não tem login. O portal gera um <strong className="text-ink">usuário</strong> (código de 6 letras e
+          números) e uma <strong className="text-ink">senha provisória</strong> em nome de {nome}, para você enviar pelo
+          WhatsApp. No primeiro acesso, a casa escolhe a própria senha.
         </p>
         <div>
-          <BotaoEnviarAcesso texto="Criar acesso do morador" textoCarregando="Gerando…" />
+          <BotaoEnviarAcesso texto="Criar o login da casa" textoCarregando="Gerando…" />
         </div>
       </form>
     );
@@ -154,7 +154,8 @@ export function AcessoMorador({
         <div className="flex flex-col gap-3 rounded-2xl bg-danger-soft px-4 py-3">
           <p className="flex items-start gap-2 font-bold">
             <TriangleAlert aria-hidden className="mt-0.5 size-5 shrink-0 text-danger" />
-            A senha atual de {nome} vai parar de funcionar e a pessoa será desconectada de todos os aparelhos.
+            O login é um só por casa: a senha atual deixa de funcionar para todos da casa, e quem estiver com o portal
+            aberto é desconectado de todos os aparelhos.
           </p>
           <div className="flex flex-wrap gap-2">
             <BotaoEnviarAcesso texto="Sim, gerar nova senha" textoCarregando="Gerando…" perigo />
