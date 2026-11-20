@@ -9,7 +9,9 @@
  * - tudo em transação e com auditoria (o voto é auditado SEM a escolha).
  */
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { adminDb } from "../firebase-admin";
+import { marcarMudancaDepois } from "../sinais";
 import { garantirPermissao, getContexto } from "../contexto";
 import {
   gravarEleicao,
@@ -119,6 +121,8 @@ export async function votarEleicao(
     const v = lerFormulario(esquemaCedula, dados);
     try {
       await registrarVotoEleicao(adminDb(), ctx, v.id, v.escolha);
+      // Avisa as telas da comissão depois de responder (fora da transação do voto).
+      after(() => marcarMudancaDepois(adminDb(), ctx.condominioId, "eleicoes"));
       revalidar(v.id);
       // De propósito, a resposta NÃO repete a escolha.
       return "Voto registrado com sucesso. Obrigado por votar!";

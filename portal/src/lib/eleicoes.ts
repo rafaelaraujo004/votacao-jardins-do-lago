@@ -376,6 +376,44 @@ export function apurarChapa(contagem: {
 // ---------- Textos ----------
 
 /** "Escolha 1 candidato" / "Escolha até 3 candidatos". */
+// ---------- Urna ----------
+
+/*
+ * A urna é UM documento só (elections/{id}/urna/contagem), de propósito.
+ * NÃO repartir em vários documentos (ex.: "parte-0" … "parte-9" para aguentar
+ * mais gravações por segundo): a data de criação e a de atualização de cada
+ * parte coincidem com a hora do voto da primeira e da última casa que caíram
+ * nela, e uma parte com todos os votos iguais revelaria o voto dessas casas.
+ * Com o documento único, essas datas só mostram a primeira e a última casa do
+ * condomínio inteiro, ao lado do total — sem revelar escolha nenhuma.
+ * No Firestore, votos ao mesmo tempo no mesmo documento esperam a vez; não se perdem.
+ */
+
+export type ContagemUrna = {
+  cedulas: number;
+  sim: number;
+  nao: number;
+  brancos: number;
+  votos: Record<string, number>;
+};
+
+/** Lê os contadores da urna (documento que não existe = nada). Valores estranhos contam como 0. */
+export function somarUrna(partes: readonly (Record<string, unknown> | null | undefined)[]): ContagemUrna {
+  const n = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.floor(v) : 0);
+  const total: ContagemUrna = { cedulas: 0, sim: 0, nao: 0, brancos: 0, votos: {} };
+  for (const p of partes) {
+    if (!p) continue;
+    total.cedulas += n(p.cedulas);
+    total.sim += n(p.sim);
+    total.nao += n(p.nao);
+    total.brancos += n(p.brancos);
+    if (p.votos && typeof p.votos === "object") {
+      for (const [id, v] of Object.entries(p.votos as Record<string, unknown>)) total.votos[id] = (total.votos[id] ?? 0) + n(v);
+    }
+  }
+  return total;
+}
+
 export function textoEscolhas(escolhasPorCasa: number): string {
   return escolhasPorCasa === 1
     ? "Escolha 1 candidato"

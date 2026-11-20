@@ -44,3 +44,54 @@ export function marcarMudanca(
   if ("get" in escrita) escrita.set(ref, dados, { merge: true });
   else escrita.set(ref, dados, { merge: true });
 }
+
+/** Estado das marcas "depois" deste servidor, por condomínio/módulo. */
+type EstadoMarca = { ultima: number; rodando: Promise<void> | null; sujo: boolean };
+const marcasDepois = new Map<string, EstadoMarca>();
+
+const esperar = (ms: number) => new Promise<void>((ok) => setTimeout(ok, ms));
+
+/**
+ * Marca "o módulo mudou" FORA da transação, DEPOIS que a gravação deu certo.
+ * Usado pelo voto (chamado com after(), sem atrasar a resposta): no dia da eleição muitas
+ * casas votam juntas, e o documento de sinais (um só por condomínio) não deve ser disputado
+ * por cada transação de voto.
+ * - no máximo uma marca a cada `intervaloMs` em cada servidor; votos em rajada viram uma marca;
+ * - a ÚLTIMA mudança da rajada sempre ganha uma marca posterior a ela ("sujo"), para a tela
+ *   da comissão nunca ficar sem o último voto;
+ * - se a gravação falhar, só registra no log: o voto já está gravado, e as telas se
+ *   atualizam na próxima marca (ou sozinhas, a cada 30 min).
+ */
+export function marcarMudancaDepois(
+  db: Firestore,
+  condominioId: string,
+  modulo: ModuloSinc,
+  intervaloMs = 1000,
+): Promise<void> {
+  const chave = `${condominioId}/${modulo}`;
+  if (!marcasDepois.has(chave) && marcasDepois.size > 1000) marcasDepois.clear();
+  const estado = marcasDepois.get(chave) ?? { ultima: 0, rodando: null, sujo: false };
+  marcasDepois.set(chave, estado);
+  if (estado.rodando) {
+    // Já há uma marca a caminho: ela grava de novo no fim, depois desta mudança.
+    estado.sujo = true;
+    return estado.rodando;
+  }
+  estado.rodando = (async () => {
+    do {
+      estado.sujo = false;
+      const espera = estado.ultima + intervaloMs - Date.now();
+      if (espera > 0) await esperar(espera);
+      estado.ultima = Date.now();
+      try {
+        await refSinais(db, condominioId).set({ [modulo]: FieldValue.serverTimestamp() }, { merge: true });
+      } catch (erro) {
+        estado.ultima = 0;
+        console.error("Sinais: marca depois da gravação falhou", chave, erro);
+      }
+    } while (estado.sujo);
+  })().finally(() => {
+    estado.rodando = null;
+  });
+  return estado.rodando;
+}

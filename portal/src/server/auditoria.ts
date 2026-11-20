@@ -104,6 +104,11 @@ export type RegistroAuditoria = {
   alvo?: string;
   /** Dados úteis para entender a mudança. NÃO coloque documentos pessoais, senhas ou dados bancários. */
   detalhes?: Record<string, string | number | boolean | null>;
+  /**
+   * false = não marca o sinal do módulo dentro desta transação: quem chama marca depois,
+   * com marcarMudancaDepois (ex.: o voto, para o documento de sinais não ser disputado).
+   */
+  marcarSinal?: boolean;
 };
 
 export function registrarAuditoria(
@@ -128,7 +133,7 @@ export function registrarAuditoria(
   });
   // Avisa as telas abertas que este módulo mudou (mesma transação: só vale se a alteração valer).
   const modulo = MODULO_DA_ACAO[registro.acao];
-  if (modulo) marcarMudanca(db, escrita, registro.condominioId, modulo);
+  if (modulo && registro.marcarSinal !== false) marcarMudanca(db, escrita, registro.condominioId, modulo);
 }
 
 /** Atalho para ações sem outra gravação junto (ex.: entrar e sair). */

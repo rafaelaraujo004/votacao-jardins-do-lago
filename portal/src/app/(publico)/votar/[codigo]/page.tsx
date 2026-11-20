@@ -9,9 +9,11 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { adminDb } from "@/server/firebase-admin";
-import { consumirTentativa, limiteEstourado } from "@/server/rate-limit";
 import {
+  LIMITE_IP,
+  contarErroDoIp,
   cookieDoLink,
+  ipEstourado,
   limparCodigo,
   votacaoPorCodigo,
 } from "@/server/dados/votacao-links";
@@ -61,29 +63,16 @@ export default async function VotarPorLink({
   // Link digitado com minúsculas/traços: vai para o endereço certo (o cookie da senha depende dele).
   if (codigo && codigo !== bruto) redirect(`/votar/${codigo}`);
 
-  const h = await headers();
-  const ip =
-    h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    h.get("x-real-ip") ||
-    "desconhecido";
-  // Quem errou muitos códigos não consegue nem procurar (nem os certos) por um tempo.
-  const bloqueado = await limiteEstourado(
-    adminDb(),
-    "voto.link.invalido",
-    ip,
-    20,
-    10 * 60,
-  );
-  const senhaHash =
-    codigo && !bloqueado
-      ? ((await cookies()).get(cookieDoLink(codigo))?.value ?? null)
-      : null;
-  const v =
-    codigo && !bloqueado ? await votacaoPorCodigo(codigo, { senhaHash }) : null;
+  // Link certo sempre abre (muitas casas abrem o link atrás do mesmo endereço de internet).
+  // Só links INVÁLIDOS contam no limite do endereço, e só eles são barrados.
+  const token = codigo ? ((await cookies()).get(cookieDoLink(codigo))?.value ?? null) : null;
+  const v = codigo ? await votacaoPorCodigo(codigo, { token }) : null;
 
   if (!v) {
-    if (!bloqueado)
-      await consumirTentativa(adminDb(), "voto.link.invalido", ip, 20, 10 * 60);
+    const h = await headers();
+    const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "desconhecido";
+    const bloqueado = await ipEstourado(adminDb(), LIMITE_IP.linkInvalido, ip);
+    if (!bloqueado) await contarErroDoIp(adminDb(), LIMITE_IP.linkInvalido, ip);
     return (
       <Moldura>
         <Alerta

@@ -69,7 +69,9 @@ condominiums/{c}                     nome, status, fuso, moeda, (portalPublico: 
                                      nascimento}], casasAptas, criadoPor, criadoPorNome, criadoEm, publicadaEm — nunca apagada
     votantes/{unitId}                votouEm, unidadeRotulo — SÓ que a casa votou (nunca a escolha nem a pessoa); create em transação
     votantes/{unitId}                (também) comprovante — código sorteado do comprovante, sem ligação com o voto
-    urna/contagem                    cedulas, sim, nao (chapa) ou brancos, votos{candidatoId: n} — só contadores; lida 2 min depois de fechaEm
+    urna/contagem                    cedulas, sim, nao (chapa) ou brancos, votos{candidatoId: n} — só contadores; lida 2 min depois
+                                     de fechaEm. UM documento de propósito: repartir em vários deixaria as datas de criação/
+                                     atualização de cada parte ligarem casas a subtotais (sigilo). Votos simultâneos esperam a vez.
     links/{unitId}                   codigo, senha, hash, enviadoEm, envios — link de voto da casa (só servidor; comissão reenvia)
   contatosVotacao/{unitId}           casa, nome, telefones[] (55DDNNNNNNNNN) — importado da lista do Word; só servidor
 votoCodigos/{sha256(código)}         condominioId, eleicaoId, unitId, senhaHash — índice do link de voto (só servidor)

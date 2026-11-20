@@ -17,6 +17,7 @@ import {
   apurar,
   apurarChapa,
   situacaoEleicao,
+  somarUrna,
   validarEscolha,
   type Candidato,
   type ModoEleicao,
@@ -238,30 +239,12 @@ export async function lerApuracao(
       "O resultado só existe depois do encerramento da votação.",
     );
   }
-  const snap = await eleicoesDe(ctx, db)
-    .doc(e.id)
-    .collection("urna")
-    .doc("contagem")
-    .get();
-  const d = snap.data() ?? {};
-  const mapa = (v: unknown) => {
-    const r: Record<string, number> = {};
-    if (v && typeof v === "object")
-      for (const [k, x] of Object.entries(v as Record<string, unknown>))
-        r[k] = inteiro(x, 0);
-    return r;
-  };
+  // Urna em documento único, de propósito (veja o comentário em src/lib/eleicoes.ts).
+  const snap = await eleicoesDe(ctx, db).doc(e.id).collection("urna").doc("contagem").get();
+  const total = somarUrna([snap.data()]);
   if (e.modo === "chapa")
-    return apurarChapa({
-      sim: inteiro(d.sim, 0),
-      nao: inteiro(d.nao, 0),
-      cedulas: inteiro(d.cedulas, 0),
-    });
-  return apurar(e, {
-    votos: mapa(d.votos),
-    brancos: inteiro(d.brancos, 0),
-    cedulas: inteiro(d.cedulas, 0),
-  });
+    return apurarChapa({ sim: total.sim, nao: total.nao, cedulas: total.cedulas });
+  return apurar(e, { votos: total.votos, brancos: total.brancos, cedulas: total.cedulas });
 }
 
 // ---------- Comissão (eleicoes.gerenciar) ----------
@@ -756,7 +739,7 @@ export async function registrarVotoEleicao(
   id: string,
   enviados: string[],
   agoraFixo?: Date,
-): Promise<{ titulo: string; comprovante: string }> {
+): Promise<{ titulo: string; comprovante: string; condominioId: string }> {
   garantirPermissao(ctx, "eleicoes.votar");
   if (!ctx.unitId)
     throw new ErroDeNegocio(
@@ -799,11 +782,12 @@ export async function gravarVotoDaCasa(
   id: string,
   enviados: string[],
   agoraFixo?: Date,
-): Promise<{ titulo: string; comprovante: string }> {
+): Promise<{ titulo: string; comprovante: string; condominioId: string }> {
   const ctx = { condominioId: quem.condominioId };
   const unitId = quem.unitId;
   const ref = eleicoesDe(ctx, db).doc(id);
   const votanteRef = ref.collection("votantes").doc(unitId);
+  // Urna em documento único, de propósito (sigilo: veja o comentário em src/lib/eleicoes.ts).
   const urnaRef = ref.collection("urna").doc("contagem");
   const casaRef = base(ctx, db).collection("units").doc(unitId);
 
@@ -859,7 +843,10 @@ export async function gravarVotoDaCasa(
       );
     else somas[escolha.voto] = FieldValue.increment(1);
     tx.set(urnaRef, somas, { merge: true });
-    // 3) auditoria: a casa votou — de propósito SEM a escolha
+    // 3) auditoria: a casa votou — de propósito SEM a escolha.
+    // O "sinal" para as telas da comissão vai DEPOIS, fora da transação: quem chama (a ação
+    // da página) usa marcarMudancaDepois com after(). O documento de sinais é um só para o
+    // condomínio inteiro e não deve ser disputado por cada voto.
     registrarAuditoria(db, tx, {
       condominioId: quem.condominioId,
       uid: quem.uid,
@@ -868,8 +855,9 @@ export async function gravarVotoDaCasa(
       acao: acaoEleicao("eleicao.votar"),
       alvo: `elections/${e.id}`,
       detalhes: { unidade: unitId, via: quem.via },
+      marcarSinal: false,
     });
-    return { titulo: e.titulo, comprovante };
+    return { titulo: e.titulo, comprovante, condominioId: quem.condominioId };
   });
 }
 

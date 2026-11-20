@@ -1,10 +1,10 @@
 import "server-only";
-import { createHash, randomInt, timingSafeEqual } from "node:crypto";
-import { FieldValue, type Firestore } from "firebase-admin/firestore";
-import { adminDb } from "../firebase-admin";
+import { createHash, createHmac, randomInt, timingSafeEqual } from "node:crypto";
+import { FieldValue, Timestamp, type Firestore } from "firebase-admin/firestore";
+import { adminDb, usaEmuladores } from "../firebase-admin";
 import { garantirPermissao, type Contexto } from "../contexto";
 import { registrarAuditoria } from "../auditoria";
-import { consumirTentativa, limiteEstourado } from "../rate-limit";
+import { consumirTentativa, janelaDoLimite, limiteEstourado, refLimite } from "../rate-limit";
 import { ErroDeNegocio } from "../acoes/resultado";
 import {
   acaoEleicao,
@@ -41,7 +41,9 @@ import { FUSO_PADRAO } from "@/lib/formato";
  *   O navegador não lê nada disso (firestore.rules nega tudo).
  * - Junto com o link vai uma SENHA de 6 números (na mesma mensagem, com o passo a passo).
  *   O link sozinho não abre a cédula: a pessoa digita a senha; errou 5 vezes, o link
- *   trava por 15 minutos. Acertou, fica um cookie (só deste link, por 6 horas).
+ *   trava por 15 minutos. Acertou, fica um cookie (só deste link, por 6 horas) com um
+ *   "lembrete" ASSINADO pelo servidor (tokenDoLink): quem tem só o link não consegue
+ *   montar esse cookie para testar senhas sem passar pelos limites.
  *   No índice fica só o hash da senha; a senha em si fica em links/{unitId} para reenviar.
  * - O voto pelo link usa a MESMA gravação do voto pelo portal (gravarVotoDaCasa): uma casa,
  *   um voto, na mesma transação. Se outra pessoa abrir o link depois, vê "voto já realizado".
@@ -81,6 +83,30 @@ export function mesmoHash(a: string, b: string): boolean {
 
 /** Nome do cookie que lembra que a senha deste link foi digitada certa. */
 export const cookieDoLink = (codigo: string) => `voto_${codigo}`;
+
+/**
+ * Segredo do servidor que assina o cookie do link. Ordem: VOTO_COOKIE_SEGREDO (se
+ * configurado, 32+ caracteres); senão, derivado da chave privada do Firebase, que
+ * sempre existe no servidor de produção (nunca sai do servidor); no simulador e no
+ * computador de desenvolvimento, um valor fixo de teste.
+ */
+function segredoDoCookie(): string {
+  const proprio = process.env.VOTO_COOKIE_SEGREDO;
+  if (proprio && proprio.length >= 32) return proprio;
+  const chave = process.env.FIREBASE_PRIVATE_KEY;
+  if (chave && chave.length >= 64) return createHash("sha256").update(`voto-cookie:${chave}`).digest("hex");
+  if (usaEmuladores() || process.env.NODE_ENV !== "production") return "desenvolvimento:cookie-do-link-de-voto:nao-usar";
+  throw new Error("Configure VOTO_COOKIE_SEGREDO (pelo menos 32 caracteres) nas variáveis do servidor.");
+}
+
+/**
+ * Valor do cookie do link depois da senha certa: uma ASSINATURA do servidor (HMAC) do
+ * código + hash da senha. Sem o segredo, ninguém consegue montar este valor, então o
+ * cookie não serve para testar senhas. "Trocar link" muda o hash da senha e invalida
+ * os cookies antigos na hora.
+ */
+export const tokenDoLink = (codigo: string, senhaHash: string) =>
+  createHmac("sha256", segredoDoCookie()).update(`voto-link:${codigo}:${senhaHash}`).digest("hex");
 
 export const hashCodigo = (codigo: string) =>
   createHash("sha256").update(`voto:${codigo}`).digest("hex");
@@ -439,7 +465,8 @@ export async function resolverCodigo(
 /** Tudo que a página do link mostra. Rascunho não aparece (como para o morador). */
 export async function votacaoPorCodigo(
   codigo: string,
-  opcoes: { agora?: Date; db?: Firestore; senhaHash?: string | null } = {},
+  /** token = valor do cookie do link (tokenDoLink), se a senha já foi digitada certa. */
+  opcoes: { agora?: Date; db?: Firestore; token?: string | null } = {},
 ): Promise<VotacaoPorLink | null> {
   const agora = opcoes.agora ?? new Date();
   const db = opcoes.db ?? adminDb();
@@ -493,24 +520,65 @@ export async function votacaoPorCodigo(
     casaBloqueada: e.casasBloqueadas.includes(alvo.unitId),
     fotos: await fotosDaEleicao(alvo.condominioId, e.id, db),
     resultado,
-    senhaOk: !!opcoes.senhaHash && mesmoHash(opcoes.senhaHash, alvo.senhaHash),
+    senhaOk: tokenConfere(codigo, opcoes.token, alvo),
   };
+}
+
+/** O cookie do link confere com a senha ATUAL deste link? (assinatura do servidor) */
+function tokenConfere(codigo: string, token: string | null | undefined, alvo: Alvo): boolean {
+  return !!token && mesmoHash(token, tokenDoLink(codigo, alvo.senhaHash));
+}
+
+/**
+ * LIMITES POR ENDEREÇO DE INTERNET (IP). Só as tentativas ERRADAS contam e só barram o que
+ * está errado (link que não existe, senha errada, cookie que não confere): no dia da eleição,
+ * muitas casas votam atrás do MESMO endereço (operadoras de celular dividem um endereço entre
+ * muitos aparelhos; o Wi-Fi do condomínio também). Link certo + senha certa nunca são
+ * barrados por endereço, nem gastam tentativas. Cada senha é protegida pelos limites POR LINK
+ * (5 erros por aparelho a cada 15 min, 30 por hora no total), conferidos numa transação.
+ */
+export const LIMITE_IP = {
+  /** Abrir links que não existem (página do link). */
+  linkInvalido: { acao: "voto.link.invalido", limite: 60, janelaSegundos: 10 * 60 },
+  /** Senha errada ou link inválido ao digitar a senha. */
+  senhaErrada: { acao: "voto.senha.ip.erros", limite: 60, janelaSegundos: 15 * 60 },
+  /** Tentar votar com link inválido ou sem a senha certa. */
+  votoInvalido: { acao: "voto.link.erros", limite: 30, janelaSegundos: 10 * 60 },
+} as const;
+
+type LimiteIp = (typeof LIMITE_IP)[keyof typeof LIMITE_IP];
+
+export const ipEstourado = (db: Firestore, l: LimiteIp, ip: string) =>
+  limiteEstourado(db, l.acao, ip, l.limite, l.janelaSegundos);
+
+export const contarErroDoIp = (db: Firestore, l: LimiteIp, ip: string) =>
+  consumirTentativa(db, l.acao, ip, l.limite, l.janelaSegundos);
+
+/** Recusa uma tentativa errada vinda de `ip`: conta no limite do endereço e explica. */
+async function recusarDoIp(db: Firestore, l: LimiteIp, ip: string | undefined, mensagem: string): Promise<never> {
+  if (ip) {
+    if (await ipEstourado(db, l, ip))
+      throw new ErroDeNegocio("Muitas tentativas seguidas. Espere alguns minutos e tente de novo.");
+    await contarErroDoIp(db, l, ip);
+  }
+  throw new ErroDeNegocio(mensagem);
 }
 
 /** Voto pelo link: a casa e a eleição vêm do CÓDIGO (nunca do formulário). */
 export async function votarPorCodigo(
   codigo: string,
-  senhaHash: string | null,
+  /** Valor do cookie do link (tokenDoLink), gravado quando a senha foi digitada certa. */
+  token: string | null,
   enviados: string[],
   db: Firestore = adminDb(),
-): Promise<{ titulo: string; comprovante: string }> {
+  /** Endereço de quem vota (só para o limite de tentativas ERRADAS). */
+  ip?: string,
+): Promise<{ titulo: string; comprovante: string; condominioId: string }> {
   const alvo = await resolverCodigo(db, codigo);
   if (!alvo)
-    throw new ErroDeNegocio(
-      "Este link de voto não vale mais. Peça um link novo à comissão.",
-    );
-  if (!senhaHash || !mesmoHash(senhaHash, alvo.senhaHash))
-    throw new ErroDeNegocio("Digite a senha da sua casa de novo para votar.");
+    return recusarDoIp(db, LIMITE_IP.votoInvalido, ip, "Este link de voto não vale mais. Peça um link novo à comissão.");
+  if (!tokenConfere(codigo, token, alvo))
+    return recusarDoIp(db, LIMITE_IP.votoInvalido, ip, "Digite a senha da sua casa de novo para votar.");
   const casa = await base({ condominioId: alvo.condominioId }, db)
     .collection("units")
     .doc(alvo.unitId)
@@ -531,13 +599,20 @@ export async function votarPorCodigo(
   );
 }
 
+/** Limites POR LINK da senha: por aparelho (link + endereço) e no total do link. */
+const LIMITE_SENHA_APARELHO = { acao: "voto.senha.ip", limite: 5, janelaSegundos: 15 * 60 } as const;
+const LIMITE_SENHA_LINK = { acao: "voto.senha.link", limite: 30, janelaSegundos: 60 * 60 } as const;
+
 /**
  * Confere a senha do link. Contra quem tem só o link e tenta travar a casa:
  * - contam só as tentativas ERRADAS (acertar não gasta);
  * - limite por link E por endereço (5 a cada 15 min): quem erra de outro aparelho não trava a casa;
- * - teto por link (30 erros por hora), venha de onde vier, contra quem troca de endereço.
+ * - teto por link (30 erros por hora), venha de onde vier, contra quem troca de endereço;
+ * - os dois limites do link são conferidos e somados NUMA transação junto com a comparação
+ *   da senha: tentativas ao mesmo tempo no mesmo link entram em fila (nenhuma rajada passa);
+ * - o limite do ENDEREÇO só vale para links que não existem (contra quem tenta vários links);
  * - só vale com a votação aberta (ou, depois, para baixar o comprovante de quem já votou).
- * Devolve o hash da senha (vai para o cookie) se acertou.
+ * Devolve o token do cookie (tokenDoLink) se acertou.
  */
 export async function conferirSenha(
   codigo: string,
@@ -545,23 +620,21 @@ export async function conferirSenha(
   ip: string,
   db: Firestore = adminDb(),
   agora = new Date(),
-): Promise<{ ok: true; senhaHash: string } | { ok: false; erro: string }> {
+): Promise<{ ok: true; token: string } | { ok: false; erro: string }> {
   const travado = {
     ok: false as const,
     erro: "Senha errada muitas vezes. Espere 15 minutos e tente de novo.",
   };
-  const chaveIp = `${codigo}:${ip}`;
-  const [porIp, porLink] = await Promise.all([
-    limiteEstourado(db, "voto.senha.ip", chaveIp, 5, 15 * 60),
-    limiteEstourado(db, "voto.senha.link", codigo, 30, 60 * 60),
-  ]);
-  if (porIp || porLink) return travado;
   const alvo = await resolverCodigo(db, codigo);
-  if (!alvo)
+  if (!alvo) {
+    if (await ipEstourado(db, LIMITE_IP.senhaErrada, ip))
+      return { ok: false, erro: "Muitas tentativas seguidas. Espere alguns minutos e tente de novo." };
+    await contarErroDoIp(db, LIMITE_IP.senhaErrada, ip);
     return {
       ok: false,
       erro: "Senha errada ou link inválido. Confira a mensagem que você recebeu.",
     };
+  }
   const ref = eleicoesDe({ condominioId: alvo.condominioId }, db).doc(
     alvo.eleicaoId,
   );
@@ -580,28 +653,49 @@ export async function conferirSenha(
   if (!votante.exists && situacao === "encerrada")
     return { ok: false, erro: "A votação já encerrou." };
   const tentativa = hashSenha(codigo, senha);
-  if (!mesmoHash(tentativa, alvo.senhaHash)) {
-    const [r] = await Promise.all([
-      consumirTentativa(db, "voto.senha.ip", chaveIp, 5, 15 * 60),
-      consumirTentativa(db, "voto.senha.link", codigo, 30, 60 * 60),
-    ]);
-    return r.restantes > 0
-      ? {
-          ok: false,
-          erro: `Senha errada. Confira a senha de 6 números na mensagem (${r.restantes} ${r.restantes === 1 ? "tentativa" : "tentativas"}).`,
-        }
-      : travado;
-  }
-  return { ok: true, senhaHash: tentativa };
+  const refAparelho = refLimite(db, LIMITE_SENHA_APARELHO.acao, `${codigo}:${ip}`);
+  const refLink = refLimite(db, LIMITE_SENHA_LINK.acao, codigo);
+  const r = await db.runTransaction(async (tx) => {
+    const agoraMs = Date.now();
+    const [dAparelho, dLink] = await tx.getAll(refAparelho, refLink);
+    const aparelho = janelaDoLimite(dAparelho.data(), agoraMs, LIMITE_SENHA_APARELHO.janelaSegundos);
+    const link = janelaDoLimite(dLink.data(), agoraMs, LIMITE_SENHA_LINK.janelaSegundos);
+    if (aparelho.contagem >= LIMITE_SENHA_APARELHO.limite || link.contagem >= LIMITE_SENHA_LINK.limite)
+      return { certo: false as const, restantes: 0 };
+    // Senha certa: não grava nada (acertar não gasta tentativas).
+    if (mesmoHash(tentativa, alvo.senhaHash)) return { certo: true as const, restantes: 0 };
+    for (const [ref, l, j] of [
+      [refAparelho, LIMITE_SENHA_APARELHO, aparelho],
+      [refLink, LIMITE_SENHA_LINK, link],
+    ] as const) {
+      tx.set(ref, {
+        acao: l.acao,
+        inicio: j.inicio,
+        contagem: j.contagem + 1,
+        expiraEm: Timestamp.fromMillis(j.inicio + l.janelaSegundos * 1000),
+      });
+    }
+    return {
+      certo: false as const,
+      restantes: Math.min(LIMITE_SENHA_APARELHO.limite - aparelho.contagem - 1, LIMITE_SENHA_LINK.limite - link.contagem - 1),
+    };
+  });
+  if (r.certo) return { ok: true, token: tokenDoLink(codigo, alvo.senhaHash) };
+  return r.restantes > 0
+    ? {
+        ok: false,
+        erro: `Senha errada. Confira a senha de 6 números na mensagem (${r.restantes} ${r.restantes === 1 ? "tentativa" : "tentativas"}).`,
+      }
+    : travado;
 }
 
-/** Comprovante pelo link: só com a senha certa (cookie). */
+/** Comprovante pelo link: só com a senha certa (cookie assinado). */
 export async function comprovantePorCodigo(
   codigo: string,
-  senhaHash: string | null,
+  token: string | null,
   db: Firestore = adminDb(),
 ) {
   const alvo = await resolverCodigo(db, codigo);
-  if (!alvo || !senhaHash || !mesmoHash(senhaHash, alvo.senhaHash)) return null;
+  if (!alvo || !tokenConfere(codigo, token, alvo)) return null;
   return comprovanteDaCasa(alvo.condominioId, alvo.eleicaoId, alvo.unitId, db);
 }

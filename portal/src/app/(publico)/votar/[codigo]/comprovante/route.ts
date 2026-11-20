@@ -29,8 +29,8 @@ export async function GET(
       new URL(`/votar/${codigo}/comprovante`, _req.url),
       303,
     );
-  const senhaHash = (await cookies()).get(cookieDoLink(codigo))?.value ?? null;
-  const c = await comprovantePorCodigo(codigo, senhaHash);
+  const token = (await cookies()).get(cookieDoLink(codigo))?.value ?? null;
+  const c = await comprovantePorCodigo(codigo, token);
   if (!c) return Response.redirect(new URL(`/votar/${codigo}`, _req.url), 303);
   const pdf = pdfComprovante({
     condominioNome: c.condominioNome,

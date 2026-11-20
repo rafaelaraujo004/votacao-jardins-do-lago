@@ -14,6 +14,7 @@ import {
   conferirSenha,
   gerarLinksFaltantes,
   hashSenha,
+  tokenDoLink,
   importarContatos,
   limparCodigo,
   listarEnvios,
@@ -23,7 +24,7 @@ import {
   votarPorCodigo,
 } from "@/server/dados/votacao-links";
 import { calcularPermissoes } from "@/lib/permissoes";
-import type { Candidato } from "@/lib/eleicoes";
+import { somarUrna, type Candidato } from "@/lib/eleicoes";
 
 const PROJETO = "demo-jardins-links";
 let db: Firestore;
@@ -81,10 +82,10 @@ async function codigoDa(id: string, unitId: string): Promise<string> {
   return (await ref(id).collection("links").doc(unitId).get()).get("codigo") as string;
 }
 
-/** Hash da senha certa (o que o cookie guarda depois de digitar a senha). */
+/** O que o cookie guarda depois de digitar a senha certa (lembrete assinado pelo servidor). */
 async function senhaDa(id: string, unitId: string): Promise<string> {
   const l = (await ref(id).collection("links").doc(unitId).get()).data()!;
-  return hashSenha(l.codigo as string, l.senha as string);
+  return tokenDoLink(l.codigo as string, hashSenha(l.codigo as string, l.senha as string));
 }
 
 /** Acha a eleição/casa do código e devolve o hash da senha certa (como o cookie). */
@@ -92,7 +93,7 @@ async function senhaPara(codigo: string): Promise<string | null> {
   const idx = await db.collection("votoCodigos").get();
   for (const d of idx.docs) {
     const l = await db.doc(`condominiums/a/elections/${d.get("eleicaoId")}/links/${d.get("unitId")}`).get();
-    if (l.get("codigo") === codigo) return hashSenha(codigo, l.get("senha") as string);
+    if (l.get("codigo") === codigo) return tokenDoLink(codigo, hashSenha(codigo, l.get("senha") as string));
   }
   return null; // código antigo/trocado
 }
@@ -138,7 +139,7 @@ describe("links de voto", () => {
 
     const depois = await votacaoPorCodigo(codigo, { db });
     expect(depois?.casaVotou).toBe(true);
-    expect((await ref(id).collection("urna").doc("contagem").get()).data()).toEqual({ cedulas: 1, sim: 1 });
+    expect(somarUrna((await ref(id).collection("urna").get()).docs.map((d) => d.data()))).toEqual({ cedulas: 1, sim: 1, nao: 0, brancos: 0, votos: {} });
 
     // A auditoria registra que a casa votou pelo link — nunca em quê.
     const logs = await db.collection("condominiums/a/auditLogs").where("acao", "==", "eleicao.votar").get();
@@ -244,9 +245,13 @@ describe("senha do link e comprovante", () => {
     expect(JSON.stringify((await db.collection("votoCodigos").get()).docs.map((d) => d.data()))).not.toContain(`"${link.senha}"`);
 
     await expect(votarPorCodigo(codigo, null, ["sim"], db)).rejects.toThrow(/senha/);
-    await expect(votarPorCodigo(codigo, hashSenha(codigo, "000000") === (await senhaDa(id, "casa-001")) ? "x" : hashSenha(codigo, "000000"), ["sim"], db)).rejects.toThrow(/senha/);
+    await expect(votarPorCodigo(codigo, tokenDoLink(codigo, hashSenha(codigo, link.senha === "000000" ? "111111" : "000000")), ["sim"], db)).rejects.toThrow(/senha/);
     expect((await votacaoPorCodigo(codigo, { db }))?.senhaOk).toBe(false);
-    expect((await votacaoPorCodigo(codigo, { db, senhaHash: await senhaDa(id, "casa-001") }))?.senhaOk).toBe(true);
+    expect((await votacaoPorCodigo(codigo, { db, token: await senhaDa(id, "casa-001") }))?.senhaOk).toBe(true);
+    // Quem tem só o link não consegue montar o cookie: o hash da senha SEM a assinatura não vale.
+    const semAssinatura = hashSenha(codigo, link.senha as string);
+    expect((await votacaoPorCodigo(codigo, { db, token: semAssinatura }))?.senhaOk).toBe(false);
+    await expect(votarPorCodigo(codigo, semAssinatura, ["sim"], db)).rejects.toThrow(/senha/);
   });
 
   it("conferirSenha: acertar não gasta tentativas; quem erra de outro aparelho não trava a casa", async () => {
@@ -265,7 +270,7 @@ describe("senha do link e comprovante", () => {
     expect(travado.ok).toBe(false);
     if (!travado.ok) expect(travado.erro).toMatch(/15 minutos/);
     // A casa, no aparelho dela, continua conseguindo.
-    expect(await conferirSenha(link.codigo, link.senha, "ip-casa", db)).toEqual({ ok: true, senhaHash: hashSenha(link.codigo, link.senha) });
+    expect(await conferirSenha(link.codigo, link.senha, "ip-casa", db)).toEqual({ ok: true, token: tokenDoLink(link.codigo, hashSenha(link.codigo, link.senha)) });
   });
 
   it("conferirSenha: antes de abrir não aceita senha; código inventado dá a mesma resposta de senha errada", async () => {

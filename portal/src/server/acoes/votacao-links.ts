@@ -7,9 +7,10 @@
  */
 import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
+import { after } from "next/server";
 import { adminDb } from "../firebase-admin";
+import { marcarMudancaDepois } from "../sinais";
 import { garantirPermissao, getContexto } from "../contexto";
-import { consumirTentativa } from "../rate-limit";
 import { ErroDocx, lerTabelasDocx } from "../docx";
 import {
   conferirSenha,
@@ -143,28 +144,22 @@ export async function importarContatosVotacao(
   });
 }
 
-/** Voto pelo link da casa (sem login). Limite de tentativas por endereço contra quem tenta adivinhar códigos. */
+/**
+ * Voto pelo link da casa (sem login). O limite por endereço conta só tentativas ERRADAS
+ * (link inválido, sem a senha certa): votar de verdade nunca gasta tentativas, porque
+ * muitas casas votam atrás do mesmo endereço de internet (veja LIMITE_IP).
+ */
 export async function votarComCodigo(
   _: Resultado,
   dados: FormData,
 ): Promise<Resultado> {
   return executar(async () => {
-    const limite = await consumirTentativa(
-      adminDb(),
-      "voto.link",
-      await ipDoPedido(),
-      30,
-      10 * 60,
-    );
-    if (!limite.permitido)
-      throw new ErroDeNegocio(
-        "Muitas tentativas seguidas. Espere alguns minutos e tente de novo.",
-      );
     const v = lerFormulario(esquemaVotoLink, dados);
     try {
-      const senhaHash =
-        (await cookies()).get(cookieDoLink(v.codigo))?.value ?? null;
-      await votarPorCodigo(v.codigo, senhaHash, v.escolha);
+      const token = (await cookies()).get(cookieDoLink(v.codigo))?.value ?? null;
+      const { condominioId } = await votarPorCodigo(v.codigo, token, v.escolha, adminDb(), await ipDoPedido());
+      // Avisa as telas da comissão depois de responder (fora da transação do voto).
+      after(() => marcarMudancaDepois(adminDb(), condominioId, "eleicoes"));
     } catch (e) {
       const codigo =
         e && typeof e === "object" && "code" in e
@@ -188,17 +183,8 @@ export async function entrarComSenha(
   dados: FormData,
 ): Promise<Resultado> {
   return executar(async () => {
-    const limiteIp = await consumirTentativa(
-      adminDb(),
-      "voto.senha.ip",
-      await ipDoPedido(),
-      30,
-      15 * 60,
-    );
-    if (!limiteIp.permitido)
-      throw new ErroDeNegocio(
-        "Muitas tentativas seguidas. Espere alguns minutos e tente de novo.",
-      );
+    // Os limites (por link, por aparelho e por endereço) ficam em conferirSenha e contam
+    // só as tentativas ERRADAS: acertar a senha nunca gasta tentativas.
     const codigo = limparCodigo(String(dados.get("codigo") ?? ""));
     const senha = String(dados.get("senha") ?? "").replace(/\D/g, "");
     if (!codigo)
@@ -211,7 +197,7 @@ export async function entrarComSenha(
       );
     const r = await conferirSenha(codigo, senha, await ipDoPedido());
     if (!r.ok) throw new ErroDeNegocio(r.erro);
-    (await cookies()).set(cookieDoLink(codigo), r.senhaHash, {
+    (await cookies()).set(cookieDoLink(codigo), r.token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

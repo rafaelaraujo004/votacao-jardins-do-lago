@@ -301,3 +301,23 @@ describe("esquemaFotoCandidato", () => {
     expect(esquemaFotoCandidato.safeParse({ ...ok, candidato: "../x" }).success).toBe(false);
   });
 });
+
+describe("contadores da urna", () => {
+  it("lê e soma os contadores, ignorando valores estranhos", async () => {
+    const { somarUrna } = await import("@/lib/eleicoes");
+    const total = somarUrna([
+      { cedulas: 2, sim: 1, nao: 1 },
+      undefined,
+      null,
+      { cedulas: 3, sim: 3 },
+      { cedulas: 1, brancos: 1, votos: { c1: 1, c2: "x" } },
+      { cedulas: -5, sim: Number.NaN, votos: { c1: 2 } },
+    ]);
+    expect(total).toEqual({ cedulas: 6, sim: 4, nao: 1, brancos: 1, votos: { c1: 3, c2: 0 } });
+  });
+
+  it("urna vazia soma zero", async () => {
+    const { somarUrna } = await import("@/lib/eleicoes");
+    expect(somarUrna([])).toEqual({ cedulas: 0, sim: 0, nao: 0, brancos: 0, votos: {} });
+  });
+});

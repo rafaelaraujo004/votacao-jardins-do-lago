@@ -16,7 +16,7 @@ import {
   salvarBloqueios,
 } from "@/server/dados/eleicoes";
 import { calcularPermissoes } from "@/lib/permissoes";
-import type { Candidato } from "@/lib/eleicoes";
+import { somarUrna, type Candidato } from "@/lib/eleicoes";
 
 const PROJETO = "demo-jardins-eleicoes";
 let db: Firestore;
@@ -75,6 +75,11 @@ async function aberta(extra?: Partial<{ escolhasPorCasa: number; permiteBranco: 
 }
 
 const ref = (id: string) => db.doc(`condominiums/a/elections/${id}`);
+/** Contadores da urna (documento único "contagem"; lidos com a mesma função da apuração). */
+async function urnaDe(id: string) {
+  const snap = await ref(id).collection("urna").get();
+  return somarUrna(snap.docs.map((d) => d.data()));
+}
 
 beforeEach(async () => {
   await limpar();
@@ -89,8 +94,7 @@ describe("registrarVotoEleicao", () => {
     const id = await aberta();
     await registrarVotoEleicao(db, contexto("m1", "casa-1", "morador"), id, ["c2"]);
 
-    const urna = (await ref(id).collection("urna").doc("contagem").get()).data();
-    expect(urna).toEqual({ cedulas: 1, votos: { c2: 1 } });
+    expect(await urnaDe(id)).toEqual({ cedulas: 1, sim: 0, nao: 0, brancos: 0, votos: { c2: 1 } });
 
     const votante = (await ref(id).collection("votantes").doc("casa-1").get()).data()!;
     expect(Object.keys(votante).sort()).toEqual(["comprovante", "unidadeRotulo", "votouEm"]);
@@ -104,14 +108,18 @@ describe("registrarVotoEleicao", () => {
     // Só existem os documentos esperados (nenhuma cédula individual).
     const subs = await ref(id).listCollections();
     expect(subs.map((s) => s.id).sort()).toEqual(["urna", "votantes"]);
-    expect((await ref(id).collection("urna").get()).size).toBe(1);
+    const partes = await ref(id).collection("urna").get();
+    expect(partes.size).toBe(1);
+    // A urna é um documento só, com contadores (nunca quem votou nem a casa).
+    expect(partes.docs[0].id).toBe("contagem");
+    expect(Object.keys(partes.docs[0].data()).sort()).toEqual(["cedulas", "votos"]);
   });
 
   it("a mesma casa não vota duas vezes (nem por outra pessoa da casa)", async () => {
     const id = await aberta();
     await registrarVotoEleicao(db, contexto("m1", "casa-1", "morador"), id, ["c1"]);
     await expect(registrarVotoEleicao(db, contexto("m1b", "casa-1", "morador"), id, ["c2"])).rejects.toThrow(/já votou/);
-    expect((await ref(id).collection("urna").doc("contagem").get()).get("cedulas")).toBe(1);
+    expect((await urnaDe(id)).cedulas).toBe(1);
   });
 
   it("duas pessoas da mesma casa ao mesmo tempo: só um voto vale", async () => {
@@ -121,7 +129,7 @@ describe("registrarVotoEleicao", () => {
       registrarVotoEleicao(db, contexto("m1b", "casa-1", "morador"), id, ["c2"]),
     ]);
     expect(r.filter((x) => x.status === "fulfilled")).toHaveLength(1);
-    const urna = (await ref(id).collection("urna").doc("contagem").get()).data()!;
+    const urna = await urnaDe(id);
     expect(urna.cedulas).toBe(1);
     expect((urna.votos.c1 ?? 0) + (urna.votos.c2 ?? 0)).toBe(1);
   });
@@ -130,8 +138,7 @@ describe("registrarVotoEleicao", () => {
     const id = await aberta({ escolhasPorCasa: 2 });
     await registrarVotoEleicao(db, contexto("m1", "casa-1", "morador"), id, ["branco"]);
     await registrarVotoEleicao(db, contexto("m2", "casa-2", "morador"), id, ["c1", "c3"]);
-    const urna = (await ref(id).collection("urna").doc("contagem").get()).data();
-    expect(urna).toEqual({ cedulas: 2, brancos: 1, votos: { c1: 1, c3: 1 } });
+    expect(await urnaDe(id)).toEqual({ cedulas: 2, sim: 0, nao: 0, brancos: 1, votos: { c1: 1, c3: 1 } });
   });
 
   it("recusa: sem casa, casa inativa, antes de abrir, depois de fechar, rascunho e escolha inválida", async () => {
@@ -147,7 +154,7 @@ describe("registrarVotoEleicao", () => {
     await expect(registrarVotoEleicao(db, contexto("m1", "casa-1", "morador"), rascunho, ["c1"])).rejects.toThrow(/não encontrada/);
 
     // Nada foi contado.
-    expect((await ref(id).collection("urna").doc("contagem").get()).exists).toBe(false);
+    expect((await ref(id).collection("urna").get()).size).toBe(0);
     expect((await ref(id).collection("votantes").get()).size).toBe(0);
   });
 
@@ -238,8 +245,7 @@ describe("chapa única", () => {
     await registrarVotoEleicao(db, contexto("m1", "casa-1", "morador"), id, ["sim"]);
     await registrarVotoEleicao(db, contexto("m2", "casa-2", "morador"), id, ["nao"]);
     await expect(registrarVotoEleicao(db, contexto("m1b", "casa-1", "morador"), id, ["sim"])).rejects.toThrow(/já votou/);
-    const urna = (await ref(id).collection("urna").doc("contagem").get()).data();
-    expect(urna).toEqual({ cedulas: 2, sim: 1, nao: 1 });
+    expect(await urnaDe(id)).toEqual({ cedulas: 2, sim: 1, nao: 1, brancos: 0, votos: {} });
     const votante = (await ref(id).collection("votantes").doc("casa-1").get()).data()!;
     expect(JSON.stringify(votante)).not.toMatch(/sim|nao/);
   });
@@ -265,7 +271,7 @@ describe("bloqueio de casas", () => {
     // Desbloqueou: a casa volta a poder votar.
     await salvarBloqueios(db, comissao, id, { adicionar: [], remover: ["casa-1"] });
     await registrarVotoEleicao(db, contexto("m1", "casa-1", "morador"), id, ["nao"]);
-    expect((await ref(id).collection("urna").doc("contagem").get()).data()).toEqual({ cedulas: 2, sim: 1, nao: 1 });
+    expect(await urnaDe(id)).toEqual({ cedulas: 2, sim: 1, nao: 1, brancos: 0, votos: {} });
 
     // Casa que já votou não pode ser bloqueada (a ata ficaria com números errados).
     await expect(salvarBloqueios(db, comissao, id, { adicionar: ["casa-2"], remover: [] })).rejects.toThrow(/já votou/);
