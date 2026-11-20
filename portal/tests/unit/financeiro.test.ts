@@ -94,9 +94,9 @@ describe("gráfico do saldo", () => {
   );
 
   it("com um mês só, começa no saldo do mês anterior (o gráfico já aparece)", () => {
-    expect(pontosDoSaldo(meses)).toEqual([
+    expect(pontosDoSaldo(meses)).toStrictEqual([
       { mes: "2026-09", saldoCentavos: 1_000_00 },
-      { mes: "2026-10", saldoCentavos: 2_000_00 },
+      { mes: "2026-10", saldoCentavos: 2_000_00, receitasCentavos: 10_000_00, despesasCentavos: 9_000_00 },
     ]);
   });
 

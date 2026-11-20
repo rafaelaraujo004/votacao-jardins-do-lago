@@ -1,7 +1,8 @@
 /**
- * Prestação de contas no PAINEL do síndico e do conselho: os valores do mês
- * (saldo, receitas, despesas e resultado) e, abaixo, o gráfico do saldo dos
- * últimos 12 meses. Recebe os meses já calculados no servidor.
+ * Prestação de contas no PAINEL do síndico e do conselho (e no início do morador):
+ * os valores do mês (saldo, receitas, despesas e resultado) e, abaixo, o gráfico
+ * dos últimos 12 meses. Tocar num mês do gráfico troca os valores de cima para
+ * aquele mês. Recebe os meses já calculados no servidor.
  *
  * - Visão completa ("financeiro.ver"): mostra o mês atual, mesmo ainda em aberto,
  *   e o gráfico inclui meses que os moradores ainda não veem (avisado embaixo).
@@ -13,7 +14,7 @@ import { nomeDoMes, nomeDoMesTitulo, pontosDoSaldo, type MesComSaldo } from "@/l
 import { EstadoVazio } from "@/components/ui/basicos";
 import { TituloSecao } from "@/components/ui/painel";
 import { CartoesResumo, SituacaoMes } from "./pecas";
-import { GraficoSaldo } from "./grafico-saldo";
+import { ResumoDosMeses, type PainelDoMes } from "./resumo-meses";
 
 /** Quantos meses o gráfico do painel mostra. */
 const MESES_NO_GRAFICO = 12;
@@ -63,34 +64,49 @@ export function ResumoFinanceiroPainel({
     );
   }
 
-  const doMes = ateHoje.find((m) => m.mes === mes);
-  // Saldo no fim do mês mostrado (sem lançamentos no mês: o saldo que vinha de antes).
-  const anterior = ateHoje.filter((m) => m.mes <= mes).at(-1);
-  const saldo = doMes?.saldoFinalCentavos ?? anterior?.saldoFinalCentavos ?? saldoInicialCentavos;
   const pontos = pontosDoSaldo(ateHoje, MESES_NO_GRAFICO);
   // O aviso só faz sentido quando o gráfico aparece (2 meses ou mais).
   const temNaoPublicado = visaoCompleta && pontos.length >= 2 && ateHoje.slice(-MESES_NO_GRAFICO).some((m) => !m.publicado);
-  const nomeCurto = nomeDoMes(mes).split(" ")[0];
+
+  /** Cabeçalho e cartões de um mês (tocar no mês do gráfico mostra estes). */
+  function painelDoMes(m: string): PainelDoMes {
+    const doMes = ateHoje.find((x) => x.mes === m);
+    // Saldo no fim do mês (sem lançamentos no mês: o saldo que vinha de antes).
+    const anterior = ateHoje.filter((x) => x.mes <= m).at(-1);
+    const saldo = doMes?.saldoFinalCentavos ?? anterior?.saldoFinalCentavos ?? saldoInicialCentavos;
+    const nomeCurto = nomeDoMes(m).split(" ")[0];
+    return {
+      cabecalho: (
+        <>
+          <span className="font-bold text-ink">{nomeDoMesTitulo(m)}</span>
+          <SituacaoMes publicado={doMes?.publicado ?? false} />
+          {m === mesAtual ? <span className="text-[0.88rem] text-muted">mês atual</span> : null}
+        </>
+      ),
+      cartoes: (
+        <CartoesResumo
+          saldo={saldo}
+          receitas={doMes?.receitasCentavos ?? 0}
+          despesas={doMes?.despesasCentavos ?? 0}
+          rotuloSaldo={m === mesAtual ? "em caixa agora" : `no fim de ${nomeCurto}`}
+        />
+      ),
+    };
+  }
+
+  // O mês que abre e cada mês do gráfico que tem lançamentos (o mês de partida não tem cartões).
+  const paineis: Record<string, PainelDoMes> = { [mes]: painelDoMes(mes) };
+  for (const p of pontos) {
+    if (!paineis[p.mes] && ateHoje.some((x) => x.mes === p.mes)) paineis[p.mes] = painelDoMes(p.mes);
+  }
 
   return (
     <section aria-labelledby="titulo-financeiro-painel" className="flex flex-col gap-3">
       {cabecalho}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="font-bold text-ink">{nomeDoMesTitulo(mes)}</span>
-        <SituacaoMes publicado={doMes?.publicado ?? false} />
-        {mes === mesAtual ? <span className="text-[0.88rem] text-muted">mês atual</span> : null}
-      </div>
-
-      <CartoesResumo
-        saldo={saldo}
-        receitas={doMes?.receitasCentavos ?? 0}
-        despesas={doMes?.despesasCentavos ?? 0}
-        rotuloSaldo={mes === mesAtual ? "em caixa agora" : `no fim de ${nomeCurto}`}
-      />
-
-      <h3 className="sr-only">Saldo nos últimos meses</h3>
-      <GraficoSaldo
+      <ResumoDosMeses
+        paineis={paineis}
+        inicial={mes}
         pontos={pontos}
         mensagemVazia={
           visaoCompleta

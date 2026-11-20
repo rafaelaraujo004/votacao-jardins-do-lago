@@ -191,13 +191,28 @@ export function calcularSaldos(meses: MesResumo[], saldoInicialCentavos: number)
     });
 }
 
+/** Um mês no gráfico: saldo no fim do mês e, quando conhecidos, o que entrou e saiu nele. */
+export type PontoSaldo = {
+  mes: string;
+  saldoCentavos: number;
+  /** Ausente no mês "de partida" (antes do primeiro mês com lançamentos). */
+  receitasCentavos?: number;
+  despesasCentavos?: number;
+};
+
 /**
  * Pontos do gráfico de saldo (os últimos `quantos` meses). Com um mês só, o gráfico começa no
  * saldo que vinha do mês anterior (ex.: setembro = saldo inicial) — assim já aparece no 1º mês.
+ * Esse mês de partida não tem receitas nem despesas.
  */
-export function pontosDoSaldo(meses: MesComSaldo[], quantos = 12): { mes: string; saldoCentavos: number }[] {
+export function pontosDoSaldo(meses: MesComSaldo[], quantos = 12): PontoSaldo[] {
   const ultimos = meses.slice(-quantos);
-  const pontos = ultimos.map((m) => ({ mes: m.mes, saldoCentavos: m.saldoFinalCentavos }));
+  const pontos: PontoSaldo[] = ultimos.map((m) => ({
+    mes: m.mes,
+    saldoCentavos: m.saldoFinalCentavos,
+    receitasCentavos: m.receitasCentavos,
+    despesasCentavos: m.despesasCentavos,
+  }));
   if (pontos.length === 1) pontos.unshift({ mes: mesAnterior(ultimos[0].mes), saldoCentavos: ultimos[0].saldoAnteriorCentavos });
   return pontos;
 }
