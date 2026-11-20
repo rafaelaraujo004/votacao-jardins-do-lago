@@ -12,7 +12,11 @@ condominiums/{c}                     nome, status, fuso, moeda, (portalPublico: 
                                      pix {chave (só dígitos no CNPJ/CPF/celular), tipo (cnpj/cpf/email/telefone/aleatoria),
                                      favorecido} | null, telefoneRonda, responsavelReservas {nome, telefone, horario|null} | null,
                                      linkVotacao (https) | null}  — cada formulário grava só os seus campos ("informacoes.<campo>")
-  members/{uid}                      nome, papel, unitId, status, permissoesExtras[], permissoesNegadas[],
+  members/{uid}                      nome, papel, unitId, status, telefone, telefone2 (só dígitos, com DDD),
+                                     permissoesExtras[], permissoesNegadas[],
+                                     origem? ("lista-contatos" = veio da lista de contatos; uid fixo
+                                     lista-{c}-{unitId}-{resumo do nome}: rodar a importação de novo não
+                                     repete ninguém, mesmo se a lista mudar a ordem dos nomes),
                                      precisaTrocarSenha?, senhaProvisoriaValidaDesde? (ms, marca do Firebase),
                                      senhaProvisoriaEm?, senhaProvisoriaPor?, senhaTrocadaEm?,
                                      usuario? (só morador: código de 6 caracteres, ex. "K7M4PX"), usuarioCriadoEm?
@@ -76,6 +80,10 @@ votoCodigos/{sha256(código)}         condominioId, eleicaoId, unitId, senhaHash
   sistema/sinais                     {portaria, reservas, financeiro, comunicados, solicitacoes, documentos,
                                      enquetes, classificados, pessoas, informacoes}: hora da última mudança de
                                      cada módulo (só servidor; gravado junto com a auditoria)
+  sistema/importacaoMoradores        {ate (ms), por, desde}: trava da importação da lista de contatos (uma por vez;
+                                     solta sozinha em 3 min se o servidor cair no meio); excluidosPorCasa {unitId:
+                                     [nomes sem acento/minúsculos]} = moradores que o síndico excluiu (não voltam ao
+                                     trazer a lista de novo)
 ```
 
 Coleções em inglês (padrão do Firebase e da sugestão inicial); campos em português (linguagem do projeto).
@@ -97,6 +105,7 @@ Coleções em inglês (padrão do Firebase e da sugestão inicial); campos em po
 | `informacoes` no documento do condomínio | A área do morador (com login) lê um documento só e devolve uma lista fechada de campos (nunca o documento inteiro). O antigo `portalPublico` não é mais lido nem gravado: não existe área sem login. |
 | `votes/{unitId}` com o id da casa | O "1 voto por casa" vem do próprio caminho: a transação usa `create`, que falha se a casa já votou. O síndico só vê `totais`. |
 | `counters/solicitacoes-AAAA` | Protocolo sequencial por ano sem repetir, lido e gravado na mesma transação que cria a solicitação. |
+| Excluir cadastro (só o admin) apaga `members/{uid}`, `usernames/{codigo}` e `users/{uid}` (ou tira o condomínio da lista, se a pessoa estiver em outro) e a conta no Authentication | É a exceção ao "nada é apagado", pedida pelo síndico para cadastros errados ou de quem saiu. O histórico (reservas, solicitações, auditoria) guarda o nome e continua; anúncios ainda no ar ou pendentes viram "removido" na mesma transação (o WhatsApp da pessoa não fica exposto). Morador excluído fica anotado por casa e nome para a importação da lista não trazê-lo de volta. Para afastar alguém por um tempo existe "Suspender". |
 | `classifieds` só pelo servidor | O documento tem `autorUid` e `unitId`; os outros moradores recebem só primeiro nome e o contato escolhido pelo autor. |
 | `sistema/sinais` (um documento por condomínio) | As telas abertas perguntam a cada 15–20 s "o que mudou?" lendo **só este documento** (e não a tela inteira). É gravado na mesma transação da auditoria, então só marca o que de fato foi salvo. Não tem dado pessoal. Veja "Sincronização" em ARQUITETURA.md. |
 | Áreas reais por id fixo | O script `configurar-jardins-do-lago` pode rodar de novo sem duplicar nada (merge por id). |

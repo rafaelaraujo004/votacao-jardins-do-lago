@@ -50,6 +50,9 @@ Não existe área pública. Todas as páginas, ações e exportações exigem se
 | `/admin/reservas/areas` | `areas.configurar` |
 | Acesso com senha da equipe (página da pessoa) | `equipe.gerenciar` |
 | Usuário e senha do morador (página da pessoa e da unidade) | `moradores.gerenciar` (só o admin) |
+| `/admin/pessoas` (lista) e página da pessoa | `moradores.ver` = consulta; **editar** nome, perfil, casa e telefones: `moradores.gerenciar` (morador) ou `equipe.gerenciar` (portaria, conselho e administração) |
+| `/admin/pessoas/importar` (trazer a lista de contatos da votação) | `moradores.gerenciar` (só o admin) |
+| **Excluir cadastro** (página da pessoa) | só o **papel admin**, com a gerência do perfil da pessoa; nunca o próprio cadastro nem o último admin ativo. Apaga o cadastro, o usuário do morador e a conta de acesso (não dá para desfazer: para algo temporário use "Suspender") |
 | `/comunicados`, `/comunicados/[id]` (morador) | `comunicados.ver` (só publicados) |
 | `/admin/comunicados` | `comunicados.ver` = consulta; `comunicados.publicar` = criar, editar, publicar, fixar e arquivar |
 | `/solicitacoes`, `/solicitacoes/[id]` (morador) | `solicitacoes.abrir` (só a própria casa; notas internas nunca aparecem) |

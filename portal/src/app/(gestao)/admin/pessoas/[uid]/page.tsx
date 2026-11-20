@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, CirclePause, CirclePlay, KeyRound, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CirclePause, CirclePlay, KeyRound, ShieldCheck, Trash2 } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { obterPessoa } from "@/server/dados/pessoas";
 import { situacaoAcessoMorador, situacaoDoAcesso } from "@/server/dados/acesso";
@@ -24,6 +24,7 @@ import { BotaoLink } from "@/components/ui/botao";
 import { CamposPessoa } from "../campos-pessoa";
 import { EtiquetaSituacaoPessoa } from "../etiquetas";
 import { AcessoSenha } from "./acesso-senha";
+import { BotaoExcluirPessoa } from "./botao-excluir";
 import { AcessoMorador } from "@/components/acesso/acesso-morador";
 
 export const metadata: Metadata = { title: "Pessoa" };
@@ -51,6 +52,8 @@ export default async function PaginaPessoa({ params, searchParams }: PageProps<"
     pessoa.papel === "morador" && !ehVoce && pessoa.status === "ativo" && ctx.permissoes.has("moradores.gerenciar");
   const situacaoMorador = podeCriarAcessoMorador ? await situacaoAcessoMorador(ctx, pessoa.uid) : null;
   const efetivas = calcularPermissoes(pessoa.papel, pessoa.permissoesExtras, pessoa.permissoesNegadas);
+  // Excluir de vez: só a administração (síndico), nunca o próprio cadastro.
+  const podeExcluir = ctx.papel === "admin" && podeEditar && !ehVoce;
 
   return (
     <div className="flex flex-col gap-6">
@@ -73,7 +76,7 @@ export default async function PaginaPessoa({ params, searchParams }: PageProps<"
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Cartao className="flex flex-col gap-4">
-          <h2 className="text-lg font-bold">Dados</h2>
+          <h2 className="text-lg font-bold">{podeEditar ? "Editar dados" : "Dados"}</h2>
           {podeEditar ? (
             <Formulario acao={salvarPessoa} limparAoSalvar={false}>
               <input type="hidden" name="uid" value={pessoa.uid} />
@@ -210,6 +213,23 @@ export default async function PaginaPessoa({ params, searchParams }: PageProps<"
               </ul>
             )}
           </Cartao>
+
+          {podeExcluir ? (
+            <Cartao className="flex flex-col gap-3 border-danger">
+              <h2 className="flex items-center gap-2 text-lg font-bold text-danger">
+                <Trash2 aria-hidden className="size-5" /> Excluir cadastro
+              </h2>
+              <p className="text-ink-2">
+                Apaga o cadastro e o acesso de {pessoa.nome}. Não dá para desfazer.{" "}
+                {pessoa.status === "suspenso"
+                  ? "O acesso já está suspenso: só exclua se este cadastro não deve mais existir."
+                  : "Para afastar a pessoa só por um tempo, use “Suspender acesso”."}
+              </p>
+              <div>
+                <BotaoExcluirPessoa uid={pessoa.uid} nome={pessoa.nome} suspenso={pessoa.status === "suspenso"} />
+              </div>
+            </Cartao>
+          ) : null}
         </div>
       </div>
     </div>

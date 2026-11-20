@@ -92,8 +92,10 @@ service cloud.firestore {
       allow read: if ativo(c);
       allow write: if false;
 
+      // Cadastro das pessoas (nome, casa, telefones): a própria pessoa, a administração e
+      // quem recebeu "ver moradores". O conselho sem essa permissão não lê (nem pelo Firebase direto).
       match /members/{uid} {
-        allow read: if (logado() && request.auth.uid == uid) || gestao(c);
+        allow read: if (logado() && request.auth.uid == uid) || papel(c, 'admin') || temExtra(c, 'moradores.ver');
         allow write: if false;
       }
 

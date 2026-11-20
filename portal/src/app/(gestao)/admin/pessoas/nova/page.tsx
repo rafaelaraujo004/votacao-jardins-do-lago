@@ -41,7 +41,8 @@ export default async function NovaPessoa({ searchParams }: PageProps<"/admin/pes
               senha provisória na página da pessoa.
             </p>
             <p className="mt-1">
-              <strong>Moradores</strong>: o cadastro fica pronto e o acesso será liberado em breve pela administração.
+              <strong>Moradores</strong>: depois de adicionar, crie o usuário e a senha na página da pessoa e envie pelo
+              WhatsApp.
             </p>
           </Alerta>
           <div>

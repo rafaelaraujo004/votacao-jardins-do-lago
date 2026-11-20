@@ -47,6 +47,12 @@ const DESCRICAO: Record<string, { texto: string; icone: LucideIcon }> = {
   "sessao.sair": { texto: "Saiu do portal", icone: LogOut },
   "condominio.criar": { texto: "Criou o condomínio no sistema", icone: Settings },
   "membro.criar": { texto: "Cadastrou uma pessoa", icone: Settings },
+  "membro.alterar": { texto: "Alterou o cadastro de uma pessoa", icone: Pencil },
+  "membro.permissoes": { texto: "Alterou as permissões de uma pessoa", icone: Settings },
+  "membro.suspender": { texto: "Suspendeu o acesso de uma pessoa", icone: UserX },
+  "membro.reativar": { texto: "Reativou o acesso de uma pessoa", icone: UserCheck },
+  "membro.excluir": { texto: "Excluiu o cadastro de uma pessoa", icone: UserX },
+  "membro.importar": { texto: "Trouxe pessoas da lista de contatos (um lote)", icone: Settings },
   // Acesso com senha (equipe)
   "acesso.criar_senha": { texto: "Criou o acesso com senha de alguém da equipe", icone: KeyRound },
   "acesso.criar_morador": { texto: "Criou o usuário e a senha de um morador", icone: KeyRound },

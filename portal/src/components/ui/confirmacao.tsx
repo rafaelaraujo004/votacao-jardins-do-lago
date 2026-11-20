@@ -6,7 +6,7 @@
  * Se a ação nem chegar ao servidor (internet caiu, ou o site foi atualizado com a
  * página aberta), a janela avisa e oferece "Atualizar a página" — nunca fica muda.
  */
-import { useRef, useState, type ReactNode } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
 import { RotateCw, TriangleAlert } from "lucide-react";
 import { Botao } from "./botao";
 
@@ -28,6 +28,8 @@ export function BotaoComConfirmacao({
   variante?: "primario" | "secundario" | "perigo";
 }) {
   const janela = useRef<HTMLDialogElement>(null);
+  // Id único por janela: com várias na mesma página, cada uma é anunciada com o próprio título.
+  const idTitulo = useId();
   const [carregando, setCarregando] = useState(false);
   const [falhou, setFalhou] = useState(false);
 
@@ -58,7 +60,7 @@ export function BotaoComConfirmacao({
       </Botao>
       <dialog
         ref={janela}
-        aria-labelledby="confirmacao-titulo"
+        aria-labelledby={idTitulo}
         className="m-auto w-[min(92vw,28rem)] rounded-[26px] border border-borda-luz bg-surface p-0 text-ink shadow-float backdrop:bg-black/50"
       >
         <div className="flex flex-col gap-4 p-6">
@@ -67,7 +69,7 @@ export function BotaoComConfirmacao({
               <TriangleAlert aria-hidden className="size-6" />
             </span>
           ) : null}
-          <h2 id="confirmacao-titulo" className="text-xl font-bold">
+          <h2 id={idTitulo} className="text-xl font-bold">
             {titulo}
           </h2>
           <div className="text-ink-2">{mensagem}</div>

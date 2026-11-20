@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { Campo, classeEntrada } from "@/components/ui/basicos";
 import { NOME_DO_PAPEL, type Papel } from "@/lib/permissoes";
+import { formatarTelefone } from "@/lib/contatos-votacao";
 
 export function CamposPessoa({
   papeis,
@@ -13,7 +14,7 @@ export function CamposPessoa({
 }: {
   papeis: Papel[];
   unidades: { id: string; rotulo: string }[];
-  inicial?: { nome?: string; papel?: Papel; unitId?: string | null; telefone?: string };
+  inicial?: { nome?: string; papel?: Papel; unitId?: string | null; telefone?: string; telefone2?: string };
   papelTravado?: boolean;
 }) {
   const [papel, setPapel] = useState<Papel>(inicial?.papel ?? papeis[0]);
@@ -21,7 +22,7 @@ export function CamposPessoa({
   return (
     <>
       <Campo id="nome" rotulo="Nome completo">
-        <input id="nome" name="nome" required minLength={3} maxLength={80} autoComplete="off" defaultValue={inicial?.nome} className={classeEntrada} />
+        <input id="nome" name="nome" required minLength={2} maxLength={80} autoComplete="off" defaultValue={inicial?.nome} className={classeEntrada} />
       </Campo>
 
       <Campo id="papel" rotulo="Perfil" dica={papelTravado ? "Você não pode mudar o seu próprio perfil." : undefined}>
@@ -66,9 +67,24 @@ export function CamposPessoa({
           autoComplete="off"
           maxLength={20}
           placeholder="(91) 99999-9999"
-          defaultValue={inicial?.telefone}
+          defaultValue={inicial?.telefone ? formatarTelefone(inicial.telefone) : undefined}
           className={classeEntrada}
           aria-describedby="telefone-dica"
+        />
+      </Campo>
+
+      <Campo id="telefone2" rotulo="Outro telefone (opcional)" dica="Um segundo número para contato, se houver.">
+        <input
+          id="telefone2"
+          name="telefone2"
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
+          maxLength={20}
+          placeholder="(91) 99999-9999"
+          defaultValue={inicial?.telefone2 ? formatarTelefone(inicial.telefone2) : undefined}
+          className={classeEntrada}
+          aria-describedby="telefone2-dica"
         />
       </Campo>
     </>

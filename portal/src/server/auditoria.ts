@@ -31,6 +31,8 @@ export const ACOES_AUDITADAS = [
   "membro.permissoes",
   "membro.suspender",
   "membro.reativar",
+  "membro.excluir",
+  "membro.importar",
   "unidade.criar",
   "unidade.alterar",
   "financeiro.lancar",

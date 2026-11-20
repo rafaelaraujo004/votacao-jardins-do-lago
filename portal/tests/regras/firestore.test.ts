@@ -132,6 +132,16 @@ describe("isolamento entre unidades", () => {
     await assertFails(getDoc(doc(como("morador1"), `condominiums/${C}/members/morador2`)));
   });
 
+  it("telefones dos moradores: o síndico lê; o conselho só com a permissão extra 'ver moradores'", async () => {
+    await assertSucceeds(getDoc(doc(como("sindico"), `condominiums/${C}/members/morador1`)));
+    await assertFails(getDoc(doc(como("conselheiro"), `condominiums/${C}/members/morador1`)));
+    await assertFails(getDoc(doc(como("porteiro"), `condominiums/${C}/members/morador1`)));
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await updateDoc(doc(ctx.firestore(), `condominiums/${C}/members/conselheiro`), { permissoesExtras: ["moradores.ver"] });
+    });
+    await assertSucceeds(getDoc(doc(como("conselheiro"), `condominiums/${C}/members/morador1`)));
+  });
+
   it("ninguém lê o cadastro de usuário de outra pessoa", async () => {
     await assertSucceeds(getDoc(doc(como("morador1"), "users/morador1")));
     await assertFails(getDoc(doc(como("sindico"), "users/morador1")));

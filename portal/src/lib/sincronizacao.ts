@@ -46,6 +46,8 @@ export const MODULO_DA_ACAO: Record<AcaoAuditada, ModuloSinc | null> = {
   "membro.permissoes": "pessoas",
   "membro.suspender": "pessoas",
   "membro.reativar": "pessoas",
+  "membro.excluir": "pessoas",
+  "membro.importar": "pessoas",
   "unidade.criar": "pessoas",
   "unidade.alterar": "pessoas",
   "admin.alterar": "pessoas",
