@@ -11,6 +11,7 @@ import {
   ChevronRight,
   CircleCheck,
   Clock,
+  House,
   RotateCcw,
   TrendingDown,
   TrendingUp,
@@ -18,7 +19,7 @@ import {
 } from "lucide-react";
 import { cx } from "@/lib/cx";
 import { dataISOParaBR, formatarMoeda } from "@/lib/formato";
-import { FORMAS_PAGAMENTO, nomeDoMes, nomeDoMesTitulo, type MesComSaldo } from "@/lib/financeiro";
+import { agruparPorCategoria, CAMPOS_QUADRO, FORMAS_PAGAMENTO, nomeDoMes, nomeDoMesTitulo, type MesComSaldo, type QuadroCasas } from "@/lib/financeiro";
 import { Etiqueta } from "@/components/ui/basicos";
 import { BlocoNumero, type CorNumero } from "@/components/ui/painel";
 import type { Lancamento } from "@/server/dados/financeiro";
@@ -216,59 +217,142 @@ export function SituacaoMes({ publicado }: { publicado: boolean }) {
 export function ListaLancamentos({ lancamentos, acao }: { lancamentos: Lancamento[]; acao?: (l: Lancamento) => ReactNode }) {
   return (
     <ul className="flex flex-col rounded-[var(--radius-card)] border border-borda-luz bg-surface px-4 py-1 shadow-card">
-      {lancamentos.map((l) => {
-        const entrada = l.tipo === "receita";
-        // Efeito no caixa: receita soma, despesa subtrai; o estorno (valor negativo) inverte.
-        const efeito = entrada ? l.valorCentavos : -l.valorCentavos;
-        return (
-          <li key={l.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line py-3 last:border-0">
-            <span
-              className={cx(
-                "grid size-[42px] shrink-0 place-items-center rounded-[13px]",
-                entrada ? "bg-ok-soft text-pine" : "bg-plum-soft text-plum",
-              )}
-            >
-              {l.estornaId ? (
-                <RotateCcw aria-hidden className="size-5" />
-              ) : entrada ? (
-                <ArrowDownLeft aria-hidden className="size-5" />
-              ) : (
-                <ArrowUpRight aria-hidden className="size-5" />
-              )}
-            </span>
-            <div className="min-w-0 flex-1 basis-40">
-              <div className="flex items-baseline justify-between gap-2">
-                <p className="min-w-0 font-bold leading-snug">{l.descricao}</p>
-                <span
-                  className={cx(
-                    "shrink-0 whitespace-nowrap font-bold tabular-nums",
-                    efeito >= 0 ? "text-pine" : "text-plum",
-                  )}
-                >
-                  <span className="sr-only">{efeito >= 0 ? "Entrou no caixa: " : "Saiu do caixa: "}</span>
-                  {efeito >= 0 ? "+ " : "− "}
-                  {formatarMoeda(Math.abs(l.valorCentavos))}
-                </span>
-              </div>
-              <p className="mt-0.5 text-[0.86rem] text-muted">
-                {dataISOParaBR(l.data)} · {l.categoriaNome}
-                {/* "Outro" não diz nada a quem lê: só mostra a forma quando ela é conhecida. */}
-                {l.forma !== "outro" ? ` · ${FORMAS_PAGAMENTO[l.forma] ?? l.forma}` : ""}
-                {l.criadoPorNome ? ` · lançado por ${l.criadoPorNome}` : ""}
-              </p>
-              <span className="sr-only">{entrada ? "Entrada de dinheiro" : "Saída de dinheiro"}</span>
-              {l.estornaId || l.estornadoPor ? (
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  {l.estornaId ? <Etiqueta tom="neutro" icone={RotateCcw}>Estorno</Etiqueta> : null}
-                  {l.estornadoPor ? <Etiqueta tom="aviso" icone={Undo2}>Estornado</Etiqueta> : null}
-                </div>
-              ) : null}
-            </div>
-            {acao ? <div className="w-full sm:w-auto">{acao(l)}</div> : null}
-          </li>
-        );
-      })}
+      {lancamentos.map((l) => (
+        <LinhaLancamento key={l.id} l={l} acao={acao} />
+      ))}
     </ul>
+  );
+}
+
+function LinhaLancamento({ l, acao, numero }: { l: Lancamento; acao?: (l: Lancamento) => ReactNode; numero?: number }) {
+  const entrada = l.tipo === "receita";
+  // Efeito no caixa: receita soma, despesa subtrai; o estorno (valor negativo) inverte.
+  const efeito = entrada ? l.valorCentavos : -l.valorCentavos;
+  return (
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line py-3 last:border-0">
+      <span
+        className={cx(
+          "grid size-[42px] shrink-0 place-items-center rounded-[13px]",
+          entrada ? "bg-ok-soft text-pine" : "bg-plum-soft text-plum",
+        )}
+      >
+        {l.estornaId ? (
+          <RotateCcw aria-hidden className="size-5" />
+        ) : numero !== undefined ? (
+          <span className="text-[0.95rem] font-bold tabular-nums">
+            <span className="sr-only">Nº </span>
+            {numero}
+          </span>
+        ) : entrada ? (
+          <ArrowDownLeft aria-hidden className="size-5" />
+        ) : (
+          <ArrowUpRight aria-hidden className="size-5" />
+        )}
+      </span>
+      <div className="min-w-0 flex-1 basis-40">
+        <div className="flex items-baseline justify-between gap-2">
+          <p className="min-w-0 font-bold leading-snug">{l.descricao}</p>
+          <span className={cx("shrink-0 whitespace-nowrap font-bold tabular-nums", efeito >= 0 ? "text-pine" : "text-plum")}>
+            <span className="sr-only">{efeito >= 0 ? "Entrou no caixa: " : "Saiu do caixa: "}</span>
+            {efeito >= 0 ? "+ " : "− "}
+            {formatarMoeda(Math.abs(l.valorCentavos))}
+          </span>
+        </div>
+        <p className="mt-0.5 text-[0.86rem] text-muted">
+          {dataISOParaBR(l.data)}
+          {numero === undefined ? ` · ${l.categoriaNome}` : ""}
+          {/* "Outro" não diz nada a quem lê: só mostra a forma quando ela é conhecida. */}
+          {l.forma !== "outro" ? ` · ${FORMAS_PAGAMENTO[l.forma] ?? l.forma}` : ""}
+          {l.criadoPorNome ? ` · lançado por ${l.criadoPorNome}` : ""}
+        </p>
+        <span className="sr-only">{entrada ? "Entrada de dinheiro" : "Saída de dinheiro"}</span>
+        {l.estornaId || l.estornadoPor ? (
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {l.estornaId ? <Etiqueta tom="neutro" icone={RotateCcw}>Estorno</Etiqueta> : null}
+            {l.estornadoPor ? <Etiqueta tom="aviso" icone={Undo2}>Estornado</Etiqueta> : null}
+          </div>
+        ) : null}
+      </div>
+      {acao ? <div className="w-full sm:w-auto">{acao(l)}</div> : null}
+    </li>
+  );
+}
+
+/**
+ * Lançamentos do mês separados como no relatório em papel: receitas e cada categoria de
+ * despesa (ordinárias, extraordinárias…), numerados na ordem em que foram lançados e com o
+ * subtotal de cada grupo. No fim, o total geral das despesas.
+ */
+export function ListaAgrupada({ lancamentos, ordem }: { lancamentos: Lancamento[]; ordem?: Map<string, number> }) {
+  const grupos = agruparPorCategoria(lancamentos, ordem);
+  const totalDespesas = grupos.filter((g) => g.tipo === "despesa").reduce((t, g) => t + g.totalCentavos, 0);
+  const gruposDespesa = grupos.filter((g) => g.tipo === "despesa").length;
+  return (
+    <div className="flex flex-col gap-4">
+      {grupos.map((g) => (
+        <section
+          key={`${g.tipo}:${g.categoriaId}`}
+          aria-label={`${g.nome}: ${g.itens.length} lançamentos, subtotal ${formatarMoeda(g.totalCentavos)}`}
+          className="overflow-hidden rounded-[var(--radius-card)] border border-borda-luz bg-surface shadow-card"
+        >
+          <header
+            className={cx(
+              "flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-4 py-3",
+              g.tipo === "receita" ? "bg-ok-soft" : "bg-plum-soft",
+            )}
+          >
+            <h3 className="font-display text-[1.05rem] font-bold">
+              {g.nome}
+              <span className="ml-2 text-[0.85rem] font-normal text-ink-2">
+                {g.tipo === "receita" ? "entrada" : "saída"} · {g.itens.length} {g.itens.length === 1 ? "lançamento" : "lançamentos"}
+              </span>
+            </h3>
+            <p className="font-bold tabular-nums">
+              <span className="text-[0.85rem] font-normal text-ink-2">Subtotal </span>
+              {formatarMoeda(g.totalCentavos)}
+            </p>
+          </header>
+          <ul className="flex flex-col px-4 py-1">
+            {g.itens.map((l, i) => (
+              <LinhaLancamento key={l.id} l={l} numero={i + 1} />
+            ))}
+          </ul>
+        </section>
+      ))}
+      {gruposDespesa > 1 ? (
+        <p className="flex flex-wrap items-baseline justify-between gap-2 rounded-[var(--radius-card)] border-2 border-plum/40 bg-surface px-4 py-3 font-bold">
+          <span>Total geral das despesas</span>
+          <span className="tabular-nums">{formatarMoeda(totalDespesas)}</span>
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+// ---------- Quadro de casas do mês ----------
+
+/** Quadro de casas (como no relatório em papel): só totais, nenhuma casa identificada. */
+export function QuadroCasasResumo({ quadro }: { quadro: QuadroCasas }) {
+  const itens = CAMPOS_QUADRO.filter((c) => quadro[c.chave] !== null);
+  return (
+    <div className="flex flex-col gap-3">
+      {itens.length ? (
+        <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {itens.map((c) => (
+            <div key={c.chave} className="rounded-2xl border border-borda-luz bg-surface px-3.5 py-3 shadow-card">
+              <dt className="text-[0.82rem] font-bold leading-tight text-ink-2">{c.rotulo}</dt>
+              <dd className="mt-1 font-display text-[1.6rem] font-bold leading-none tabular-nums">{quadro[c.chave]}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+      {quadro.observacao ? (
+        <p className="flex items-start gap-2 text-[0.92rem] text-ink-2">
+          <House aria-hidden className="mt-0.5 size-4 shrink-0" />
+          {quadro.observacao}
+        </p>
+      ) : null}
+    </div>
   );
 }
 

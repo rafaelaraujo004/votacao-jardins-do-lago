@@ -41,6 +41,7 @@ export const ACOES_AUDITADAS = [
   "financeiro.publicar",
   "financeiro.configurar",
   "financeiro.categoria",
+  "financeiro.quadro",
   "informacoes.alterar",
   "visitante.autorizar",
   "visitante.cancelar",

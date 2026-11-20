@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { FileDown, FileText, Plus, Send, Wallet } from "lucide-react";
+import { Eye, EyeOff, FileDown, FileText, House, Plus, Send, Tags, Wallet } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
-import { configFinanceira, lancamentosDoMes, listarCategorias, mesesComSaldo } from "@/server/dados/financeiro";
-import { configurarSaldoInicial, criarCategoriasPadrao, publicarMes } from "@/server/acoes/financeiro";
+import { configFinanceira, contarCasasAtivas, lancamentosDoMes, listarCategorias, mesesComSaldo } from "@/server/dados/financeiro";
+import { alternarCategoria, configurarSaldoInicial, criarCategoria, criarCategoriasPadrao, publicarMes, salvarQuadroCasas } from "@/server/acoes/financeiro";
 import { hojeISO, formatarMoeda } from "@/lib/formato";
-import { mesAnterior, mesSeguinte, nomeDoMes, REGEX_MES } from "@/lib/financeiro";
-import { Alerta, Campo, Cartao, classeEntrada, EstadoVazio, TituloPagina } from "@/components/ui/basicos";
+import { CAMPOS_QUADRO, LIMITE_OBSERVACAO_QUADRO, mesAnterior, mesSeguinte, nomeDoMes, REGEX_MES } from "@/lib/financeiro";
+import { Alerta, Campo, Cartao, classeEntrada, EstadoVazio, Etiqueta, TituloPagina } from "@/components/ui/basicos";
 import { BotaoLink, classesDoBotao } from "@/components/ui/botao";
 import { BotaoEnviar, Formulario } from "@/components/ui/formulario";
 import { AcaoConfirmada } from "@/components/ui/acao-confirmada";
@@ -20,11 +20,12 @@ export default async function FinanceiroGestao({ searchParams }: PageProps<"/adm
   const { mes: mesBruto } = await searchParams;
   const mes = typeof mesBruto === "string" && REGEX_MES.test(mesBruto) && mesBruto <= mesAtual ? mesBruto : mesAtual;
 
-  const [meses, categorias, lancamentos, config] = await Promise.all([
+  const [meses, categorias, lancamentos, config, casasAtivas] = await Promise.all([
     mesesComSaldo(ctx),
     listarCategorias(ctx),
     lancamentosDoMes(ctx, mes),
     configFinanceira(ctx),
+    contarCasasAtivas(ctx),
   ]);
 
   const podeLancar = ctx.permissoes.has("financeiro.lancar");
@@ -55,8 +56,8 @@ export default async function FinanceiroGestao({ searchParams }: PageProps<"/adm
         <Cartao className="flex flex-col gap-3">
           <h2 className="text-lg font-bold">Primeiro passo: categorias</h2>
           <p className="text-ink-2">
-            Crie as categorias iniciais (Energia elétrica, Água, Limpeza, Manutenção, Jardinagem, Segurança, Materiais, Serviços
-            terceirizados, Outros e as de receitas).
+            Crie as categorias iniciais: Despesas ordinárias e Despesas extraordinárias (como no relatório mensal), as de
+            receitas e outras de apoio (Energia elétrica, Água, Manutenção…). As que não usar podem ser escondidas depois.
           </p>
           <Formulario acao={criarCategoriasPadrao}>
             <div>
@@ -158,6 +159,116 @@ export default async function FinanceiroGestao({ searchParams }: PageProps<"/adm
           />
         )}
       </section>
+
+      {/* Quadro de casas: só em mês que já tem lançamentos (um mês vazio travaria a publicação dos seguintes). */}
+      {podeLancar && lancamentos.length > 0 && (doMes?.quantidade ?? 0) > 0 ? (
+        <section className="flex flex-col gap-3" aria-labelledby="titulo-quadro">
+          <h2 id="titulo-quadro" className="flex items-center gap-2 text-xl font-bold">
+            <House aria-hidden className="size-5 text-pine" /> Quadro de casas de {nomeDoMes(mes)}
+          </h2>
+          <Cartao>
+            <Formulario acao={salvarQuadroCasas} limparAoSalvar={false}>
+              <p className="text-ink-2">
+                Os números do quadro do relatório mensal. Só totais: nenhuma casa é identificada. Deixe em branco o que não souber.
+                {publicado ? " O mês já foi publicado: a correção aparece na hora para os moradores." : " Os moradores veem quando o mês for publicado."}
+              </p>
+              <input type="hidden" name="mes" value={mes} />
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {CAMPOS_QUADRO.map((c) => {
+                  const salvo = doMes?.casas?.[c.chave];
+                  const sugestao = c.chave === "total" && (salvo === null || salvo === undefined) ? casasAtivas : salvo;
+                  return (
+                    <Campo key={c.chave} id={`quadro-${c.chave}`} rotulo={c.rotulo}>
+                      <input
+                        id={`quadro-${c.chave}`}
+                        name={c.chave}
+                        inputMode="numeric"
+                        pattern="[0-9.]*"
+                        autoComplete="off"
+                        defaultValue={sugestao ?? ""}
+                        className={classeEntrada}
+                      />
+                    </Campo>
+                  );
+                })}
+              </div>
+              <Campo id="quadro-observacao" rotulo="Observação (opcional)" dica="Ex.: isentas e boletos vencidos referentes ao mês anterior; valores pagos avulsos.">
+                <input
+                  id="quadro-observacao"
+                  name="observacao"
+                  maxLength={LIMITE_OBSERVACAO_QUADRO}
+                  defaultValue={doMes?.casas?.observacao ?? ""}
+                  className={classeEntrada}
+                  aria-describedby="quadro-observacao-dica"
+                />
+              </Campo>
+              <div>
+                <BotaoEnviar>Salvar quadro de casas</BotaoEnviar>
+              </div>
+            </Formulario>
+          </Cartao>
+        </section>
+      ) : null}
+
+      {podeLancar && categorias.length ? (
+        <details className="rounded-[var(--radius-card)] border border-borda-luz bg-surface shadow-card">
+          <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 px-5 font-bold">
+            <Tags aria-hidden className="size-5 text-pine" />
+            <span className="flex-1">Categorias ({categorias.filter((c) => c.ativa).length} aparecendo na tela de lançar)</span>
+          </summary>
+          <div className="flex flex-col gap-5 border-t border-line p-5">
+            <p className="text-ink-2">Esconda as que não usa: elas saem da tela de lançar, mas os lançamentos antigos continuam com elas.</p>
+            {(["receita", "despesa"] as const).map((tipo) => (
+              <div key={tipo} className="flex flex-col gap-2">
+                <h3 className="font-bold">{tipo === "receita" ? "Entradas (receitas)" : "Saídas (despesas)"}</h3>
+                <ul className="flex flex-col divide-y divide-line rounded-2xl border border-line">
+                  {categorias
+                    .filter((c) => c.tipo === tipo)
+                    .map((c) => (
+                      <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className={c.ativa ? "font-bold" : "text-muted"}>{c.nome}</span>
+                          {c.ativa ? null : <Etiqueta tom="neutro" icone={EyeOff}>escondida</Etiqueta>}
+                        </span>
+                        <AcaoConfirmada
+                          acao={alternarCategoria}
+                          campos={{ id: c.id, ativa: c.ativa ? "nao" : "sim" }}
+                          titulo={c.ativa ? `Esconder "${c.nome}"?` : `Mostrar "${c.nome}"?`}
+                          mensagem={
+                            c.ativa
+                              ? "Ela sai da tela de lançar. Os lançamentos que já usam esta categoria continuam iguais."
+                              : "Ela volta a aparecer na tela de lançar."
+                          }
+                          textoConfirmar={c.ativa ? "Esconder" : "Mostrar"}
+                        >
+                          {c.ativa ? <EyeOff aria-hidden className="size-4" /> : <Eye aria-hidden className="size-4" />}
+                          {c.ativa ? "Esconder" : "Mostrar"}
+                        </AcaoConfirmada>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            ))}
+            <Formulario acao={criarCategoria}>
+              <h3 className="font-bold">Nova categoria</h3>
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_14rem]">
+                <Campo id="nova-categoria-nome" rotulo="Nome">
+                  <input id="nova-categoria-nome" name="nome" required minLength={3} maxLength={40} placeholder="Ex.: Fundo de obras" className={classeEntrada} />
+                </Campo>
+                <Campo id="nova-categoria-tipo" rotulo="Tipo">
+                  <select id="nova-categoria-tipo" name="tipo" defaultValue="despesa" className={classeEntrada}>
+                    <option value="despesa">Saída (despesa)</option>
+                    <option value="receita">Entrada (receita)</option>
+                  </select>
+                </Campo>
+              </div>
+              <div>
+                <BotaoEnviar variante="secundario">Criar categoria</BotaoEnviar>
+              </div>
+            </Formulario>
+          </div>
+        </details>
+      ) : null}
 
       {meses.length ? (
         <section className="flex flex-col gap-3" aria-labelledby="titulo-evolucao">

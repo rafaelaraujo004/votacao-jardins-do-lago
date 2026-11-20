@@ -63,6 +63,7 @@ export const MODULO_DA_ACAO: Record<AcaoAuditada, ModuloSinc | null> = {
   "financeiro.publicar": "financeiro",
   "financeiro.configurar": "financeiro",
   "financeiro.categoria": "financeiro",
+  "financeiro.quadro": "financeiro",
   "informacoes.alterar": "informacoes",
   "visitante.autorizar": "portaria",
   "visitante.cancelar": "portaria",

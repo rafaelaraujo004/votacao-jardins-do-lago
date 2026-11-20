@@ -101,6 +101,9 @@ Uma fase só é "concluída" com: tela funcionando, validação, integração re
 - Categorias **Despesas ordinárias** e **Despesas extraordinárias** (as duas colunas do relatório mensal do Jardins do Lago).
 - `scripts/lancar-prestacao.ts`: lança um mês inteiro a partir do relatório passado a limpo (JSON em `scripts/dados-financeiro/`, fora do git porque o repositório é público). Confere subtotais e saldo antes de gravar e recusa mês que já tem lançamentos. Outubro/2026 lançado (não publicado).
 - Topo no celular reorganizado; textos dizem "Residencial Jardins do Lago" em vez de "condomínio".
+- Para o síndico lançar os próximos meses pelo portal igual ao relatório: **quadro de casas do mês** (total, pagas, sem a extra, acordos, isentas, inadimplentes, boletos vencidos), **categorias** que dá para esconder/mostrar e criar, e a data do lançamento já no mês escolhido.
+- **Relatório para PDF** no formato do relatório em papel (receitas, ordinárias e extraordinárias com Nº e subtotal, total geral, quadro de casas, saldo) e com gráficos (para onde foi o dinheiro, maiores despesas, saldo mês a mês). A planilha também traz subtotais e o quadro.
+- Morador: lançamentos separados como no relatório; Início no celular com os 4 cartões e o gráfico (com um mês só, o gráfico parte do saldo do mês anterior); saudação logo abaixo da foto.
 
 ## O que falta
 

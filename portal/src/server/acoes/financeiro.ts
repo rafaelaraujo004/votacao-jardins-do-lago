@@ -14,6 +14,7 @@ import { garantirPermissao, getContexto } from "../contexto";
 import { registrarAuditoria } from "../auditoria";
 import { ErroDeNegocio, executar, lerFormulario, type Resultado } from "./resultado";
 import { CATEGORIAS_PADRAO, CHAVES_FORMA, nomeDoMes, REGEX_MES } from "@/lib/financeiro";
+import { esquemaAlternarCategoria, esquemaNovaCategoria, esquemaQuadroCasas, idDaCategoria, quadroDoFormulario } from "@/lib/validacao-financeiro";
 import { formatarMoeda, hojeISO, reaisParaCentavos } from "@/lib/formato";
 import { idDocumento } from "@/lib/validacao";
 
@@ -295,5 +296,134 @@ export async function criarCategoriasPadrao(): Promise<Resultado> {
     });
     revalidarFinanceiro();
     return criadas ? `${criadas} categorias criadas.` : "As categorias já existiam.";
+  });
+}
+
+/**
+ * Quadro de casas do mês (total, pagas, isentas, inadimplentes…), como no relatório em papel.
+ * Só números: nenhuma casa é identificada. Não mexe em dinheiro nem em saldo, por isso pode ser
+ * corrigido mesmo depois de publicado (fica na auditoria).
+ */
+export async function salvarQuadroCasas(_: Resultado, dados: FormData): Promise<Resultado> {
+  return executar(async () => {
+    const ctx = garantirPermissao(await getContexto(), "financeiro.lancar");
+    const v = lerFormulario(esquemaQuadroCasas, dados);
+    const mesAtual = hojeISO(new Date(), ctx.fuso).slice(0, 7);
+    if (v.mes > mesAtual) throw new ErroDeNegocio("Escolha um mês que já começou.");
+    const quadro = quadroDoFormulario(v);
+
+    const db = adminDb();
+    const c = db.collection("condominiums").doc(ctx.condominioId);
+    const resumoRef = c.collection("monthlySummaries").doc(v.mes);
+    await db.runTransaction(async (tx) => {
+      const [resumo, condominio] = await tx.getAll(resumoRef, c);
+      const mesInicial = condominio.get("financeiro.mesInicial") as string | undefined;
+      if (mesInicial && v.mes < mesInicial) {
+        throw new ErroDeNegocio(`A prestação de contas começa em ${nomeDoMes(mesInicial)}.`);
+      }
+      // Só em mês que já tem lançamentos: um mês "vazio" criado aqui ficaria sem publicar e
+      // travaria a publicação dos meses seguintes (eles são publicados em ordem).
+      if (!resumo.exists || Number(resumo.get("quantidade") ?? 0) === 0) {
+        throw new ErroDeNegocio(`Faça os lançamentos de ${nomeDoMes(v.mes)} antes de preencher o quadro de casas.`);
+      }
+      tx.set(resumoRef, { casas: { ...quadro, atualizadoEm: FieldValue.serverTimestamp(), atualizadoPor: ctx.uid } }, { merge: true });
+      registrarAuditoria(db, tx, {
+        condominioId: ctx.condominioId,
+        uid: ctx.uid,
+        nome: ctx.nome,
+        papel: ctx.papel,
+        acao: "financeiro.quadro",
+        alvo: `monthlySummaries/${v.mes}`,
+        detalhes: {
+          mes: v.mes,
+          total: quadro.total,
+          pagas: quadro.pagas,
+          pagasSemExtra: quadro.pagasSemExtra,
+          acordos: quadro.acordos,
+          isentas: quadro.isentas,
+          inadimplentes: quadro.inadimplentes,
+          boletosVencidos: quadro.boletosVencidos,
+          publicado: resumo.get("publicado") === true,
+        },
+      });
+    });
+    revalidarFinanceiro();
+    return `Quadro de casas de ${nomeDoMes(v.mes)} salvo.`;
+  });
+}
+
+/** Cria uma categoria nova (ex.: "Fundo de obras"). O nome vira o identificador. */
+export async function criarCategoria(_: Resultado, dados: FormData): Promise<Resultado> {
+  return executar(async () => {
+    const ctx = garantirPermissao(await getContexto(), "financeiro.lancar");
+    const v = lerFormulario(esquemaNovaCategoria, dados);
+    const id = idDaCategoria(v.nome);
+    if (id.length < 2) throw new ErroDeNegocio("Use letras no nome da categoria.");
+
+    const db = adminDb();
+    const col = db.collection("condominiums").doc(ctx.condominioId).collection("financialCategories");
+    await db.runTransaction(async (tx) => {
+      const todas = await tx.get(col);
+      const mesmoNome = todas.docs.find((d) => d.id === id || idDaCategoria(String(d.get("nome") ?? "")) === id);
+      if (mesmoNome) {
+        throw new ErroDeNegocio(
+          mesmoNome.get("ativa") === false
+            ? `Já existe a categoria "${mesmoNome.get("nome")}", escondida. Use "Mostrar" na lista.`
+            : `Já existe a categoria "${mesmoNome.get("nome")}".`,
+        );
+      }
+      // Entra no fim do seu tipo (as receitas vêm antes das despesas nas listas).
+      const doTipo = todas.docs.filter((d) => d.get("tipo") === v.tipo).map((d) => Number(d.get("ordem") ?? 0));
+      const ordem = Math.max(v.tipo === "receita" ? 3 : 20, ...doTipo) + 1;
+      tx.create(col.doc(id), { nome: v.nome, tipo: v.tipo, ordem, ativa: true });
+      registrarAuditoria(db, tx, {
+        condominioId: ctx.condominioId,
+        uid: ctx.uid,
+        nome: ctx.nome,
+        papel: ctx.papel,
+        acao: "financeiro.categoria",
+        alvo: `financialCategories/${id}`,
+        detalhes: { criada: v.nome, tipo: v.tipo },
+      });
+    });
+    revalidarFinanceiro();
+    return `Categoria "${v.nome}" criada.`;
+  });
+}
+
+/**
+ * Esconde ou mostra uma categoria na tela de lançar. Nada é apagado: os lançamentos antigos
+ * continuam com a categoria (e aparecem normalmente nos relatórios).
+ */
+export async function alternarCategoria(_: Resultado, dados: FormData): Promise<Resultado> {
+  return executar(async () => {
+    const ctx = garantirPermissao(await getContexto(), "financeiro.lancar");
+    const v = lerFormulario(esquemaAlternarCategoria, dados);
+    const ativa = v.ativa === "sim";
+
+    const db = adminDb();
+    const ref = db.collection("condominiums").doc(ctx.condominioId).collection("financialCategories").doc(v.id);
+    const nome = await db.runTransaction(async (tx) => {
+      const cat = await tx.get(ref);
+      if (!cat.exists) throw new ErroDeNegocio("Categoria não encontrada. Atualize a página.");
+      if (!ativa) {
+        const outras = await tx.get(ref.parent.where("tipo", "==", cat.get("tipo")));
+        const ativasDoTipo = outras.docs.filter((d) => d.id !== v.id && d.get("ativa") !== false);
+        if (ativasDoTipo.length === 0) throw new ErroDeNegocio("Deixe pelo menos uma categoria deste tipo aparecendo.");
+      }
+      tx.update(ref, { ativa });
+      registrarAuditoria(db, tx, {
+        condominioId: ctx.condominioId,
+        uid: ctx.uid,
+        nome: ctx.nome,
+        papel: ctx.papel,
+        acao: "financeiro.categoria",
+        alvo: `financialCategories/${v.id}`,
+        detalhes: { categoria: String(cat.get("nome") ?? v.id), ativa },
+      });
+      return String(cat.get("nome") ?? v.id);
+    });
+    revalidarFinanceiro();
+    return ativa ? `"${nome}" voltou a aparecer na tela de lançar.` : `"${nome}" não aparece mais na tela de lançar.`;
   });
 }

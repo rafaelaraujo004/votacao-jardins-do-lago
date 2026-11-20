@@ -12,7 +12,7 @@ import { lancamentosDoMes, mesesComSaldo, type Lancamento } from "@/server/dados
 import { lancamentosPublicados, mesesPublicados } from "@/server/dados/morador";
 import type { MesComSaldo } from "@/lib/financeiro";
 import { dataISOParaBR } from "@/lib/formato";
-import { FORMAS_PAGAMENTO, nomeDoMesTitulo, REGEX_MES } from "@/lib/financeiro";
+import { agruparPorCategoria, CAMPOS_QUADRO, FORMAS_PAGAMENTO, nomeDoMesTitulo, REGEX_MES } from "@/lib/financeiro";
 
 const numero = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const reais = (centavos: number) => numero.format(centavos / 100);
@@ -51,6 +51,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ erro: "Seu perfil não permite baixar a prestação de contas." }, { status: 403 });
   }
 
+  // Subtotais como no relatório em papel (receitas, ordinárias, extraordinárias…) e o quadro de casas.
+  const grupos = agruparPorCategoria(lancamentos);
+  const totalDespesas = grupos.filter((g) => g.tipo === "despesa").reduce((t, g) => t + g.totalCentavos, 0);
+  const casas = resumo?.casas ?? null;
+  const linhasCasas: string[][] = casas
+    ? [
+        [],
+        ["Quadro de casas"],
+        ...CAMPOS_QUADRO.filter((c) => casas[c.chave] !== null).map((c) => [c.rotulo, String(casas[c.chave])]),
+        ...(casas.observacao ? [["Observação", casas.observacao]] : []),
+      ]
+    : [];
+
   const linhas: string[][] = [
     [nomeCondominio],
     [`Prestação de contas — ${nomeDoMesTitulo(mes)}`, resumo?.publicado ? "Publicada" : "Em aberto (não publicada)"],
@@ -60,6 +73,11 @@ export async function GET(req: NextRequest) {
     ["Despesas", reais(resumo?.despesasCentavos ?? 0)],
     ["Resultado do mês", reais(resumo?.resultadoCentavos ?? 0)],
     ["Saldo final", reais(resumo?.saldoFinalCentavos ?? 0)],
+    [],
+    ["Subtotal por categoria"],
+    ...grupos.map((g) => [`${g.nome} (${g.tipo === "receita" ? "receita" : "despesa"})`, reais(g.totalCentavos)]),
+    ["Total geral das despesas", reais(totalDespesas)],
+    ...linhasCasas,
     [],
     ["Data", "Tipo", "Categoria", "Descrição", "Forma de pagamento", "Valor (R$)", "Observação"],
     ...[...lancamentos].reverse().map((l) => [

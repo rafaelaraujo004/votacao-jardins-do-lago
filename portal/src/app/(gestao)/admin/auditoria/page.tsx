@@ -31,6 +31,7 @@ import {
   TreePalm,
   UserCheck,
   UserX,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
@@ -53,6 +54,13 @@ const DESCRICAO: Record<string, { texto: string; icone: LucideIcon }> = {
   "membro.reativar": { texto: "Reativou o acesso de uma pessoa", icone: UserCheck },
   "membro.excluir": { texto: "Excluiu o cadastro de uma pessoa", icone: UserX },
   "membro.importar": { texto: "Trouxe pessoas da lista de contatos (um lote)", icone: Settings },
+  // Prestação de contas
+  "financeiro.lancar": { texto: "Fez um lançamento no caixa", icone: Wallet },
+  "financeiro.estornar": { texto: "Estornou um lançamento do caixa", icone: Wallet },
+  "financeiro.publicar": { texto: "Publicou a prestação de contas do mês", icone: Wallet },
+  "financeiro.configurar": { texto: "Definiu o saldo inicial do caixa", icone: Wallet },
+  "financeiro.categoria": { texto: "Criou, escondeu ou mostrou uma categoria do caixa", icone: Wallet },
+  "financeiro.quadro": { texto: "Preencheu o quadro de casas do mês", icone: Wallet },
   // Acesso com senha (equipe)
   "acesso.criar_senha": { texto: "Criou o acesso com senha de alguém da equipe", icone: KeyRound },
   "acesso.criar_morador": { texto: "Criou o login de uma casa (usuário e senha)", icone: KeyRound },

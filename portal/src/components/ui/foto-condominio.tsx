@@ -2,10 +2,11 @@
  * Foto real da portaria do condomínio (tratada: recorte, cor, contraste e nitidez),
  * no topo do Início do morador, no lugar do desenho. WebP com JPEG de reserva.
  * Fica acima da dobra: carrega na hora (sem "lazy"), com tamanho fixo (a tela não pula).
+ * No computador o cartão acompanha a altura do endereço ao lado: a foto preenche tudo (recorta, sem esticar).
  */
 export function FotoCondominio() {
   return (
-    <div className="relative">
+    <div className="relative min-h-0 flex-1 sm:min-h-[12rem]">
       <picture>
         <source type="image/webp" srcSet="/condominio-portaria.webp" />
         <img
@@ -15,7 +16,7 @@ export function FotoCondominio() {
           height={490}
           fetchPriority="high"
           decoding="async"
-          className="block aspect-[1127/490] h-auto w-full object-cover"
+          className="block aspect-[1127/490] h-auto w-full object-cover sm:absolute sm:inset-0 sm:aspect-auto sm:h-full"
         />
       </picture>
       <span className="absolute bottom-2.5 left-2.5 inline-flex items-center gap-1.5 rounded-full bg-[rgb(18_56_42/0.82)] px-3 py-1 text-[0.8rem] font-bold text-white shadow-[0_2px_8px_rgb(0_0_0/0.25)] sm:bottom-3 sm:left-3 sm:text-[0.86rem]">

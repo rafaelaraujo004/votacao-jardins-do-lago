@@ -2,7 +2,7 @@ import "server-only";
 import type { Timestamp } from "firebase-admin/firestore";
 import { adminDb } from "../firebase-admin";
 import { ErroDeAcesso, type Contexto } from "../contexto";
-import { calcularSaldos, type FormaPagamento, type MesComSaldo, type MesResumo, type TipoLancamento } from "@/lib/financeiro";
+import { calcularSaldos, lerQuadroCasas, type FormaPagamento, type MesComSaldo, type MesResumo, type TipoLancamento } from "@/lib/financeiro";
 
 /**
  * Quem vê o quê:
@@ -56,8 +56,16 @@ export async function mesesComSaldo(ctx: Contexto): Promise<MesComSaldo[]> {
     despesasCentavos: Number(d.get("despesasCentavos") ?? 0),
     publicado: d.get("publicado") === true,
     quantidade: Number(d.get("quantidade") ?? 0),
+    casas: lerQuadroCasas(d.get("casas")),
   }));
   return calcularSaldos(meses, config.saldoInicialCentavos);
+}
+
+/** Casas ativas no cadastro (sugestão para o "Total de casas" do quadro do mês). */
+export async function contarCasasAtivas(ctx: Contexto): Promise<number> {
+  visaoFinanceira(ctx);
+  const r = await base(ctx).collection("units").where("status", "==", "ativa").count().get();
+  return r.data().count;
 }
 
 export type Lancamento = {

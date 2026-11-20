@@ -30,10 +30,13 @@ condominiums/{c}                     nome, status, fuso, moeda, (portalPublico: 
   usernames/{codigo}                 uid, criadoEm, criadoPor — índice "um usuário, uma pessoa" (criado em transação;
                                      só o servidor lê e grava)
   units/{unitId}                     rotulo, numero, quadra, titularUid, status
-  financialCategories/{id}           nome, tipo (receita/despesa)
+  financialCategories/{id}           nome, tipo (receita/despesa), ordem, ativa (false = escondida da tela de lançar;
+                                     nunca apagada)
   financialEntries/{id}              tipo, categoriaId, valorCentavos, data (AAAA-MM-DD), forma, descricao,
                                      publicado, estornaId, estornadoPor   — nunca editado nem apagado
-  monthlySummaries/{AAAA-MM}         saldoAnterior, receitas, despesas, saldo, publicado
+  monthlySummaries/{AAAA-MM}         saldoAnterior, receitas, despesas, saldo, publicado,
+                                     casas{total, pagas, pagasSemExtra, acordos, isentas, inadimplentes, boletosVencidos,
+                                     observacao, atualizadoEm, atualizadoPor} — quadro de casas do relatório (só totais)
   amenities/{id}                     tipo (area/equipamento), nome, regras, capacidade (0 = não informada), exigeAprovacao,
                                      antecedenciaMinimaHoras (o antigo antecedenciaMinDias ainda é lido ×24),
                                      antecedenciaMaxDias, prazoDesistenciaHoras, limitePorMes (0 = sem limite),

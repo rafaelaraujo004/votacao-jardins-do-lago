@@ -15,7 +15,7 @@ import { adminDb } from "../firebase-admin";
 import { garantirPermissao, type Contexto } from "../contexto";
 import type { Lancamento } from "./financeiro";
 import { ordenarAreas, paraArea, paraReserva, type Reserva } from "./reservas";
-import { calcularSaldos, REGEX_MES, type FormaPagamento, type MesComSaldo, type MesResumo, type TipoLancamento } from "@/lib/financeiro";
+import { calcularSaldos, lerQuadroCasas, REGEX_MES, type FormaPagamento, type MesComSaldo, type MesResumo, type TipoLancamento } from "@/lib/financeiro";
 import { dataCurta, dataISO, type EventoAgenda } from "@/lib/agenda";
 import { descreverFaixa, ocupaHorario, REGEX_MES_RESERVA, type ConfigArea, type StatusReserva } from "@/lib/reservas";
 
@@ -36,6 +36,8 @@ export async function mesesPublicados(ctx: Contexto): Promise<MesComSaldo[]> {
     despesasCentavos: Number(d.get("despesasCentavos") ?? 0),
     publicado: true,
     quantidade: Number(d.get("quantidade") ?? 0),
+    // Só totais (nenhuma casa identificada), como no relatório em papel.
+    casas: lerQuadroCasas(d.get("casas")),
   }));
   const financeiro = condominio.get("financeiro") as { saldoInicialCentavos?: unknown } | undefined;
   const saldoInicial = Number(financeiro?.saldoInicialCentavos ?? 0);

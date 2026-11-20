@@ -9,7 +9,7 @@
  */
 import Link from "next/link";
 import { ChevronRight, Wallet } from "lucide-react";
-import { nomeDoMes, nomeDoMesTitulo, type MesComSaldo } from "@/lib/financeiro";
+import { nomeDoMes, nomeDoMesTitulo, pontosDoSaldo, type MesComSaldo } from "@/lib/financeiro";
 import { EstadoVazio } from "@/components/ui/basicos";
 import { TituloSecao } from "@/components/ui/painel";
 import { CartoesResumo, SituacaoMes } from "./pecas";
@@ -67,7 +67,7 @@ export function ResumoFinanceiroPainel({
   // Saldo no fim do mês mostrado (sem lançamentos no mês: o saldo que vinha de antes).
   const anterior = ateHoje.filter((m) => m.mes <= mes).at(-1);
   const saldo = doMes?.saldoFinalCentavos ?? anterior?.saldoFinalCentavos ?? saldoInicialCentavos;
-  const pontos = ateHoje.slice(-MESES_NO_GRAFICO).map((m) => ({ mes: m.mes, saldoCentavos: m.saldoFinalCentavos }));
+  const pontos = pontosDoSaldo(ateHoje, MESES_NO_GRAFICO);
   // O aviso só faz sentido quando o gráfico aparece (2 meses ou mais).
   const temNaoPublicado = visaoCompleta && pontos.length >= 2 && ateHoje.slice(-MESES_NO_GRAFICO).some((m) => !m.publicado);
   const nomeCurto = nomeDoMes(mes).split(" ")[0];

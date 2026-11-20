@@ -9,7 +9,17 @@ import { cx } from "@/lib/cx";
 
 type Cat = { id: string; nome: string; tipo: TipoLancamento };
 
-export function CamposLancamento({ categorias, hoje, dataMinima }: { categorias: Cat[]; hoje: string; dataMinima?: string }) {
+export function CamposLancamento({
+  categorias,
+  hoje,
+  dataPadrao,
+  dataMinima,
+}: {
+  categorias: Cat[];
+  hoje: string;
+  dataPadrao?: string;
+  dataMinima?: string;
+}) {
   const [tipo, setTipo] = useState<TipoLancamento>("despesa");
   const opcoes = categorias.filter((c) => c.tipo === tipo);
 
@@ -52,7 +62,7 @@ export function CamposLancamento({ categorias, hoje, dataMinima }: { categorias:
           <input id="valor" name="valor" inputMode="decimal" required placeholder="0,00" autoComplete="off" pattern="[0-9.,R$ ]+" className={classeEntrada} aria-describedby="valor-dica" />
         </Campo>
         <Campo id="data" rotulo="Data do pagamento ou recebimento">
-          <input id="data" name="data" type="date" required max={hoje} min={dataMinima} defaultValue={hoje} className={classeEntrada} />
+          <input id="data" name="data" type="date" required max={hoje} min={dataMinima} defaultValue={dataPadrao ?? hoje} className={classeEntrada} />
         </Campo>
       </div>
 

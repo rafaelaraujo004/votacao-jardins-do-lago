@@ -68,6 +68,8 @@ Não existe área pública. Todas as páginas, ações e exportações exigem se
 | `/votar/[código]` (público) | sem login: o código do link + a senha de 6 números da casa |
 | `/classificados` (morador) | `classificados.usar` (anúncios aprovados: só primeiro nome e o WhatsApp escolhido pelo autor) |
 | `/classificados/moderar` (morador com extra) | `classificados.moderar` |
+| Quadro de casas do mês (`salvarQuadroCasas`) | `financeiro.lancar`; só números (nenhuma casa identificada); pode ser corrigido depois de publicado (fica na auditoria) |
+| Categorias do caixa (`criarCategoria`, `alternarCategoria`) | `financeiro.lancar`; esconder não apaga (lançamentos antigos continuam); sempre fica pelo menos uma de cada tipo |
 | `/classificados/[id]/editar` | `classificados.usar` + ser o **autor**; só aguardando, publicado ou não aprovado; ao salvar volta para aprovação |
 | Notificações no celular (`chavePublicaPush`, `salvarInscricaoPush`, `removerInscricaoPush`) | estar logado; a inscrição fica ligada a quem está logado e só ela mesma remove |
 | `/admin/classificados` | `classificados.moderar` (vê a casa do autor) |

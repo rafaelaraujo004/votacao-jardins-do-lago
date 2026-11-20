@@ -25,7 +25,6 @@ import { Cartao, EstadoVazio, Etiqueta } from "@/components/ui/basicos";
 import { FotoCondominio } from "@/components/ui/foto-condominio";
 import { FaixaPetalas, TituloSecao, type TomModulo } from "@/components/ui/painel";
 import { ResumoFinanceiroPainel } from "@/components/financeiro/resumo-painel";
-import { ResumoContasInicio } from "@/components/financeiro/resumo-inicio";
 import { EnderecoCopiavel } from "@/components/ui/endereco";
 import { Calendario } from "@/components/ui/calendario";
 import { AtalhoComAjuda } from "@/components/ui/atalho-com-ajuda";
@@ -99,10 +98,7 @@ async function ResumoInicio({ ctx, className }: { ctx: Contexto; className?: str
   }
   return (
     <div className={className}>
-      {/* Celular: cartão compacto (saldo, entradas, saídas e minigráfico) que cabe na primeira tela. */}
-      <ResumoContasInicio meses={meses} className="sm:hidden" />
-      {/* Telas maiores: o bloco completo, com os quatro números e o gráfico grande. */}
-      <div className="hidden sm:block">
+      {/* Celular e computador: o mesmo bloco, com os quatro números do mês e o gráfico do saldo. */}
       <ResumoFinanceiroPainel
         meses={meses}
         mesAtual={hojeISO(new Date(), ctx.fuso).slice(0, 7)}
@@ -110,7 +106,6 @@ async function ResumoInicio({ ctx, className }: { ctx: Contexto; className?: str
         visaoCompleta={false}
         href="/financeiro"
       />
-      </div>
     </div>
   );
 }
@@ -195,32 +190,31 @@ export default async function InicioMorador() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Identidade (ilustração + endereço) e a PRESTAÇÃO DE CONTAS com gráfico, na primeira tela.
-          Celular: ilustração → contas → endereço. Telas maiores: ilustração | endereço e as contas embaixo. */}
+      {/* Identidade (foto + endereço), a saudação e a PRESTAÇÃO DE CONTAS com gráfico, na primeira tela.
+          Celular: foto → saudação → contas → endereço. Telas maiores: foto | endereço, depois saudação e contas. */}
       <div className="grid gap-4 sm:grid-cols-2">
         <section
           aria-label={ctx.condominioNome}
-          className="surgir order-1 overflow-hidden rounded-[var(--radius-card)] border border-borda-luz shadow-card"
+          className="surgir order-1 flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-borda-luz shadow-card"
         >
           <FaixaPetalas />
           <FotoCondominio />
         </section>
         {/* O endereço fica num cartão normal: assim acompanha o tema claro/escuro sem ficar estranho. */}
-        <Cartao semEspaco aria-label="Endereço do Residencial Jardins do Lago" className="surgir order-3 flex flex-col justify-center p-3 sm:order-2 sm:p-4">
+        <Cartao semEspaco aria-label="Endereço do Residencial Jardins do Lago" className="surgir order-4 flex flex-col justify-center p-3 sm:order-2 sm:p-4">
           <EnderecoCopiavel />
         </Cartao>
-        <Suspense fallback={<BlocoCarregando altura="order-2 h-64 sm:order-3 sm:col-span-2 sm:h-96" />}>
-          <ResumoInicio ctx={ctx} className="order-2 sm:order-3 sm:col-span-2" />
+        {/* Saudação: logo abaixo da foto. */}
+        <header className="order-2 sm:order-3 sm:col-span-2">
+          <h1 className="text-[1.7rem] font-bold text-destaque">
+            {saudacao(new Date(), ctx.fuso)}!
+          </h1>
+          <p className="mt-0.5 text-ink-2">Bem-vindo ao portal do {ctx.condominioNome}.</p>
+        </header>
+        <Suspense fallback={<BlocoCarregando altura="order-3 h-64 sm:order-4 sm:col-span-2 sm:h-96" />}>
+          <ResumoInicio ctx={ctx} className="order-3 sm:order-4 sm:col-span-2" />
         </Suspense>
       </div>
-
-      {/* Saudação */}
-      <header>
-        <h1 className="text-[1.7rem] font-bold text-destaque">
-          {saudacao(new Date(), ctx.fuso)}!
-        </h1>
-        <p className="mt-0.5 text-ink-2">Bem-vindo ao portal do {ctx.condominioNome}.</p>
-      </header>
 
       {/* Votação oficial: logo abaixo da saudação, ACIMA de todos os outros avisos,
           enquanto houver uma agendada ou aberta (e o resultado nos 7 dias seguintes).

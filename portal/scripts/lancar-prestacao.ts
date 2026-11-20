@@ -17,13 +17,21 @@
  *   Publicar um mês JÁ lançado (o mesmo que o botão "Publicar" da tela; antes confere se os
  *   totais gravados batem com o arquivo):
  *               npx tsx scripts/lancar-prestacao.ts --arquivo scripts/dados-financeiro/2026-10.json --so-publicar
+ *   Lançar um mês ANTERIOR ao primeiro mês do portal (ex.: setembro, com outubro já publicado). O mês entra
+ *   PUBLICADO (os meses são publicados em ordem), o saldo inicial passa a ser o do arquivo e o saldo final
+ *   dele precisa ser exatamente o saldo inicial que o portal já usava — assim os meses seguintes não mudam:
+ *               npx tsx scripts/lancar-prestacao.ts --arquivo scripts/dados-financeiro/2026-09.json --antes-do-inicio --conferir
+ *   Acertar a ordem das linhas de um mês lançado pelo script antigo (a ordem do arquivo vira a ordem do relatório):
+ *               npx tsx scripts/lancar-prestacao.ts --arquivo scripts/dados-financeiro/2026-10.json --reordenar
+ *   Gravar/corrigir só o quadro de casas do mês ("casas" no arquivo):
+ *               npx tsx scripts/lancar-prestacao.ts --arquivo scripts/dados-financeiro/2026-10.json --quadro
  */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { cert, initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore, Timestamp } from "firebase-admin/firestore";
-import { CATEGORIAS_PADRAO, CHAVES_FORMA, REGEX_MES, type FormaPagamento, type TipoLancamento } from "../src/lib/financeiro";
+import { CAMPOS_QUADRO, CATEGORIAS_PADRAO, CHAVES_FORMA, lerQuadroCasas, mesSeguinte, REGEX_MES, type CampoQuadro, type FormaPagamento, type TipoLancamento } from "../src/lib/financeiro";
 import { formatarMoeda, reaisParaCentavos } from "../src/lib/formato";
 
 const { values } = parseArgs({
@@ -33,12 +41,18 @@ const { values } = parseArgs({
     conferir: { type: "boolean" },
     publicar: { type: "boolean" },
     "so-publicar": { type: "boolean" },
+    quadro: { type: "boolean" },
+    "antes-do-inicio": { type: "boolean" },
+    reordenar: { type: "boolean" },
   },
 });
 const ID = values.id ?? "jardins-do-lago";
 const SO_CONFERIR = values.conferir === true;
 const PUBLICAR = values.publicar === true;
 const SO_PUBLICAR = values["so-publicar"] === true;
+const SO_QUADRO = values.quadro === true;
+const ANTES_DO_INICIO = values["antes-do-inicio"] === true;
+const REORDENAR = values.reordenar === true;
 const SIMULADOR = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
 const QUEM = { uid: "script:lancar-prestacao", nome: "Prestação de contas lançada do relatório mensal (a pedido da administração)", papel: "admin" };
 
@@ -55,6 +69,8 @@ type Arquivo = {
   saldoEsperado: string;
   lancamentos: Linha[];
   conferencia?: Record<string, string>;
+  /** Quadro de casas do relatório (só totais). */
+  casas?: Partial<Record<CampoQuadro, number | null>> & { observacao?: string };
 };
 
 function centavos(texto: string, onde: string): number {
@@ -194,9 +210,9 @@ async function main() {
       tx.set(c, { financeiro: { saldoInicialCentavos: saldoInicial, mesInicial: mes } }, { merge: true });
       audit("financeiro.configurar", null, { saldoInicialCentavos: saldoInicial, mesInicial: mes });
     }
-    // A lista do portal mostra do mais novo para o mais antigo (mesma data → hora do lançamento).
-    // Um segundo de diferença entre eles mantém a ordem do relatório (o 1º do arquivo aparece primeiro).
-    const agora = Date.now();
+    // Mesma data → a ordem vem da hora do lançamento. Um segundo de diferença entre eles, na ordem
+    // do arquivo, faz o relatório do portal (Nº 1, 2, 3…) sair na mesma ordem do relatório em papel.
+    const agora = Date.now() - linhas.length * 1000;
     for (const [i, l] of linhas.entries()) {
       const ref = c.collection("financialEntries").doc();
       tx.create(ref, {
@@ -213,7 +229,7 @@ async function main() {
         estornadoPor: null,
         criadoPor: QUEM.uid,
         criadoPorNome: QUEM.nome,
-        criadoEm: Timestamp.fromMillis(agora - i * 1000),
+        criadoEm: Timestamp.fromMillis(agora + i * 1000),
       });
       audit("financeiro.lancar", `financialEntries/${ref.id}`, { tipo: l.tipo, valorCentavos: l.valorCentavos, data: l.data, categoria: l.categoria });
     }
@@ -290,4 +306,141 @@ async function soPublicar() {
   console.log(total === null ? "\n(Só conferência: nada foi publicado.)\n" : `\n✔ ${mes} publicado com ${total} lançamentos. Os moradores já podem ver.\n`);
 }
 
-(SO_PUBLICAR ? soPublicar() : main()).catch((e) => falhar(e instanceof Error ? e.message : String(e)));
+
+/** Lança um mês anterior ao primeiro mês do portal, já publicado, sem mudar os saldos dos meses seguintes. */
+async function antesDoInicio() {
+  const c = db.collection("condominiums").doc(ID);
+  const mes = dados.mes;
+  if (saldoInicial === null) falhar('Informe "saldoInicial" (o saldo do mês anterior a este) no arquivo.');
+  const resultado = await db.runTransaction(async (tx) => {
+    const condominio = await tx.get(c);
+    if (!condominio.exists) falhar(`O condomínio "${ID}" não existe no projeto ${projectId}.`);
+    const mesInicialAtual = condominio.get("financeiro.mesInicial") as string | undefined;
+    const saldoAtual = Number(condominio.get("financeiro.saldoInicialCentavos") ?? NaN);
+    if (!mesInicialAtual || mesSeguinte(mes) !== mesInicialAtual) {
+      falhar(`Este modo é só para o mês logo antes do início do portal (início atual: ${mesInicialAtual ?? "não configurado"}).`);
+    }
+    const [resumo, doMes, anteriores] = await Promise.all([
+      tx.get(c.collection("monthlySummaries").doc(mes)),
+      tx.get(c.collection("financialEntries").where("mes", "==", mes)),
+      tx.get(c.collection("financialEntries").where("mes", "<", mes).limit(1)),
+    ]);
+    if (resumo.exists || !doMes.empty || !anteriores.empty) falhar(`${mes} (ou um mês anterior) já tem dados no portal.`);
+    const saldoFinal = saldoInicial + receitas - despesas;
+    if (saldoFinal !== saldoAtual) {
+      falhar(
+        `O saldo final de ${mes} (${formatarMoeda(saldoFinal)}) precisa ser igual ao saldo inicial que o portal já usa ` +
+          `(${formatarMoeda(saldoAtual)}, começo de ${mesInicialAtual}). Diferença: ${formatarMoeda(saldoAtual - saldoFinal)}.`,
+      );
+    }
+    if (saldoFinal !== esperado) falhar(`Saldo final não bate com o relatório: calculado ${formatarMoeda(saldoFinal)}, relatório ${formatarMoeda(esperado)}.`);
+
+    const usadas = [...new Set(linhas.map((l) => l.categoria))].map((id) => categoriasConhecidas.get(id)!);
+    const docsCat = await tx.getAll(...usadas.map((cat) => c.collection("financialCategories").doc(cat.id)));
+    const criar = usadas.filter((_, i) => !docsCat[i].exists);
+
+    console.log(`\nProjeto ${projectId}${SIMULADOR ? " (SIMULADOR)" : ""} · condomínio ${ID} · mês ${mes} (antes de ${mesInicialAtual})`);
+    console.log(`Fonte: ${dados.fonte}`);
+    console.log(`Saldo inicial: ${formatarMoeda(saldoAtual)} em ${mesInicialAtual} → ${formatarMoeda(saldoInicial)} em ${mes}`);
+    console.log(`Receitas: ${formatarMoeda(receitas)} · Despesas: ${formatarMoeda(despesas)} · Saldo final: ${formatarMoeda(saldoFinal)} (= começo de ${mesInicialAtual})`);
+    console.log(`Lançamentos: ${linhas.length} · categorias a criar: ${criar.map((x) => x.nome).join(", ") || "nenhuma"} · entra PUBLICADO`);
+    if (SO_CONFERIR) return false;
+
+    const audit = (acao: string, alvo: string | null, detalhes: Record<string, string | number | boolean | null>) =>
+      tx.create(c.collection("auditLogs").doc(), { condominioId: ID, uid: QUEM.uid, nome: QUEM.nome, papel: QUEM.papel, acao, alvo, detalhes, criadoEm: FieldValue.serverTimestamp() });
+    for (const cat of criar) tx.create(c.collection("financialCategories").doc(cat.id), { nome: cat.nome, tipo: cat.tipo, ordem: cat.ordem, ativa: true });
+    if (criar.length) audit("financeiro.categoria", null, { criadas: criar.length });
+    tx.set(c, { financeiro: { saldoInicialCentavos: saldoInicial, mesInicial: mes } }, { merge: true });
+    audit("financeiro.configurar", null, { saldoInicialCentavos: saldoInicial, mesInicial: mes, antes: `${saldoAtual} em ${mesInicialAtual}` });
+    const base = Date.now() - linhas.length * 1000;
+    for (const [i, l] of linhas.entries()) {
+      const ref = c.collection("financialEntries").doc();
+      tx.create(ref, {
+        tipo: l.tipo, categoriaId: l.categoria, categoriaNome: l.categoriaNome, valorCentavos: l.valorCentavos, data: l.data, mes,
+        forma: l.forma, descricao: l.descricao, publicado: true, estornaId: null, estornadoPor: null,
+        criadoPor: QUEM.uid, criadoPorNome: QUEM.nome, criadoEm: Timestamp.fromMillis(base + i * 1000),
+      });
+      audit("financeiro.lancar", `financialEntries/${ref.id}`, { tipo: l.tipo, valorCentavos: l.valorCentavos, data: l.data, categoria: l.categoria });
+    }
+    const quadro = lerQuadroCasas(dados.casas ?? null);
+    tx.set(c.collection("monthlySummaries").doc(mes), {
+      receitasCentavos: receitas, despesasCentavos: despesas, quantidade: linhas.length, publicado: true,
+      publicadoEm: FieldValue.serverTimestamp(), publicadoPor: QUEM.uid, atualizadoEm: FieldValue.serverTimestamp(),
+      ...(quadro ? { casas: { ...quadro, atualizadoEm: FieldValue.serverTimestamp(), atualizadoPor: QUEM.uid } } : {}),
+    });
+    audit("financeiro.publicar", `monthlySummaries/${mes}`, { mes, lancamentos: linhas.length });
+    if (quadro) audit("financeiro.quadro", `monthlySummaries/${mes}`, { mes });
+    tx.set(c.collection("sistema").doc("sinais"), { financeiro: FieldValue.serverTimestamp() }, { merge: true });
+    return true;
+  });
+  console.log(resultado ? `\n✔ ${linhas.length} lançamentos de ${mes} gravados e publicados.\n` : "\n(Só conferência: nada foi gravado.)\n");
+}
+
+/**
+ * Acerta a ordem das linhas de um mês lançado pelo script antigo (que gravava a hora ao contrário).
+ * Só muda a hora do lançamento (criadoEm), nunca valor, descrição ou categoria. Confere que cada
+ * linha do arquivo existe uma única vez no mês.
+ */
+async function reordenar() {
+  const c = db.collection("condominiums").doc(ID);
+  const mes = dados.mes;
+  const snap = await c.collection("financialEntries").where("mes", "==", mes).where("criadoPor", "==", QUEM.uid).get();
+  if (snap.size !== linhas.length) falhar(`${mes} tem ${snap.size} lançamentos do script; o arquivo tem ${linhas.length}.`);
+  const usados = new Set<string>();
+  const pares = linhas.map((l) => {
+    const d = snap.docs.find((x) => !usados.has(x.id) && x.get("descricao") === l.descricao && Number(x.get("valorCentavos")) === l.valorCentavos);
+    if (!d) falhar(`Não achei no banco: "${l.descricao}" (${l.valor}).`);
+    usados.add(d.id);
+    return d;
+  });
+  const menor = Math.min(...snap.docs.map((d) => d.get("criadoEm")?.toMillis?.() ?? Date.now()));
+  console.log(`\nProjeto ${projectId}${SIMULADOR ? " (SIMULADOR)" : ""} · ${mes}: ${pares.length} lançamentos encontrados; a ordem passa a ser a do arquivo.`);
+  if (SO_CONFERIR) return console.log("\n(Só conferência: nada foi gravado.)\n");
+  const lote = db.batch();
+  pares.forEach((d, i) => lote.update(d.ref, { criadoEm: Timestamp.fromMillis(menor + i * 1000) }));
+  lote.create(c.collection("auditLogs").doc(), {
+    condominioId: ID, uid: QUEM.uid, nome: QUEM.nome, papel: QUEM.papel, acao: "financeiro.configurar",
+    alvo: `monthlySummaries/${mes}`, detalhes: { mes, ordemDasLinhas: "ordem do relatório em papel (só a hora do lançamento mudou)" },
+    criadoEm: FieldValue.serverTimestamp(),
+  });
+  await lote.commit();
+  console.log(`\n✔ Ordem de ${mes} acertada.\n`);
+}
+
+/** Grava (ou corrige) o quadro de casas do mês a partir do arquivo — o mesmo da tela "Quadro de casas". */
+async function soQuadro() {
+  const c = db.collection("condominiums").doc(ID);
+  const mes = dados.mes;
+  const quadro = lerQuadroCasas(dados.casas ?? null);
+  if (!quadro) falhar('O arquivo não tem "casas" (quadro de casas).');
+  if (quadro.total !== null) {
+    for (const campo of CAMPOS_QUADRO) {
+      const n = quadro[campo.chave];
+      if (campo.chave !== "total" && n !== null && n > quadro.total) falhar(`"${campo.rotulo}" passa do total de casas.`);
+    }
+  }
+  const resumoRef = c.collection("monthlySummaries").doc(mes);
+  const resumo = await resumoRef.get();
+  if (!resumo.exists) falhar(`${mes} não tem lançamentos: lance o mês antes.`);
+  console.log(`\nProjeto ${projectId}${SIMULADOR ? " (SIMULADOR)" : ""} · condomínio ${ID} · mês ${mes}`);
+  for (const campo of CAMPOS_QUADRO) console.log(`  ${campo.rotulo}: ${quadro[campo.chave] ?? "—"}`);
+  if (quadro.observacao) console.log(`  Observação: ${quadro.observacao}`);
+  if (SO_CONFERIR) return console.log("\n(Só conferência: nada foi gravado.)\n");
+  const lote = db.batch();
+  lote.set(resumoRef, { casas: { ...quadro, atualizadoEm: FieldValue.serverTimestamp(), atualizadoPor: QUEM.uid } }, { merge: true });
+  lote.create(c.collection("auditLogs").doc(), {
+    condominioId: ID,
+    uid: QUEM.uid,
+    nome: QUEM.nome,
+    papel: QUEM.papel,
+    acao: "financeiro.quadro",
+    alvo: `monthlySummaries/${mes}`,
+    detalhes: { mes, ...Object.fromEntries(CAMPOS_QUADRO.map((x) => [x.chave, quadro[x.chave]])), publicado: resumo.get("publicado") === true },
+    criadoEm: FieldValue.serverTimestamp(),
+  });
+  lote.set(c.collection("sistema").doc("sinais"), { financeiro: FieldValue.serverTimestamp() }, { merge: true });
+  await lote.commit();
+  console.log(`\n✔ Quadro de casas de ${mes} gravado.\n`);
+}
+
+(REORDENAR ? reordenar() : ANTES_DO_INICIO ? antesDoInicio() : SO_QUADRO ? soQuadro() : SO_PUBLICAR ? soPublicar() : main()).catch((e) => falhar(e instanceof Error ? e.message : String(e)));

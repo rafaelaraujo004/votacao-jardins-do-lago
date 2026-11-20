@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import { FileDown, FileText, Wallet } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { lancamentosPublicados, mesesPublicados } from "@/server/dados/morador";
-import { totaisPorCategoria } from "@/server/dados/financeiro";
+import { listarCategorias, totaisPorCategoria } from "@/server/dados/financeiro";
 import { formatarMoeda } from "@/lib/formato";
-import { nomeDoMes, REGEX_MES } from "@/lib/financeiro";
+import { nomeDoMes, pontosDoSaldo, REGEX_MES } from "@/lib/financeiro";
 import { Cartao, EstadoVazio } from "@/components/ui/basicos";
 import { classesDoBotao } from "@/components/ui/botao";
 import { CabecalhoPagina, SegmentoLinks, TituloSecao } from "@/components/ui/painel";
-import { CartoesResumo, DestaqueSaldo, ListaLancamentos, SeletorMes, TabelaEvolucao } from "@/components/financeiro/pecas";
+import { CartoesResumo, DestaqueSaldo, ListaAgrupada, QuadroCasasResumo, SeletorMes, TabelaEvolucao } from "@/components/financeiro/pecas";
 import { GraficoSaldo } from "@/components/financeiro/grafico-saldo";
 
 export const metadata: Metadata = { title: "Prestação de contas" };
@@ -42,7 +42,8 @@ export default async function FinanceiroMorador({ searchParams }: PageProps<"/fi
   const escolhido = typeof bruto === "string" && REGEX_MES.test(bruto) ? meses.find((m) => m.mes === bruto) : undefined;
   const atual = escolhido ?? ultimo;
   const indice = meses.indexOf(atual);
-  const lancamentos = await lancamentosPublicados(ctx, atual.mes);
+  const [lancamentos, listaCategorias] = await Promise.all([lancamentosPublicados(ctx, atual.mes), listarCategorias(ctx)]);
+  const ordemCategorias = new Map(listaCategorias.map((c) => [c.id, c.ordem]));
   const categorias = totaisPorCategoria(lancamentos.filter((l) => l.tipo === "despesa"));
   const totalCategorias = categorias.reduce((soma, c) => soma + Math.max(c.totalCentavos, 0), 0);
 
@@ -53,7 +54,7 @@ export default async function FinanceiroMorador({ searchParams }: PageProps<"/fi
     const partes = [escolhido ? `mes=${atual.mes}` : "", p === 12 ? "periodo=12" : ""].filter(Boolean);
     return partes.length ? `/financeiro?${partes.join("&")}` : "/financeiro";
   };
-  const pontos = meses.slice(-periodo).map((m) => ({ mes: m.mes, saldoCentavos: m.saldoFinalCentavos }));
+  const pontos = pontosDoSaldo(meses, periodo);
 
   return (
     <div className="flex flex-col gap-5">
@@ -139,12 +140,21 @@ export default async function FinanceiroMorador({ searchParams }: PageProps<"/fi
         </section>
       ) : null}
 
+      {atual.casas ? (
+        <section className="flex flex-col gap-3" aria-labelledby="titulo-casas">
+          <TituloSecao id="titulo-casas" extra={nomeDoMes(atual.mes).split(" ")[0]}>
+            Quadro de casas
+          </TituloSecao>
+          <QuadroCasasResumo quadro={atual.casas} />
+        </section>
+      ) : null}
+
       <section className="flex flex-col gap-3" aria-labelledby="titulo-lanc">
         <TituloSecao id="titulo-lanc" extra={`${lancamentos.length} ${lancamentos.length === 1 ? "lançamento" : "lançamentos"}`}>
           Movimentações
         </TituloSecao>
         {lancamentos.length ? (
-          <ListaLancamentos lancamentos={lancamentos} />
+          <ListaAgrupada lancamentos={lancamentos} ordem={ordemCategorias} />
         ) : (
           <EstadoVazio icone={Wallet} titulo="Sem lançamentos neste mês" />
         )}
