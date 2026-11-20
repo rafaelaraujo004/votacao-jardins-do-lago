@@ -1,5 +1,5 @@
 /**
- * Ícones dos atalhos do painel, por nome (componentes de servidor passam só o nome
+ * Ícones dos atalhos (painel da gestão e Início do morador), por nome (componentes de servidor passam só o nome
  * para componentes de navegador — funções não podem atravessar essa fronteira).
  */
 import {
@@ -21,6 +21,13 @@ import {
   Store,
   Users,
   Vote,
+  BookUser,
+  ClipboardPlus,
+  KeyRound,
+  MapPinned,
+  Package,
+  QrCode,
+  UserCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -43,6 +50,13 @@ export const ICONES_ATALHO = {
   Store,
   Users,
   Vote,
+  BookUser,
+  ClipboardPlus,
+  KeyRound,
+  MapPinned,
+  Package,
+  QrCode,
+  UserCheck,
 } satisfies Record<string, LucideIcon>;
 
 export type NomeIconeAtalho = keyof typeof ICONES_ATALHO;

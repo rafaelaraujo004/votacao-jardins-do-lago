@@ -9,7 +9,10 @@ import { useId, useRef } from "react";
 import Link from "next/link";
 import { Info, X } from "lucide-react";
 import { AtalhoModulo, type TomModulo } from "@/components/ui/painel";
-import { ICONES_ATALHO, type NomeIconeAtalho } from "@/components/ui/icones-atalho";
+import {
+  ICONES_ATALHO,
+  type NomeIconeAtalho,
+} from "@/components/ui/icones-atalho";
 
 export function AtalhoComAjuda({
   icone,
@@ -17,12 +20,15 @@ export function AtalhoComAjuda({
   href,
   tom,
   ajuda,
+  rotuloAbrir,
 }: {
   icone: NomeIconeAtalho;
   titulo: string;
   href: string;
   tom: TomModulo;
   ajuda: string;
+  /** Texto do botão da janela (padrão: "Abrir <título>"). */
+  rotuloAbrir?: string;
 }) {
   const janela = useRef<HTMLDialogElement>(null);
   const idTitulo = useId();
@@ -51,7 +57,10 @@ export function AtalhoComAjuda({
             <span className="grid size-11 shrink-0 place-items-center rounded-[14px] bg-surface-item text-destaque">
               <Icone aria-hidden className="size-6" />
             </span>
-            <h2 id={idTitulo} className="min-w-0 flex-1 pt-1.5 text-xl font-bold leading-tight">
+            <h2
+              id={idTitulo}
+              className="min-w-0 flex-1 pt-1.5 text-xl font-bold leading-tight"
+            >
               {titulo}
             </h2>
             <button
@@ -76,7 +85,7 @@ export function AtalhoComAjuda({
               href={href}
               className="grid min-h-12 place-items-center rounded-full bg-pine px-6 font-bold text-canvas shadow-relevo active:shadow-afundado"
             >
-              Abrir {titulo}
+              {rotuloAbrir ?? `Abrir ${titulo}`}
             </Link>
           </div>
         </div>

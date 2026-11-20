@@ -2,21 +2,10 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import {
-  BookUser,
   CalendarDays,
   CalendarX2,
   ChevronRight,
-  ClipboardPlus,
   FlaskConical,
-  FolderOpen,
-  MapPinned,
-  Megaphone,
-  Package,
-  QrCode,
-  ReceiptText,
-  Store,
-  UserCheck,
-  Vote,
 } from "lucide-react";
 import { exigirPermissao, type Contexto } from "@/server/contexto";
 import type { Permissao } from "@/lib/permissoes";
@@ -35,28 +24,41 @@ import { COR_EVENTO, mesCurto } from "@/lib/agenda";
 import { cx } from "@/lib/cx";
 import { Cartao, EstadoVazio, Etiqueta } from "@/components/ui/basicos";
 import { IlustracaoCondominio } from "@/components/ui/ilustracao-condominio";
-import { AtalhoModulo, BlocoNumero, FaixaPetalas, TituloSecao, type TomModulo } from "@/components/ui/painel";
+import { BlocoNumero, FaixaPetalas, TituloSecao, type TomModulo } from "@/components/ui/painel";
 import { EnderecoCopiavel } from "@/components/ui/endereco";
 import { Calendario } from "@/components/ui/calendario";
-import type { LucideIcon } from "lucide-react";
+import { AtalhoComAjuda } from "@/components/ui/atalho-com-ajuda";
+import type { NomeIconeAtalho } from "@/components/ui/icones-atalho";
 
 export const metadata: Metadata = { title: "Início" };
 
-// Atalhos dos módulos (só aparecem os que o perfil pode usar).
-// São 12 de propósito: a grade fecha sem buracos em 3 colunas (celular) e em 4 (telas maiores).
-const ATALHOS: { icone: LucideIcon; titulo: string; href: string; tom: TomModulo; permissao: Permissao }[] = [
-  { icone: ReceiptText, titulo: "Prestação de contas", href: "/financeiro", tom: "verde", permissao: "financeiro.ver_publicado" },
-  { icone: QrCode, titulo: "Pagar taxa", href: "/contatos#titulo-pix", tom: "verde", permissao: "informacoes.ver" },
-  { icone: CalendarDays, titulo: "Agenda das áreas", href: "/reservas", tom: "verde", permissao: "reservas.fazer" },
-  { icone: ClipboardPlus, titulo: "Informar problema", href: "/solicitacoes?nova=1", tom: "areia", permissao: "solicitacoes.abrir" },
-  { icone: Megaphone, titulo: "Comunicados", href: "/comunicados", tom: "areia", permissao: "comunicados.ver" },
-  { icone: UserCheck, titulo: "Autorizar visita", href: "/visitas", tom: "lago", permissao: "visitantes.autorizar" },
-  { icone: Package, titulo: "Minhas encomendas", href: "/encomendas", tom: "areia", permissao: "encomendas.ver_proprias" },
-  { icone: Vote, titulo: "Enquetes", href: "/enquetes", tom: "vinho", permissao: "enquetes.votar" },
-  { icone: Store, titulo: "Classificados", href: "/classificados", tom: "areia", permissao: "classificados.usar" },
-  { icone: FolderOpen, titulo: "Documentos", href: "/documentos", tom: "lago", permissao: "documentos.ver" },
-  { icone: MapPinned, titulo: "Mapa das casas", href: "/mapa", tom: "lago", permissao: "mapa.ver" },
-  { icone: BookUser, titulo: "Contatos úteis", href: "/contatos", tom: "vinho", permissao: "informacoes.ver" },
+// Atalhos dos módulos (só aparecem os que o perfil pode usar), cada um com o "i" que explica
+// em linguagem simples para que serve. São 15: a grade fecha sem buracos em 3 colunas
+// (celular) e em 5 (telas maiores).
+const ATALHOS: {
+  icone: NomeIconeAtalho;
+  titulo: string;
+  href: string;
+  tom: TomModulo;
+  permissao: Permissao;
+  ajuda: string;
+  rotuloAbrir?: string;
+}[] = [
+  { icone: "Award", titulo: "Votação oficial", href: "/votacao", tom: "vinho", permissao: "eleicoes.votar", ajuda: "Eleição do síndico e do conselho. Aqui você vê a chapa, o dia e o horário da votação e vota quando ela abrir. Vale um voto por casa e o voto é secreto: ninguém vê em quem a sua casa votou." },
+  { icone: "ReceiptText", titulo: "Prestação de contas", href: "/financeiro", tom: "verde", permissao: "financeiro.ver_publicado", ajuda: "Para onde vai o dinheiro do condomínio: saldo, entradas e saídas de cada mês que a administração já conferiu e publicou." },
+  { icone: "QrCode", titulo: "Pagar taxa", href: "/contatos#titulo-pix", tom: "verde", permissao: "informacoes.ver", ajuda: "Mostra a chave PIX e o nome do favorecido para pagar a taxa do condomínio. É só copiar a chave e pagar no app do seu banco.", rotuloAbrir: "Ver o PIX" },
+  { icone: "CalendarDays", titulo: "Agenda das áreas", href: "/reservas", tom: "verde", permissao: "reservas.fazer", ajuda: "Veja os horários livres da área de lazer, da quadra e dos equipamentos e peça a sua reserva. As regras de cada área aparecem lá." },
+  { icone: "ClipboardPlus", titulo: "Informar problema", href: "/solicitacoes?nova=1", tom: "areia", permissao: "solicitacoes.abrir", ajuda: "Avise a administração sobre algo que precisa de atenção: lâmpada queimada, vazamento, barulho, sugestão. Você recebe um número de protocolo.", rotuloAbrir: "Informar agora" },
+  { icone: "ClipboardList", titulo: "Minhas solicitações", href: "/solicitacoes", tom: "vinho", permissao: "solicitacoes.abrir", ajuda: "Acompanhe os pedidos que a sua casa já fez: se estão em aberto, em andamento ou resolvidos, e as respostas da administração." },
+  { icone: "Megaphone", titulo: "Comunicados", href: "/comunicados", tom: "areia", permissao: "comunicados.ver", ajuda: "Avisos da administração para todos os moradores: manutenções, assembleias, regras e novidades." },
+  { icone: "UserCheck", titulo: "Autorizar visita", href: "/visitas", tom: "lago", permissao: "visitantes.autorizar", ajuda: "Vai receber alguém? Autorize aqui e mande o código para o visitante. Na portaria, ele mostra o código e entra sem demora.", rotuloAbrir: "Autorizar agora" },
+  { icone: "Package", titulo: "Minhas encomendas", href: "/encomendas", tom: "areia", permissao: "encomendas.ver_proprias", ajuda: "Veja as entregas que chegaram na portaria para a sua casa e se já foram retiradas." },
+  { icone: "Vote", titulo: "Enquetes", href: "/enquetes", tom: "vinho", permissao: "enquetes.votar", ajuda: "Perguntas rápidas da administração para saber a opinião dos moradores (um voto por casa). É diferente da votação oficial." },
+  { icone: "Store", titulo: "Classificados", href: "/classificados", tom: "areia", permissao: "classificados.usar", ajuda: "Compra, venda e serviços entre vizinhos. Você pode anunciar; o anúncio aparece depois que a administração aprovar." },
+  { icone: "FolderOpen", titulo: "Documentos", href: "/documentos", tom: "lago", permissao: "documentos.ver", ajuda: "Regimento interno, convenção, atas de assembleia e outros documentos do condomínio." },
+  { icone: "MapPinned", titulo: "Mapa das casas", href: "/mapa", tom: "lago", permissao: "mapa.ver", ajuda: "Encontre qualquer casa no desenho do condomínio. Toque na casa e depois em \"Chegar\" para ver o caminho desde a portaria." },
+  { icone: "BookUser", titulo: "Contatos úteis", href: "/contatos", tom: "vinho", permissao: "informacoes.ver", ajuda: "Telefones da portaria, da ronda noturna e da responsável pelas reservas, além do endereço e do PIX da taxa." },
+  { icone: "KeyRound", titulo: "Trocar senha", href: "/conta/senha", tom: "lago", permissao: "area.morador", ajuda: "Troque a senha que você usa para entrar no portal. Use uma senha fácil de lembrar e difícil de adivinhar, e não passe para outras pessoas.", rotuloAbrir: "Trocar agora" },
 ];
 
 /** Último mês PUBLICADO, ou null se ainda não houver. */
@@ -239,11 +241,18 @@ export default async function InicioMorador() {
       {/* Atalhos dos módulos */}
       <section aria-labelledby="titulo-atalhos" className="flex flex-col gap-3">
         <TituloSecao id="titulo-atalhos">O que você precisa?</TituloSecao>
-        {/* 3 por linha no celular (nomes como "Classificados" não cabem em 4 colunas a 360px). */}
-        <ul className="grid grid-cols-3 gap-2.5 min-[440px]:grid-cols-4">
+        {/* 3 por linha no celular (nomes como "Classificados" não cabem em 4 colunas a 360px); 5 em telas maiores. */}
+        <ul className="grid grid-cols-3 gap-2.5 sm:grid-cols-5">
           {atalhos.map((a) => (
             <li key={a.titulo}>
-              <AtalhoModulo icone={a.icone} titulo={a.titulo} href={a.href} tom={a.tom} />
+              <AtalhoComAjuda
+                icone={a.icone}
+                titulo={a.titulo}
+                href={a.href}
+                tom={a.tom}
+                ajuda={a.ajuda}
+                rotuloAbrir={a.rotuloAbrir}
+              />
             </li>
           ))}
         </ul>
