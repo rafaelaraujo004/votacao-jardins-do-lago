@@ -54,7 +54,9 @@ import { numeroDaCasa } from "@/lib/contatos-votacao";
  *   candidato (nem o horário: os contadores guardam só o número atual);
  * - a urna só é lida depois do encerramento (lerApuracao confere a situação) e o navegador
  *   não lê nada da eleição (firestore.rules nega tudo em elections/**);
- * - a auditoria registra que a casa votou, nunca em quem.
+ * - a auditoria registra só que a CASA votou e por onde (portal ou link) — nunca em quem, nem
+ *   a pessoa que votou (uid fixo "voto:casa"). E só a comissão vê qual casa (veja
+ *   ultimosRegistrosDeAuditoria em src/server/dados/gestao.ts).
  * O único jeito de descobrir um voto seria alguém com a chave mestra do Firebase vigiar o
  * banco ao vivo durante a votação — a mesma confiança que qualquer votação online exige
  * de quem opera o servidor. Ninguém do portal (síndico, comissão, morador) consegue.
@@ -352,7 +354,17 @@ export async function obterEleicaoGestao(
   garantirPermissao(ctx, "eleicoes.gerenciar");
   const doc = await eleicoesDe(ctx).doc(id).get();
   if (!doc.exists) return null;
-  const e = paraEleicao(doc.id, doc.data());
+  let e = paraEleicao(doc.id, doc.data());
+  // Eleição publicada antes de existir a lista congelada: a comissão abriu a tela antes de
+  // abrir a votação → grava a lista agora (uma vez só; as próximas aberturas já a encontram).
+  if (precisaCongelarLista(e, new Date())) {
+    try {
+      e = (await congelarListaSeFaltar(adminDb(), ctx.condominioId, e.id)) ?? e;
+    } catch (erro) {
+      // A tela abre do mesmo jeito; a próxima abertura tenta de novo.
+      console.error("Votação: não foi possível gravar a lista de casas aptas", erro);
+    }
+  }
   garantirFinalizacao(ctx.condominioId, e);
   const [aptasAgora, votaram, apuracao, fotos] = await Promise.all([
     e.casasAptas === null
@@ -371,6 +383,64 @@ export async function obterEleicaoGestao(
     fotos,
     apuracao,
   };
+}
+
+/** Publicada, ainda AGENDADA e sem a lista congelada de casas aptas (eleição publicada antes dela existir). */
+export function precisaCongelarLista(
+  e: Pick<EleicaoInterna, "status" | "abreEm" | "fechaEm" | "casasAptasIds">,
+  agora: Date,
+): boolean {
+  return e.status === "publicada" && e.casasAptasIds === null && situacaoEleicao(e, agora) === "agendada";
+}
+
+/**
+ * LISTA CONGELADA QUE FALTAVA (a eleição real foi publicada antes de a lista existir).
+ * Grava a lista de casas aptas (ativas − bloqueadas) e casasAptas, numa transação que confere
+ * DE NOVO que a eleição ainda está agendada e ainda sem lista (duas telas ao mesmo tempo:
+ * só a primeira grava). Depois de aberta, nunca grava: aí vale o cadastro, que fica travado
+ * com a votação aberta (conferirVotacaoAbertaAntesDoCadastro).
+ * Devolve a eleição já com a lista, ou null se não precisou (ou não pôde) gravar.
+ */
+export async function congelarListaSeFaltar(
+  db: Firestore,
+  condominioId: string,
+  id: string,
+  agoraFixo?: Date,
+): Promise<EleicaoInterna | null> {
+  const ctx = { condominioId };
+  const ref = eleicoesDe(ctx, db).doc(id);
+  const unidades = base(ctx, db).collection("units").select("status");
+  return db.runTransaction(async (tx) => {
+    // A hora é lida a cada tentativa da transação.
+    const agora = agoraFixo ?? new Date();
+    const doc = await tx.get(ref);
+    if (!doc.exists) return null;
+    const e = paraEleicao(doc.id, doc.data());
+    if (!precisaCongelarLista(e, agora)) return null;
+    const bloqueadas = new Set(e.casasBloqueadas);
+    const aptasIds = (await tx.get(unidades)).docs
+      .filter((d) => d.get("status") !== "inativa" && !bloqueadas.has(d.id))
+      .map((d) => d.id)
+      .sort();
+    // Sem nenhuma casa ativa, não grava lista vazia (ninguém poderia votar): deixa como está.
+    if (aptasIds.length === 0) return null;
+    tx.update(ref, { casasAptas: aptasIds.length, casasAptasIds: aptasIds });
+    registrarAuditoria(db, tx, {
+      condominioId,
+      uid: "sistema:lista-aptas",
+      nome: "Lista de casas aptas (automática)",
+      acao: acaoEleicao("eleicao.bloqueio"),
+      alvo: `elections/${id}`,
+      detalhes: {
+        titulo: e.titulo,
+        casasAptas: aptasIds.length,
+        motivo: "Lista de casas aptas guardada antes de a votação abrir (casas ativas menos as bloqueadas).",
+      },
+      // Quem abriu a tela já recebe os números novos; as outras telas não precisam recarregar.
+      marcarSinal: false,
+    });
+    return { ...e, casasAptas: aptasIds.length, casasAptasIds: aptasIds };
+  });
 }
 
 /**
@@ -756,32 +826,33 @@ export async function registrarVotoEleicao(
     throw new ErroDeNegocio(
       "Seu cadastro não está ligado a uma casa. Fale com a administração.",
     );
+  // Só a casa e a via: quem é a pessoa não vai para lugar nenhum (nem para a auditoria).
   return gravarVotoDaCasa(
     db,
-    {
-      condominioId: ctx.condominioId,
-      unitId: ctx.unitId,
-      uid: ctx.uid,
-      nome: ctx.nome,
-      papel: ctx.papel,
-      via: "portal",
-    },
+    { condominioId: ctx.condominioId, unitId: ctx.unitId, via: "portal" },
     id,
     enviados,
     agoraFixo,
   );
 }
 
-/** Quem está votando: a CASA (e, para a auditoria, quem/como). Nunca vem do formulário. */
+/** Quem está votando: a CASA e por onde. Nunca vem do formulário. */
 export type VotanteCasa = {
   condominioId: string;
   unitId: string;
-  uid: string;
-  nome: string;
-  papel: Contexto["papel"];
+  /**
+   * Quem chamou (link, script). NÃO é gravado em lugar nenhum — nem na auditoria —, para o
+   * registro do voto não dizer quem da casa votou. Fica no tipo só para quem já passa.
+   */
+  uid?: string;
+  nome?: string;
+  papel?: Contexto["papel"];
   /** "portal" (morador logado) ou "link" (link de voto da casa, sem login). */
   via: "portal" | "link";
 };
+
+/** Como o voto aparece na auditoria: nunca a pessoa, só "Voto da casa". */
+export const AUDITORIA_DO_VOTO = { uid: "voto:casa", nome: "Voto da casa" } as const;
 
 /**
  * Grava o voto de UMA casa — usado pelo portal e pelo link de voto (mesma regra para os dois).
@@ -862,15 +933,15 @@ export async function gravarVotoDaCasa(
       );
     else somas[escolha.voto] = FieldValue.increment(1);
     tx.set(urnaRef, somas, { merge: true });
-    // 3) auditoria: a casa votou — de propósito SEM a escolha.
+    // 3) auditoria: a casa votou — de propósito SEM a escolha e SEM a pessoa (nem nome, nem
+    // uid, nem papel): só a casa e a via. A casa só aparece para a comissão (gestao.ts).
     // O "sinal" para as telas da comissão vai DEPOIS, fora da transação: quem chama (a ação
     // da página) usa marcarMudancaDepois com after(). O documento de sinais é um só para o
     // condomínio inteiro e não deve ser disputado por cada voto.
     registrarAuditoria(db, tx, {
       condominioId: quem.condominioId,
-      uid: quem.uid,
-      nome: quem.nome,
-      papel: quem.papel,
+      uid: AUDITORIA_DO_VOTO.uid,
+      nome: AUDITORIA_DO_VOTO.nome,
       acao: acaoEleicao("eleicao.votar"),
       alvo: `elections/${e.id}`,
       detalhes: { unidade: unitId, via: quem.via },
@@ -1291,15 +1362,15 @@ export async function finalizarEleicao(
 export const AVISO_ATE_MS = 48 * 60 * 60 * 1000;
 
 /**
- * Cadastro de casas x votação (decisão de 21/11/2026): com a votação ABERTA, ativar ou inativar
- * casa não é permitido (seria bloquear/desbloquear no meio da votação). Chame ANTES de gravar.
+ * Cadastro de casas x votação (decisão de 21/11/2026): com a votação ABERTA, criar, ativar ou
+ * inativar casa não é permitido (seria mudar quem vota no meio da votação). Chame ANTES de gravar.
  */
 export async function conferirVotacaoAbertaAntesDoCadastro(condominioId: string, db: Firestore = adminDb(), agora = new Date()): Promise<void> {
   const snap = await eleicoesDe({ condominioId }, db).where("status", "==", "publicada").get();
   const aberta = snap.docs.map((d) => paraEleicao(d.id, d.data())).find((e) => situacaoEleicao(e, agora) === "aberta");
   if (aberta)
     throw new ErroDeNegocio(
-      `A votação "${aberta.titulo}" está aberta: não dá para ativar nem inativar casas até o encerramento (as casas aptas ficaram congeladas quando ela abriu).`,
+      `A votação "${aberta.titulo}" está aberta: não dá para cadastrar, ativar nem inativar casas até o encerramento (as casas aptas ficaram congeladas quando ela abriu).`,
     );
 }
 

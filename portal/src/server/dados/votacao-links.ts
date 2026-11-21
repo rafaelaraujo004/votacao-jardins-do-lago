@@ -44,7 +44,8 @@ import { FUSO_PADRAO } from "@/lib/formato";
  *   O navegador não lê nada disso (firestore.rules nega tudo).
  * - Junto com o link vai uma SENHA de 6 números (na mesma mensagem, com o passo a passo).
  *   O link sozinho não abre a cédula: a pessoa digita a senha; errou 5 vezes, o link
- *   trava por 15 minutos. Acertou, fica um cookie (só deste link, por 6 horas) com um
+ *   trava por 15 minutos. Acertou, fica um cookie (só deste link, até 1 hora depois do
+ *   encerramento — veja validadeDoCookie) com um
  *   "lembrete" ASSINADO pelo servidor (tokenDoLink): quem tem só o link não consegue
  *   montar esse cookie para testar senhas sem passar pelos limites.
  *   No índice fica só o hash da senha; a senha em si fica em links/{unitId} para reenviar.
@@ -86,6 +87,67 @@ export function mesmoHash(a: string, b: string): boolean {
 
 /** Nome do cookie que lembra que a senha deste link foi digitada certa. */
 export const cookieDoLink = (codigo: string) => `voto_${codigo}`;
+
+const HORA_MS = 60 * 60 * 1000;
+
+/**
+ * Por quanto tempo (em segundos) o cookie da senha vale: até 1 hora depois do encerramento
+ * da votação — a pessoa que entrou às 9h não precisa digitar a senha de novo no fim da
+ * manhã. No mínimo 1 hora (ex.: entrou depois do encerramento para baixar o comprovante)
+ * e no máximo 24 horas.
+ */
+export function validadeDoCookie(fechaEm: Date, agora = new Date()): number {
+  const segundos = Math.ceil((fechaEm.getTime() + HORA_MS - agora.getTime()) / 1000);
+  return Math.min(24 * 60 * 60, Math.max(60 * 60, segundos));
+}
+
+/**
+ * Chave do ENDEREÇO DE INTERNET para os limites de tentativas.
+ * - IPv6: cada aparelho/casa costuma receber um bloco inteiro (/64) e pode trocar o final do
+ *   endereço quando quiser. Por isso conta o BLOCO ("2001:db8:1:2::/64"), não o endereço todo.
+ * - IPv4 (também quando vem dentro do IPv6, "::ffff:1.2.3.4") e com porta: só o endereço.
+ * - Qualquer outra coisa (ex.: "desconhecido") fica como veio.
+ * Chamar duas vezes dá o mesmo resultado.
+ */
+export function chaveDoIp(bruto: string): string {
+  let ip = bruto.trim().toLowerCase();
+  if (ip.endsWith("/64")) return ip; // já é a chave
+  const colchetes = /^\[([^\]]+)\](?::\d+)?$/.exec(ip); // "[2001:db8::1]:443"
+  if (colchetes) ip = colchetes[1];
+  const v4ComPorta = /^(\d{1,3}(?:\.\d{1,3}){3}):\d+$/.exec(ip); // "1.2.3.4:5678"
+  if (v4ComPorta) return v4ComPorta[1];
+  if (!ip.includes(":")) return ip;
+  const grupos = gruposIpv6(ip.replace(/%.*$/, "")); // sem a zona ("fe80::1%eth0")
+  if (!grupos) return bruto.trim();
+  // IPv4 dentro do IPv6: conta como o IPv4.
+  if (grupos.slice(0, 5).every((g) => g === 0) && grupos[5] === 0xffff)
+    return [grupos[6] >> 8, grupos[6] & 255, grupos[7] >> 8, grupos[7] & 255].join(".");
+  return `${grupos
+    .slice(0, 4)
+    .map((g) => g.toString(16))
+    .join(":")}::/64`;
+}
+
+/** Os 8 grupos de um IPv6 (com "::" e IPv4 no final já expandidos); null se não é IPv6. */
+function gruposIpv6(ip: string): number[] | null {
+  let texto = ip;
+  const v4 = /(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(texto);
+  if (v4) {
+    const n = v4.slice(1).map(Number);
+    if (n.some((x) => x > 255)) return null;
+    texto = `${texto.slice(0, v4.index)}${((n[0] << 8) | n[1]).toString(16)}:${((n[2] << 8) | n[3]).toString(16)}`;
+  }
+  const partes = texto.split("::");
+  if (partes.length > 2) return null;
+  const ler = (s: string) => (s ? s.split(":") : []);
+  const esquerda = ler(partes[0]);
+  const direita = partes.length === 2 ? ler(partes[1]) : [];
+  const zeros = 8 - esquerda.length - direita.length;
+  if (partes.length === 2 ? zeros < 1 : zeros !== 0) return null;
+  const todos = [...esquerda, ...Array<string>(partes.length === 2 ? zeros : 0).fill("0"), ...direita];
+  if (!todos.every((g) => /^[0-9a-f]{1,4}$/.test(g))) return null;
+  return todos.map((g) => parseInt(g, 16));
+}
 
 /**
  * Segredo do servidor que assina o cookie do link. Ordem: VOTO_COOKIE_SEGREDO (se
@@ -465,16 +527,39 @@ export async function resolverCodigo(
     : null;
 }
 
-/** Tudo que a página do link mostra. Rascunho não aparece (como para o morador). */
-export async function votacaoPorCodigo(
+/**
+ * O que a página do link mostra:
+ * - "ok": a votação publicada (agendada, aberta ou encerrada) com a situação da casa;
+ * - "indisponivel": o código é CERTO, mas a votação ainda não foi publicada (ou voltou para
+ *   rascunho). Não é tentativa errada: a página pede para guardar o link e não conta no
+ *   limite do endereço. Não mostra nada da votação nem da casa;
+ * - "invalido": o código não existe, foi trocado, a votação foi apagada ou o condomínio
+ *   está suspenso.
+ */
+export type LinkDeVoto =
+  | { estado: "ok"; votacao: VotacaoPorLink }
+  | { estado: "indisponivel"; codigo: string; condominioNome: string }
+  /** A comissão apagou as senhas depois do resultado (LGPD): a votação terminou. */
+  | { estado: "desativado"; condominioNome: string }
+  | { estado: "invalido" };
+
+export async function lerLinkDeVoto(
   codigo: string,
   /** token = valor do cookie do link (tokenDoLink), se a senha já foi digitada certa. */
   opcoes: { agora?: Date; db?: Firestore; token?: string | null } = {},
-): Promise<VotacaoPorLink | null> {
+): Promise<LinkDeVoto> {
   const agora = opcoes.agora ?? new Date();
   const db = opcoes.db ?? adminDb();
   const alvo = await resolverCodigo(db, codigo);
-  if (!alvo) return null;
+  if (!alvo) {
+    // Índice desativado pela limpeza depois do resultado: "terminou", não "link inválido".
+    const indice = await codigosCol(db).doc(hashCodigo(codigo)).get();
+    if (indice.exists && indice.get("desativadoEm")) {
+      const cond = await db.collection("condominiums").doc(texto(indice.get("condominioId"), "-")).get();
+      return { estado: "desativado", condominioNome: texto(cond.get("nome"), "Residencial Jardins do Lago") };
+    }
+    return { estado: "invalido" };
+  }
   const ctx = { condominioId: alvo.condominioId };
   const eleicaoRef = eleicoesDe(ctx, db).doc(alvo.eleicaoId);
   const [cond, doc, casa, votante] = await Promise.all([
@@ -483,13 +568,11 @@ export async function votacaoPorCodigo(
     base(ctx, db).collection("units").doc(alvo.unitId).get(),
     eleicaoRef.collection("votantes").doc(alvo.unitId).get(),
   ]);
-  if (
-    !cond.exists ||
-    cond.get("status") === "suspenso" ||
-    !doc.exists ||
-    doc.get("status") !== "publicada"
-  )
-    return null;
+  if (!cond.exists || cond.get("status") === "suspenso" || !doc.exists)
+    return { estado: "invalido" };
+  const condominioNome = texto(cond.get("nome"), "Residencial Jardins do Lago");
+  if (doc.get("status") !== "publicada")
+    return { estado: "indisponivel", codigo, condominioNome };
   const e = paraEleicao(doc.id, doc.data());
   const situacao = situacaoEleicao(e, agora);
   garantirFinalizacao(alvo.condominioId, e);
@@ -503,9 +586,9 @@ export async function votacaoPorCodigo(
         casasAptas: e.casasAptas ?? votaram,
       }))
     : null;
-  return {
+  const votacao: VotacaoPorLink = {
     codigo,
-    condominioNome: texto(cond.get("nome"), "Residencial Jardins do Lago"),
+    condominioNome,
     fuso: texto(cond.get("fuso"), FUSO_PADRAO),
     eleicaoId: e.id,
     titulo: e.titulo,
@@ -526,6 +609,16 @@ export async function votacaoPorCodigo(
     resultado,
     senhaOk: tokenConfere(codigo, opcoes.token, alvo),
   };
+  return { estado: "ok", votacao };
+}
+
+/** A votação publicada do link, ou null (código inválido OU votação ainda não publicada). */
+export async function votacaoPorCodigo(
+  codigo: string,
+  opcoes: { agora?: Date; db?: Firestore; token?: string | null } = {},
+): Promise<VotacaoPorLink | null> {
+  const r = await lerLinkDeVoto(codigo, opcoes);
+  return r.estado === "ok" ? r.votacao : null;
 }
 
 /**
@@ -539,10 +632,8 @@ export async function votacaoPorCodigo(
 const VALIDADE_CODIGO_MS = 60_000;
 const codigoGuardado = new Map<string, { ate: number; alvo: Alvo | null }>();
 
-export async function painelPorCodigo(
-  codigo: string,
-  db: Firestore = adminDb(),
-): Promise<{ painel: import("@/lib/eleicoes").PainelEleicao; casa: { votou: boolean; bloqueada: boolean } } | null> {
+/** Casa e eleição do código (guardado por 1 minuto); null se não existe ou condomínio suspenso. */
+async function alvoGuardado(codigo: string, db: Firestore): Promise<Alvo | null> {
   const agora = Date.now();
   let g = codigoGuardado.get(codigo);
   if (!g || g.ate <= agora) {
@@ -555,8 +646,24 @@ export async function painelPorCodigo(
     g = { ate: agora + VALIDADE_CODIGO_MS, alvo };
     codigoGuardado.set(codigo, g);
   }
-  if (!g.alvo) return null;
-  const { condominioId, eleicaoId, unitId } = g.alvo;
+  return g.alvo;
+}
+
+/**
+ * O código existe (mesmo que a votação ainda esteja em rascunho)? Usado pelo painel ao vivo
+ * para NÃO contar como tentativa errada o link certo de uma votação que voltou a rascunho.
+ */
+export async function codigoConhecido(codigo: string, db: Firestore = adminDb()): Promise<boolean> {
+  return (await alvoGuardado(codigo, db)) !== null;
+}
+
+export async function painelPorCodigo(
+  codigo: string,
+  db: Firestore = adminDb(),
+): Promise<{ painel: import("@/lib/eleicoes").PainelEleicao; casa: { votou: boolean; bloqueada: boolean } } | null> {
+  const alvo = await alvoGuardado(codigo, db);
+  if (!alvo) return null;
+  const { condominioId, eleicaoId, unitId } = alvo;
   const r = await painelDaEleicaoGuardado(condominioId, eleicaoId, db);
   if (!r) return null;
   const casa = await situacaoDaCasa({ condominioId, unitId }, r.eleicao, db);
@@ -575,6 +682,7 @@ function tokenConfere(codigo: string, token: string | null | undefined, alvo: Al
  * muitos aparelhos; o Wi-Fi do condomínio também). Link certo + senha certa nunca são
  * barrados por endereço, nem gastam tentativas. Cada senha é protegida pelos limites POR LINK
  * (5 erros por aparelho a cada 15 min, 30 por hora no total), conferidos numa transação.
+ * O endereço sempre passa por chaveDoIp (IPv6 conta pelo bloco /64).
  */
 export const LIMITE_IP = {
   /** Abrir links que não existem (página do link). */
@@ -588,16 +696,34 @@ export const LIMITE_IP = {
 type LimiteIp = (typeof LIMITE_IP)[keyof typeof LIMITE_IP];
 
 export const ipEstourado = (db: Firestore, l: LimiteIp, ip: string) =>
-  limiteEstourado(db, l.acao, ip, l.limite, l.janelaSegundos);
+  limiteEstourado(db, l.acao, chaveDoIp(ip), l.limite, l.janelaSegundos);
 
 export const contarErroDoIp = (db: Firestore, l: LimiteIp, ip: string) =>
-  consumirTentativa(db, l.acao, ip, l.limite, l.janelaSegundos);
+  consumirTentativa(db, l.acao, chaveDoIp(ip), l.limite, l.janelaSegundos);
+
+/** Endereço passou do limite? Devolve até quando (milissegundos) ou null se pode tentar. */
+async function esperaDoIp(db: Firestore, l: LimiteIp, ip: string): Promise<number | null> {
+  const dados = (await refLimite(db, l.acao, chaveDoIp(ip)).get()).data();
+  const j = janelaDoLimite(dados, Date.now(), l.janelaSegundos);
+  return j.contagem >= l.limite ? j.inicio + l.janelaSegundos * 1000 : null;
+}
+
+/** "1 minuto", "15 minutos" (arredonda para cima, nunca menos de 1). */
+function minutosAte(ateMs: number): string {
+  const m = Math.max(1, Math.ceil((ateMs - Date.now()) / 60_000));
+  return m === 1 ? "1 minuto" : `${m} minutos`;
+}
+
+const AJUDA_WHATSAPP = "Se precisar, responda a mensagem da comissão no WhatsApp.";
+
+const muitasTentativas = (ateMs: number) =>
+  `Muitas tentativas seguidas. Espere ${minutosAte(ateMs)} e tente de novo. ${AJUDA_WHATSAPP}`;
 
 /** Recusa uma tentativa errada vinda de `ip`: conta no limite do endereço e explica. */
 async function recusarDoIp(db: Firestore, l: LimiteIp, ip: string | undefined, mensagem: string): Promise<never> {
   if (ip) {
-    if (await ipEstourado(db, l, ip))
-      throw new ErroDeNegocio("Muitas tentativas seguidas. Espere alguns minutos e tente de novo.");
+    const ate = await esperaDoIp(db, l, ip);
+    if (ate !== null) throw new ErroDeNegocio(muitasTentativas(ate));
     await contarErroDoIp(db, l, ip);
   }
   throw new ErroDeNegocio(mensagem);
@@ -641,17 +767,31 @@ export async function votarPorCodigo(
 /** Limites POR LINK da senha: por aparelho (link + endereço) e no total do link. */
 const LIMITE_SENHA_APARELHO = { acao: "voto.senha.ip", limite: 5, janelaSegundos: 15 * 60 } as const;
 const LIMITE_SENHA_LINK = { acao: "voto.senha.link", limite: 30, janelaSegundos: 60 * 60 } as const;
+/**
+ * TETO DURO do link (mesma janela de 1 h): passou de 30 erros, ainda entra com a senha certa um
+ * aparelho que não errou nenhuma vez (o teto existe para quem erra) — mas com 40 erros no link,
+ * ninguém mais entra até a janela acabar. Assim o total de palpites por link fica limitado
+ * (40 por hora), mesmo trocando de endereço de internet. A comissão destrava com "Trocar link".
+ */
+const TETO_DURO_SENHA_LINK = 40;
 
 /**
  * Confere a senha do link. Contra quem tem só o link e tenta travar a casa:
  * - contam só as tentativas ERRADAS (acertar não gasta);
  * - limite por link E por endereço (5 a cada 15 min): quem erra de outro aparelho não trava a casa;
- * - teto por link (30 erros por hora), venha de onde vier, contra quem troca de endereço;
+ * - teto por link (30 erros por hora), venha de onde vier, contra quem troca de endereço.
+ *   O teto existe para quem ERRA: com ele estourado, o aparelho que ainda não errou nenhuma
+ *   vez e digita a senha CERTA entra (a casa não fica de fora porque alguém errou muito).
+ *   Se esse aparelho errar, o erro conta e ele espera como os outros — assim cada aparelho
+ *   novo tem no máximo UMA tentativa enquanto o teto estiver estourado (nada de "testar senhas"
+ *   trocando de aparelho sem limite);
  * - os dois limites do link são conferidos e somados NUMA transação junto com a comparação
  *   da senha: tentativas ao mesmo tempo no mesmo link entram em fila (nenhuma rajada passa);
  * - o limite do ENDEREÇO só vale para links que não existem (contra quem tenta vários links);
+ * - o endereço passa por chaveDoIp (IPv6 conta pelo bloco /64);
  * - só vale com a votação aberta (ou, depois, para baixar o comprovante de quem já votou).
- * Devolve o token do cookie (tokenDoLink) se acertou.
+ * Devolve o token do cookie (tokenDoLink) e o horário de encerramento (para a validade do
+ * cookie, veja validadeDoCookie) se acertou.
  */
 export async function conferirSenha(
   codigo: string,
@@ -659,16 +799,13 @@ export async function conferirSenha(
   ip: string,
   db: Firestore = adminDb(),
   agora = new Date(),
-): Promise<{ ok: true; token: string } | { ok: false; erro: string }> {
-  const travado = {
-    ok: false as const,
-    erro: "Senha errada muitas vezes. Espere 15 minutos e tente de novo.",
-  };
+): Promise<{ ok: true; token: string; fechaEm: Date } | { ok: false; erro: string }> {
+  const chaveIp = chaveDoIp(ip);
   const alvo = await resolverCodigo(db, codigo);
   if (!alvo) {
-    if (await ipEstourado(db, LIMITE_IP.senhaErrada, ip))
-      return { ok: false, erro: "Muitas tentativas seguidas. Espere alguns minutos e tente de novo." };
-    await contarErroDoIp(db, LIMITE_IP.senhaErrada, ip);
+    const ate = await esperaDoIp(db, LIMITE_IP.senhaErrada, chaveIp);
+    if (ate !== null) return { ok: false, erro: muitasTentativas(ate) };
+    await contarErroDoIp(db, LIMITE_IP.senhaErrada, chaveIp);
     return {
       ok: false,
       erro: "Senha errada ou link inválido. Confira a mensagem que você recebeu.",
@@ -681,9 +818,14 @@ export async function conferirSenha(
     ref.get(),
     ref.collection("votantes").doc(alvo.unitId).get(),
   ]);
-  if (!doc.exists || doc.get("status") !== "publicada")
-    return { ok: false, erro: "Esta votação não está disponível." };
-  const situacao = situacaoEleicao(paraEleicao(doc.id, doc.data()), agora);
+  if (!doc.exists) return { ok: false, erro: "Esta votação não está disponível." };
+  if (doc.get("status") !== "publicada")
+    return {
+      ok: false,
+      erro: "Esta votação ainda não foi liberada pela comissão. Use este mesmo link no dia.",
+    };
+  const e = paraEleicao(doc.id, doc.data());
+  const situacao = situacaoEleicao(e, agora);
   if (!votante.exists && situacao === "agendada")
     return {
       ok: false,
@@ -692,17 +834,30 @@ export async function conferirSenha(
   if (!votante.exists && situacao === "encerrada")
     return { ok: false, erro: "A votação já encerrou." };
   const tentativa = hashSenha(codigo, senha);
-  const refAparelho = refLimite(db, LIMITE_SENHA_APARELHO.acao, `${codigo}:${ip}`);
+  const refAparelho = refLimite(db, LIMITE_SENHA_APARELHO.acao, `${codigo}:${chaveIp}`);
   const refLink = refLimite(db, LIMITE_SENHA_LINK.acao, codigo);
   const r = await db.runTransaction(async (tx) => {
     const agoraMs = Date.now();
     const [dAparelho, dLink] = await tx.getAll(refAparelho, refLink);
     const aparelho = janelaDoLimite(dAparelho.data(), agoraMs, LIMITE_SENHA_APARELHO.janelaSegundos);
     const link = janelaDoLimite(dLink.data(), agoraMs, LIMITE_SENHA_LINK.janelaSegundos);
-    if (aparelho.contagem >= LIMITE_SENHA_APARELHO.limite || link.contagem >= LIMITE_SENHA_LINK.limite)
-      return { certo: false as const, restantes: 0 };
-    // Senha certa: não grava nada (acertar não gasta tentativas).
-    if (mesmoHash(tentativa, alvo.senhaHash)) return { certo: true as const, restantes: 0 };
+    const fimAparelho = aparelho.inicio + LIMITE_SENHA_APARELHO.janelaSegundos * 1000;
+    const fimLink = link.inicio + LIMITE_SENHA_LINK.janelaSegundos * 1000;
+    // Este aparelho errou demais: espera, mesmo com a senha certa.
+    if (aparelho.contagem >= LIMITE_SENHA_APARELHO.limite)
+      return { certo: false as const, restantes: 0, ate: fimAparelho };
+    // Teto duro: ninguém entra, nem com a senha certa (a resposta não depende da senha).
+    if (link.contagem >= TETO_DURO_SENHA_LINK)
+      return { certo: false as const, restantes: 0, ate: fimLink, travadoLink: true as const };
+    const linkEstourado = link.contagem >= LIMITE_SENHA_LINK.limite;
+    const certa = mesmoHash(tentativa, alvo.senhaHash);
+    // Senha certa: entra sem gravar nada (acertar não gasta tentativas). Com o teto do link
+    // estourado, entra só o aparelho que ainda não errou nenhuma vez.
+    if (certa && (!linkEstourado || aparelho.contagem === 0))
+      return { certo: true as const, restantes: 0, ate: 0 };
+    // Senha certa mas este aparelho já errou e o teto do link está estourado: tratada EXATAMENTE
+    // como uma senha errada (conta o erro e dá a mesma resposta), para a resposta nunca dizer se
+    // o palpite estava certo.
     for (const [ref, l, j] of [
       [refAparelho, LIMITE_SENHA_APARELHO, aparelho],
       [refLink, LIMITE_SENHA_LINK, link],
@@ -714,18 +869,29 @@ export async function conferirSenha(
         expiraEm: Timestamp.fromMillis(j.inicio + l.janelaSegundos * 1000),
       });
     }
+    const errosAparelho = aparelho.contagem + 1;
     return {
       certo: false as const,
-      restantes: Math.min(LIMITE_SENHA_APARELHO.limite - aparelho.contagem - 1, LIMITE_SENHA_LINK.limite - link.contagem - 1),
+      restantes: Math.min(LIMITE_SENHA_APARELHO.limite - errosAparelho, LIMITE_SENHA_LINK.limite - link.contagem - 1),
+      // Travou agora: pelo aparelho (15 min) ou pelo teto do link (até a janela do link acabar).
+      ate: errosAparelho >= LIMITE_SENHA_APARELHO.limite ? fimAparelho : fimLink,
     };
   });
-  if (r.certo) return { ok: true, token: tokenDoLink(codigo, alvo.senhaHash) };
-  return r.restantes > 0
-    ? {
-        ok: false,
-        erro: `Senha errada. Confira a senha de 6 números na mensagem (${r.restantes} ${r.restantes === 1 ? "tentativa" : "tentativas"}).`,
-      }
-    : travado;
+  if (r.certo) return { ok: true, token: tokenDoLink(codigo, alvo.senhaHash), fechaEm: e.fechaEm };
+  if ("travadoLink" in r && r.travadoLink)
+    return {
+      ok: false,
+      erro: `Este link recebeu senhas erradas demais e foi travado por segurança. Espere ${minutosAte(r.ate)} ou peça à comissão um link novo. ${AJUDA_WHATSAPP}`,
+    };
+  if (r.restantes > 0)
+    return {
+      ok: false,
+      erro: `Senha errada. Confira a senha de 6 números na mensagem do WhatsApp. ${r.restantes === 1 ? "Resta 1 tentativa" : `Restam ${r.restantes} tentativas`}.`,
+    };
+  return {
+    ok: false,
+    erro: `Senha errada muitas vezes. Espere ${minutosAte(r.ate)} e tente de novo. ${AJUDA_WHATSAPP}`,
+  };
 }
 
 /** Comprovante pelo link: só com a senha certa (cookie assinado). */

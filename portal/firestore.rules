@@ -247,11 +247,13 @@ service cloud.firestore {
         allow read, write: if false;
       }
 
-      // ----- auditoria: só leitura, para quem tem permissão; ninguém altera -----
+      // ----- auditoria: só o servidor lê; ninguém altera -----
+      // A tela Auditoria lê pelo servidor, que esconde o que cada perfil não pode ver (ex.: o
+      // voto da votação oficial aparece sem a casa para quem não é da comissão). Lido direto
+      // pelo navegador, o registro sairia inteiro — por isso nem o síndico lê daqui.
 
       match /auditLogs/{id} {
-        allow read: if papel(c, 'admin') || temExtra(c, 'auditoria.ver');
-        allow write: if false;
+        allow read, write: if false;
       }
     }
 

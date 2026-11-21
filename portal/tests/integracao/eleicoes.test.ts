@@ -5,16 +5,19 @@
  */
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { getApps, initializeApp } from "firebase-admin/app";
-import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { FieldValue, Timestamp, getFirestore, type Firestore } from "firebase-admin/firestore";
 import type { Contexto } from "@/server/contexto";
 import {
   CARENCIA_APURACAO_MS,
   apuracaoLiberada,
+  congelarListaSeFaltar,
   gravarEleicao,
   mudarStatusEleicao,
+  obterEleicaoGestao,
   registrarVotoEleicao,
   salvarBloqueios,
 } from "@/server/dados/eleicoes";
+import { ultimosRegistrosDeAuditoria } from "@/server/dados/gestao";
 import { calcularPermissoes } from "@/lib/permissoes";
 import { somarUrna, type Candidato } from "@/lib/eleicoes";
 
@@ -100,10 +103,13 @@ describe("registrarVotoEleicao", () => {
     expect(Object.keys(votante).sort()).toEqual(["comprovante", "unidadeRotulo", "votouEm"]);
     expect(JSON.stringify(votante)).not.toMatch(/c2|m1/);
 
-    // A auditoria registra a casa, nunca o candidato.
+    // A auditoria registra a casa e a via — nunca o candidato, nem a pessoa que votou.
     const logs = await db.collection("condominiums/a/auditLogs").where("acao", "==", "eleicao.votar").get();
     expect(logs.size).toBe(1);
-    expect(JSON.stringify(logs.docs[0].data())).not.toMatch(/"c2"|Candidato 2/);
+    const log = logs.docs[0].data();
+    expect(JSON.stringify(log)).not.toMatch(/"c2"|Candidato 2/);
+    expect(log).toMatchObject({ uid: "voto:casa", nome: "Voto da casa", papel: null, detalhes: { unidade: "casa-1", via: "portal" } });
+    expect(JSON.stringify(log)).not.toMatch(/"m1"/);
 
     // Só existem os documentos esperados (nenhuma cédula individual).
     const subs = await ref(id).listCollections();
@@ -254,6 +260,134 @@ describe("chapa única", () => {
     const id = await aberta({ modo: "chapa" });
     await expect(registrarVotoEleicao(db, contexto("m1", "casa-1", "morador"), id, ["c1"])).rejects.toThrow(/Sim ou Não/);
     await expect(registrarVotoEleicao(db, contexto("m1", "casa-1", "morador"), id, ["branco"])).rejects.toThrow(/Sim ou Não/);
+  });
+});
+
+describe("auditoria do voto (sigilo)", () => {
+  /** Conselheiro que recebeu só o extra "ver a auditoria" (não cuida da votação). */
+  const conselheiroAuditoria: Contexto = {
+    ...contexto("conselheiro", null, "admin"),
+    papel: "conselheiro",
+    permissoes: calcularPermissoes("conselheiro", ["auditoria.ver"]),
+  };
+
+  it("quem não é da comissão vê só 'uma casa votou'; a comissão vê a casa — ninguém vê a pessoa", async () => {
+    const id = await aberta({ modo: "chapa" });
+    await registrarVotoEleicao(db, contexto("Maria da Casa 1", "casa-1", "morador"), id, ["sim"]);
+    // Registro ANTIGO (de antes da correção), que ainda guardava o nome e o uid de quem votou.
+    await db.collection("condominiums/a/auditLogs").add({
+      condominioId: "a",
+      uid: "uid-do-joao",
+      nome: "João da Casa 2",
+      papel: "morador",
+      acao: "eleicao.votar",
+      alvo: `elections/${id}`,
+      detalhes: { unidade: "casa-2", via: "link" },
+      criadoEm: Timestamp.fromMillis(Date.now() - 60_000),
+    });
+
+    expect(conselheiroAuditoria.permissoes.has("eleicoes.gerenciar")).toBe(false);
+    // Quem não cuida da votação não vê os votos na lista (nem a hora: ao lado de "Fulano entrou
+    // no portal", a hora deixaria adivinhar quem votou).
+    const listaConselheiro = await ultimosRegistrosDeAuditoria(conselheiroAuditoria, 50, db);
+    expect(listaConselheiro.filter((l) => l.acao === "eleicao.votar")).toHaveLength(0);
+    expect(JSON.stringify(listaConselheiro)).not.toMatch(/Maria|João|uid-do-joao|casa-1|casa-2|Casa 1|Casa 2/);
+
+    const daComissao = (await ultimosRegistrosDeAuditoria(comissao, 50, db)).filter((l) => l.acao === "eleicao.votar");
+    expect(daComissao.map((l) => [l.nome, l.alvo, l.sigilo])).toEqual([
+      ["Voto da casa", "Casa 1 · pelo portal", false],
+      ["Voto da casa", "Casa 2 · pelo link", false],
+    ]);
+    expect(JSON.stringify(daComissao)).not.toMatch(/Maria|João|uid-do-joao/);
+
+    // As outras ações continuam iguais para os dois.
+    const publicar = (await ultimosRegistrosDeAuditoria(conselheiroAuditoria, 50, db)).find((l) => l.acao === "eleicao.publicar");
+    expect(publicar).toMatchObject({ nome: "sindico", sigilo: false });
+  });
+
+  it("sem 'ver a auditoria', nem a lista abre", async () => {
+    await expect(ultimosRegistrosDeAuditoria(contexto("m1", "casa-1", "morador"), 50, db)).rejects.toThrow();
+  });
+});
+
+/*
+ * Eleição publicada ANTES de existir a lista congelada (é o caso da eleição real de 29/11/2026):
+ * - aberta sem a lista, vale o cadastro de agora (ativa vota; inativa e bloqueada, não);
+ * - agendada sem a lista, a lista é gravada quando a comissão abre a tela da eleição.
+ */
+describe("eleição sem a lista congelada (casasAptasIds)", () => {
+  const semLista = (id: string) => ref(id).update({ casasAptasIds: FieldValue.delete() });
+
+  it("aberta sem a lista: casa ativa vota; inativa e bloqueada não", async () => {
+    const id = await aberta({ modo: "chapa" });
+    await semLista(id);
+    // A comissão bloqueou a casa 2 antes de abrir (gravado direto: com a votação aberta, a tela recusa).
+    await ref(id).update({ casasBloqueadas: ["casa-2"] });
+    expect((await ref(id).get()).get("casasAptasIds")).toBeUndefined();
+
+    await registrarVotoEleicao(db, contexto("m1", "casa-1", "morador"), id, ["sim"]);
+    await expect(registrarVotoEleicao(db, contexto("m3", "casa-3", "morador"), id, ["sim"])).rejects.toThrow(/não está ativa/);
+    await expect(registrarVotoEleicao(db, contexto("m2", "casa-2", "morador"), id, ["nao"])).rejects.toThrow(/não está liberada/);
+    expect(await urnaDe(id)).toEqual({ cedulas: 1, sim: 1, nao: 0, brancos: 0, votos: {} });
+  });
+
+  it("agendada sem a lista: ao abrir a tela da comissão, a lista é gravada (ativas − bloqueadas) uma vez só", async () => {
+    const agora = Date.now();
+    const id = await eleicao(new Date(agora + HORA), new Date(agora + 9 * HORA), { modo: "chapa" });
+    await mudarStatusEleicao(db, comissao, id, "publicar");
+    await semLista(id);
+    await ref(id).update({ casasBloqueadas: ["casa-2"], casasAptas: 99 });
+
+    const tela = await obterEleicaoGestao(comissao, id);
+    expect(tela?.casasAptas).toBe(1);
+    const doc = await ref(id).get();
+    expect(doc.get("casasAptasIds")).toEqual(["casa-1"]);
+    expect(doc.get("casasAptas")).toBe(1);
+
+    // Já tem a lista: abrir de novo (ou duas telas ao mesmo tempo) não grava outra vez.
+    await Promise.all([obterEleicaoGestao(comissao, id), congelarListaSeFaltar(db, "a", id)]);
+    expect(await congelarListaSeFaltar(db, "a", id)).toBeNull();
+    const logs = await db.collection("condominiums/a/auditLogs").where("uid", "==", "sistema:lista-aptas").get();
+    expect(logs.size).toBe(1);
+    expect(logs.docs[0].get("acao")).toBe("eleicao.bloqueio");
+
+    // Com a lista gravada, vale ela: a casa 2 (bloqueada) e a casa 3 (inativa) não votam; a 1 vota.
+    const dentro = new Date(agora + 2 * HORA);
+    await registrarVotoEleicao(db, contexto("m1", "casa-1", "morador"), id, ["sim"], dentro);
+    await expect(registrarVotoEleicao(db, contexto("m2", "casa-2", "morador"), id, ["sim"], dentro)).rejects.toThrow(/não está liberada/);
+    await expect(registrarVotoEleicao(db, contexto("m3", "casa-3", "morador"), id, ["sim"], dentro)).rejects.toThrow(/não estava apta/);
+  });
+
+  it("duas telas ao mesmo tempo: só uma grava a lista", async () => {
+    const agora = Date.now();
+    const id = await eleicao(new Date(agora + HORA), new Date(agora + 9 * HORA), { modo: "chapa" });
+    await mudarStatusEleicao(db, comissao, id, "publicar");
+    await semLista(id);
+    const r = await Promise.all([congelarListaSeFaltar(db, "a", id), congelarListaSeFaltar(db, "a", id)]);
+    expect(r.filter((x) => x !== null)).toHaveLength(1);
+    expect((await ref(id).get()).get("casasAptasIds")).toEqual(["casa-1", "casa-2"]);
+    const logs = await db.collection("condominiums/a/auditLogs").where("uid", "==", "sistema:lista-aptas").get();
+    expect(logs.size).toBe(1);
+  });
+
+  it("aberta, encerrada ou rascunho sem a lista: nada é gravado", async () => {
+    const agora = Date.now();
+    const id = await aberta({ modo: "chapa" });
+    await semLista(id);
+    expect(await congelarListaSeFaltar(db, "a", id)).toBeNull();
+    await obterEleicaoGestao(comissao, id);
+    expect((await ref(id).get()).get("casasAptasIds")).toBeUndefined();
+
+    // Mesma eleição agendada, mas com a hora simulada depois do encerramento.
+    const futura = await eleicao(new Date(agora + HORA), new Date(agora + 9 * HORA), { modo: "chapa" });
+    await mudarStatusEleicao(db, comissao, futura, "publicar");
+    await semLista(futura);
+    expect(await congelarListaSeFaltar(db, "a", futura, new Date(agora + 10 * HORA))).toBeNull();
+    expect((await ref(futura).get()).get("casasAptasIds")).toBeUndefined();
+
+    const rascunho = await eleicao(new Date(agora + HORA), new Date(agora + 9 * HORA));
+    expect(await congelarListaSeFaltar(db, "a", rascunho)).toBeNull();
+    expect((await ref(rascunho).get()).get("casasAptasIds")).toBeUndefined();
   });
 });
 

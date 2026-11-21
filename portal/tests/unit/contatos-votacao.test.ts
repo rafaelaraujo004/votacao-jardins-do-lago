@@ -75,7 +75,8 @@ describe("numeroDaCasa e mensagem", () => {
   it("saudação com o primeiro nome e o link na mensagem", () => {
     expect(primeiroNome("MARIA DAS GRAÇAS / JOÃO")).toBe("Maria");
     const m = mensagemConvite({ nome: "ana souza", casa: "Casa 12", titulo: "Eleição 2026/2027", link: "https://x/votar/ABC", senha: "482913", periodo: "hoje" });
-    expect(m).toContain("2. Digite a senha: 482913");
+    // O passo 2 diz qual botão tocar depois da senha (o mesmo texto do botão da tela).
+    expect(m).toContain("2. Digite a senha: 482913 e toque em Entrar para votar.");
     expect(m).toContain("SIM ou NÃO");
     // Os mesmos passos da tela e das imagens: Revisar meu voto → Confirmar voto.
     expect(m).toContain("toque em Revisar meu voto");
@@ -94,6 +95,12 @@ describe("numeroDaCasa e mensagem", () => {
     expect(imagens).toBeGreaterThan(m.indexOf("https://x/votar/ABC"));
     expect(imagens).toBeLessThan(m.indexOf("UM voto por casa"));
     expect(m).toMatch(/No link também tem essa ajuda/);
+  });
+  it("diz o que fazer se a senha não funcionar, antes do aviso final", () => {
+    const m = mensagemConvite({ nome: "Ana", casa: "Casa 12", titulo: "T", link: "https://x/votar/ABC", senha: "482913", periodo: "hoje" });
+    const ajuda = m.indexOf("Se a senha não funcionar, responda esta mensagem que a comissão ajuda.");
+    expect(ajuda).toBeGreaterThan(m.indexOf("imagens do passo a passo"));
+    expect(ajuda).toBeLessThan(m.indexOf("UM voto por casa"));
   });
 });
 

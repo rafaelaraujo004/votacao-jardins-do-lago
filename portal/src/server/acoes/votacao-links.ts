@@ -13,6 +13,7 @@ import { marcarMudancaDepois } from "../sinais";
 import { garantirPermissao, getContexto } from "../contexto";
 import { ErroDocx, lerTabelasDocx } from "../docx";
 import {
+  chaveDoIp,
   conferirSenha,
   cookieDoLink,
   gerarLinksFaltantes,
@@ -20,6 +21,7 @@ import {
   importarContatos,
   marcarEnviado,
   trocarLink,
+  validadeDoCookie,
   votarPorCodigo,
 } from "../dados/votacao-links";
 import {
@@ -40,12 +42,13 @@ function revalidarGestao(id: string) {
   revalidatePath(`/admin/votacao/${id}/links`);
 }
 
+/** Endereço de quem pediu, já como chave dos limites (IPv6 pelo bloco /64; veja chaveDoIp). */
 async function ipDoPedido(): Promise<string> {
   const h = await headers();
-  return (
+  return chaveDoIp(
     h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    h.get("x-real-ip") ||
-    "desconhecido"
+      h.get("x-real-ip") ||
+      "desconhecido",
   );
 }
 
@@ -77,7 +80,12 @@ export async function trocarLinkCasa(
   });
 }
 
-/** Chamada pelo botão do WhatsApp depois de abrir a conversa (só para acompanhar quem já recebeu). */
+/**
+ * Chamada pelo botão do WhatsApp depois de abrir a conversa (só para acompanhar quem já recebeu).
+ * De propósito NÃO revalida a página dos links: o selo "enviado" já aparece pelo estado do
+ * botão, e redesenhar a lista no meio do envio fazia a casa sumir do filtro "Não enviados"
+ * (a comissão perdia o lugar). O contador se atualiza na próxima visita.
+ */
 export async function marcarEnvioWhatsApp(
   id: string,
   unitId: string,
@@ -87,7 +95,6 @@ export async function marcarEnvioWhatsApp(
     const v = esquemaLinkCasa.safeParse({ id, unitId });
     if (!v.success) throw new ErroDeNegocio("Casa inválida.");
     await marcarEnviado(adminDb(), ctx, v.data.id, v.data.unitId);
-    revalidarGestao(v.data.id);
     return "Envio anotado.";
   });
 }
@@ -123,24 +130,23 @@ export async function importarContatosVotacao(
       );
     const r = await importarContatos(adminDb(), ctx, contatos);
     if (/^[A-Za-z0-9_-]{1,64}$/.test(id)) revalidarGestao(id);
-    const partes = [
+    // Uma informação por linha ("\n"), com TODOS os avisos: a tela da comissão mostra numa
+    // caixa fixa, para conferir casa por casa na lista do Word.
+    const resposta = [
       `${r.gravados} ${r.gravados === 1 ? "casa importada" : "casas importadas"}.`,
     ];
     if (r.ambiguas.length)
-      partes.push(
+      resposta.push(
         `Número repetido no cadastro (não importado): casa ${r.ambiguas.join(", ")}.`,
       );
     if (r.semTelefone.length)
-      partes.push(
+      resposta.push(
         `Sem telefone na lista (mantive o que havia): casa ${r.semTelefone.join(", ")}.`,
       );
     if (r.semCadastro.length)
-      partes.push(`Sem cadastro no portal: casa ${r.semCadastro.join(", ")}.`);
-    if (avisos.length)
-      partes.push(
-        `Avisos: ${avisos.slice(0, 5).join(" ")}${avisos.length > 5 ? ` (+${avisos.length - 5})` : ""}`,
-      );
-    return partes.join(" ");
+      resposta.push(`Sem cadastro no portal: casa ${r.semCadastro.join(", ")}.`);
+    if (avisos.length) resposta.push(`Avisos da lista (${avisos.length}):`, ...avisos);
+    return resposta.join("\n");
   });
 }
 
@@ -177,7 +183,10 @@ export async function votarComCodigo(
   });
 }
 
-/** Senha do link de voto. Acertou: guarda um cookie só deste link (6 horas) e mostra a cédula. */
+/**
+ * Senha do link de voto. Acertou: guarda um cookie só deste link (até 1 hora depois do
+ * encerramento; mínimo 1 h, máximo 24 h — veja validadeDoCookie) e mostra a cédula.
+ */
 export async function entrarComSenha(
   _: Resultado,
   dados: FormData,
@@ -202,7 +211,7 @@ export async function entrarComSenha(
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: `/votar/${codigo}`,
-      maxAge: 6 * 60 * 60,
+      maxAge: validadeDoCookie(r.fechaEm),
     });
     revalidatePath(`/votar/${codigo}`);
     return "Senha certa! Agora é só escolher e confirmar.";

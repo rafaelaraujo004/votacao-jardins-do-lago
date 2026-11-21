@@ -180,7 +180,7 @@ export function mensagemConvite(o: {
     "",
     `COMO VOTAR (${o.casa}):`,
     "1. Toque no link abaixo.",
-    `2. Digite a senha: ${o.senha}`,
+    `2. Digite a senha: ${o.senha} e toque em Entrar para votar.`,
     o.modo === "candidatos"
       ? "3. Escolha seu candidato e toque em Revisar meu voto."
       : "3. Escolha SIM ou NÃO para a chapa e toque em Revisar meu voto.",
@@ -190,6 +190,8 @@ export function mensagemConvite(o: {
     "",
     // As imagens vão logo depois, no passo 2 do envio (o link wa.me não anexa imagens).
     "Logo abaixo vão as imagens do passo a passo. No link também tem essa ajuda.",
+    "",
+    "Se a senha não funcionar, responda esta mensagem que a comissão ajuda.",
     "",
     "Vale UM voto por casa e o voto é secreto. Não repasse o link nem a senha para pessoas de fora da sua casa.",
   ].join("\n");

@@ -45,10 +45,31 @@ describe("modulosDaTela", () => {
     expect(modulosDaTela("/admin/solicitacoes/abc")).toEqual(["solicitacoes"]);
   });
 
-  it("início, painel e telas desconhecidas acompanham tudo", () => {
-    for (const c of ["/inicio", "/admin", "/admin/relatorios", "/admin/auditoria", "/qualquer"]) {
+  it("telas desconhecidas acompanham tudo", () => {
+    for (const c of ["/qualquer", "/conta", "/relatorio"]) {
       expect(modulosDaTela(c), c).toEqual(MODULOS_SINC);
     }
+  });
+
+  it("início e painel acompanham tudo MENOS a votação (o painel da votação se atualiza sozinho)", () => {
+    const semVotacao = MODULOS_SINC.filter((m) => m !== "eleicoes");
+    for (const c of ["/inicio", "/admin", "/admin/relatorios", "/admin/auditoria", "/admin/unidades/casa-001", "/admin/links"]) {
+      expect(modulosDaTela(c), c).toEqual(semVotacao);
+      expect(modulosDaTela(c), c).not.toContain("eleicoes");
+    }
+  });
+
+  it("as telas da votação continuam acompanhando a votação", () => {
+    expect(modulosDaTela("/admin/votacao")).toEqual(["eleicoes"]);
+    expect(modulosDaTela("/admin/votacao/abc/links")).toEqual(["eleicoes"]);
+    expect(modulosDaTela("/votacao")).toEqual(["eleicoes"]);
+    expect(modulosDaTela("/votacao/abc")).toEqual(["eleicoes"]);
+    expect(modulosDaTela("/notificacoes")).toContain("eleicoes");
+  });
+
+  it("caminhos parecidos não se confundem (/administracao não é /admin)", () => {
+    expect(modulosDaTela("/administracao")).toEqual(MODULOS_SINC);
+    expect(modulosDaTela("/iniciou")).toEqual(MODULOS_SINC);
   });
 });
 

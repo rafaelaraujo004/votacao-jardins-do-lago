@@ -4,7 +4,12 @@ import { notFound } from "next/navigation";
 import { Download, EyeOff } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { obterEleicaoMorador } from "@/server/dados/eleicoes";
-import { casas, diaMes, participacao } from "@/lib/enquetes";
+import {
+  casas,
+  dateParaDataHoraLocal,
+  diaMes,
+  participacao,
+} from "@/lib/enquetes";
 import { regraTexto, resultadoParaPainel } from "@/lib/eleicoes";
 import { formatarDataHora } from "@/lib/formato";
 import { idDocumento } from "@/lib/validacao";
@@ -74,8 +79,15 @@ export default async function EleicaoMoradorPagina({
       {e.casaVotou ? (
         <Alerta tipo="sucesso" titulo="Sua casa já votou">
           O voto da sua casa foi registrado
-          {e.casaVotouEm ? ` em ${diaMes(e.casaVotouEm, ctx.fuso)}` : ""}. Ele é
-          secreto e não pode ser mudado.
+          {e.casaVotouEm ? ` em ${diaMes(e.casaVotouEm, ctx.fuso)}` : ""}
+          {/* A hora ajuda a reconhecer que o voto foi seu (quem entrou já é da casa). */}
+          {e.casaVotouEm ? (
+            <>
+              {" "}
+              às <b>{dateParaDataHoraLocal(e.casaVotouEm, ctx.fuso).slice(11, 16)}</b>
+            </>
+          ) : null}
+          . Ele é secreto e não pode ser mudado.
           <a
             href={`/votacao/${e.id}/comprovante`}
             download

@@ -293,10 +293,20 @@ describe("classificados", () => {
 });
 
 describe("auditoria", () => {
-  it("síndico lê; conselheiro sem permissão extra e morador não leem", async () => {
-    await assertSucceeds(getDoc(doc(como("sindico"), `condominiums/${C}/auditLogs/a1`)));
-    await assertFails(getDoc(doc(como("conselheiro"), `condominiums/${C}/auditLogs/a1`)));
-    await assertFails(getDoc(doc(como("morador1"), `condominiums/${C}/auditLogs/a1`)));
+  it("ninguém lê pelo navegador (a tela lê pelo servidor), nem o síndico nem quem tem o extra", async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `condominiums/${C}/members/conselheiroAuditoria`), {
+        status: "ativo",
+        papel: "conselheiro",
+        unitId: null,
+        permissoesExtras: ["auditoria.ver"],
+        permissoesNegadas: [],
+      });
+    });
+    for (const uid of ["sindico", "conselheiroAuditoria", "conselheiro", "morador1", "porteiro"]) {
+      await assertFails(getDoc(doc(como(uid), `condominiums/${C}/auditLogs/a1`)));
+      await assertFails(getDocs(collection(como(uid), `condominiums/${C}/auditLogs`)));
+    }
   });
 
   it("ninguém altera nem apaga registros, nem o síndico", async () => {

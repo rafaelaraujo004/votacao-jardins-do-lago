@@ -15,14 +15,18 @@
  * 1. quando o <Sincronizar> avisa que a votação mudou (a cada voto muda "eleicoes");
  * 2. ao voltar para a aba (no máximo uma vez a cada 3 s);
  * 3. nas viradas de fase (abriu, encerrou, saiu o resultado), pelo relógio do SERVIDOR
- *    (a diferença entre a hora do servidor e a do aparelho é descontada).
+ *    (a diferença entre a hora do servidor e a do aparelho é descontada). Se a diferença
+ *    muda (ex.: aparelho com o relógio errado, corrigido na primeira pergunta), a espera é
+ *    refeita com a hora certa. Passou do horário e a fase ainda não virou: pergunta de novo
+ *    a cada 5 a 10 s enquanto a aba estiver aberta na tela, até virar.
  * Erro de rede: ignora e tenta na próxima. Sessão encerrada (401/403): para de perguntar.
  * Painel vazio na resposta (votação saiu de cena): o cartão some.
  *
  * MODO "link" (página do link de voto, SEM login): pergunta GET /api/votar/{código}/painel a
- * cada `intervaloSegundos` enquanto a votação está aberta ou apurando (não há <Sincronizar>
- * nessa página) e, quando a fase vira (abriu, encerrou, saiu o resultado), atualiza a página
- * inteira para a cédula e os avisos acompanharem. O botão leva à cédula da própria página.
+ * cada `intervaloSegundos` enquanto a votação está aberta ou apurando — e também nos últimos
+ * 15 minutos antes de abrir — (não há <Sincronizar> nessa página) e, quando a fase vira
+ * (abriu, encerrou, saiu o resultado), atualiza a página inteira para a cédula e os avisos
+ * acompanharem. O botão leva à cédula da própria página.
  *
  * SIGILO: só números do condomínio inteiro. Nunca QUAIS casas votaram, nunca parcial de votos.
  * Da casa da pessoa, só "votou" / "não liberada" — nunca o voto.
@@ -90,8 +94,13 @@ const DIA = 24 * HORA;
 const INTERVALO_MINIMO_MS = 3000;
 /** Viradas de fase muito distantes: o relógio do navegador só aceita esperas menores. */
 const ESPERA_MAXIMA_MS = 6 * HORA;
-/** Depois da virada de fase, se o servidor ainda não mudou, tenta de novo algumas vezes. */
-const TENTATIVAS_VIRADA = 8;
+/** Passou do horário e o servidor ainda não virou a fase: pergunta de novo a cada 5 a 10 s. */
+const REPETIR_VIRADA_MIN_MS = 5000;
+const REPETIR_VIRADA_SORTEIO_MS = 5000;
+/** A diferença de relógio mudou mais que isto: refaz a espera da virada de fase. */
+const MUDANCA_DESVIO_MS = 2000;
+/** Página do link: começa a perguntar sozinha quando falta menos que isto para abrir. */
+const ANTES_DE_ABRIR_MS = 15 * MINUTO;
 
 // ---------- Datas e horas no fuso do condomínio ----------
 
@@ -200,6 +209,16 @@ export function PainelEleicaoVivo({
   const [agora, setAgora] = useState(agoraServidor);
   /** Hora do servidor menos a hora do aparelho. */
   const desvio = useRef(0);
+  /**
+   * Muda quando a diferença de relógio muda de verdade (mais de 2 s): está nas dependências da
+   * espera da virada de fase, que então é refeita com a hora certa.
+   */
+  const [versaoDesvio, setVersaoDesvio] = useState(0);
+  const ajustarDesvio = useCallback((novo: number) => {
+    const antes = desvio.current;
+    desvio.current = novo;
+    if (Math.abs(novo - antes) > MUDANCA_DESVIO_MS) setVersaoDesvio((v) => v + 1);
+  }, []);
   const parado = useRef(false);
   const buscando = useRef(false);
   const buscarDeNovo = useRef(false);
@@ -232,7 +251,7 @@ export function PainelEleicaoVivo({
         }
         if (!resposta.ok) return;
         const dados = (await resposta.json()) as RespostaDestaque;
-        if (typeof dados.agora === "number" && Number.isFinite(dados.agora)) desvio.current = dados.agora - Date.now();
+        if (typeof dados.agora === "number" && Number.isFinite(dados.agora)) ajustarDesvio(dados.agora - Date.now());
         const painel = dados.painel && typeof dados.painel === "object" ? dados.painel : null;
         const casa = dados.casa && typeof dados.casa === "object" ? dados.casa : null;
         setEstado((antes) => {
@@ -248,9 +267,11 @@ export function PainelEleicaoVivo({
     } finally {
       buscando.current = false;
     }
-  }, [endereco]);
+  }, [endereco, ajustarDesvio]);
 
   // Diferença entre o relógio do servidor e o do aparelho.
+  // (Roda ANTES do efeito da virada de fase, que também depende de agoraServidor: quando a
+  // tela é redesenhada pelo servidor, a espera é refeita já com a diferença nova.)
   useEffect(() => {
     const diferenca = agoraServidor - Date.now();
     ultimaBusca.current = Date.now();
@@ -298,16 +319,20 @@ export function PainelEleicaoVivo({
   }, [marcaFase]);
 
   // (3) Viradas de fase: pergunta 1 a 3 s depois do horário (sorteado, para as telas do
-  // condomínio não perguntarem todas no mesmo segundo). Se ainda não virou, tenta de novo.
+  // condomínio não perguntarem todas no mesmo segundo). Se ainda não virou, pergunta de novo a
+  // cada 5 a 10 s — sem limite de tentativas — enquanto a aba estiver na tela.
+  // Refeita quando a diferença de relógio muda (versaoDesvio) ou a tela vem do servidor
+  // (agoraServidor): uma espera calculada com o relógio errado do aparelho nunca fica valendo.
   useEffect(() => {
     if (alvo === null) return;
     let espera = 0;
     let cancelado = false;
-    const tentar = async (n: number) => {
-      await buscar();
+    const tentar = async () => {
+      // Aba escondida: não pergunta (ao voltar para a aba, o painel pergunta na hora).
+      if (document.visibilityState === "visible") await buscar();
       if (cancelado || parado.current) return;
-      if (faseAtual.current === marcaFase && n < TENTATIVAS_VIRADA) {
-        espera = window.setTimeout(() => void tentar(n + 1), 4000 + Math.random() * 2000);
+      if (faseAtual.current === marcaFase) {
+        espera = window.setTimeout(() => void tentar(), REPETIR_VIRADA_MIN_MS + Math.random() * REPETIR_VIRADA_SORTEIO_MS);
       }
     };
     const agendar = () => {
@@ -316,19 +341,21 @@ export function PainelEleicaoVivo({
         espera = window.setTimeout(agendar, ESPERA_MAXIMA_MS);
         return;
       }
-      espera = window.setTimeout(() => void tentar(0), Math.max(0, falta) + 1000 + Math.random() * 2000);
+      espera = window.setTimeout(() => void tentar(), Math.max(0, falta) + 1000 + Math.random() * 2000);
     };
     agendar();
     return () => {
       cancelado = true;
       window.clearTimeout(espera);
     };
-  }, [alvo, marcaFase, buscar]);
+  }, [alvo, marcaFase, buscar, versaoDesvio, agoraServidor]);
 
   // Página sem <Sincronizar> (link de voto): pergunta sozinha de tempos em tempos enquanto os
-  // números mudam (aberta) ou o resultado está para sair (apurando), só com a aba visível.
+  // números mudam (aberta), o resultado está para sair (apurando) e, no link, também nos
+  // últimos 15 minutos antes de abrir — só com a aba visível.
   const fase = painel?.fase ?? null;
-  const perguntarSozinho = !!intervaloSegundos && (fase === "aberta" || fase === "apurando");
+  const quaseAbrindo = perfil === "link" && !!painel && fase === "agendada" && painel.abreEm - agora < ANTES_DE_ABRIR_MS;
+  const perguntarSozinho = !!intervaloSegundos && (fase === "aberta" || fase === "apurando" || quaseAbrindo);
   useEffect(() => {
     if (!perguntarSozinho || !intervaloSegundos) return;
     const relogio = window.setInterval(() => {

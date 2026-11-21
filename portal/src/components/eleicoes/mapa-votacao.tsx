@@ -1,9 +1,14 @@
 /**
  * MAPA DA VOTAÇÃO (comissão): a planta real do condomínio com cada casa pintada:
- * verde = já votou, cinza = falta votar, vermelho = bloqueada, tracejado = sem cadastro/inativa.
+ * verde = já votou, cinza = falta votar (depois do encerramento, "sem votar"),
+ * vermelho = bloqueada, tracejado = sem cadastro/inativa.
  * Mostra só QUEM votou (como a lista de participação) — nunca o voto.
  * Componente de servidor (SVG puro), usa a mesma planta do mapa do morador.
+ * No celular os números ficariam pequenos demais: em tela estreita o mapa ganha largura
+ * mínima e rola de lado dentro da própria caixa (a página não rola de lado).
  */
+import { MoveHorizontal } from "lucide-react";
+import type { SituacaoEleicao } from "@/lib/eleicoes";
 import { AREA_DESENHO, CONTORNO_TERRENO, QUADRAS } from "@/lib/planta";
 
 export type SituacaoCasaMapa = "votou" | "falta" | "bloqueada" | "inativa";
@@ -35,9 +40,15 @@ const pontos = (p: [number, number][]) =>
 
 export function MapaVotacao({
   situacoes,
+  situacao,
 }: {
   situacoes: Map<number, SituacaoCasaMapa>;
+  /** Situação da eleição: depois do encerramento, "Falta votar" vira "Sem votar". */
+  situacao?: SituacaoEleicao;
 }) {
+  const encerrada = situacao === "encerrada";
+  const rotulo = (s: SituacaoCasaMapa | "semCadastro") =>
+    s === "falta" && encerrada ? "Sem votar" : ROTULO[s];
   const conta = {
     votou: 0,
     falta: 0,
@@ -54,12 +65,25 @@ export function MapaVotacao({
   const { x, y, w, h } = AREA_DESENHO;
   return (
     <figure className="flex flex-col gap-3">
-      <div className="overflow-hidden rounded-2xl border border-line bg-surface-item">
+      {/* Só em tela estreita, onde o mapa fica mais largo que a tela. */}
+      <p className="flex items-center gap-1.5 text-[0.85rem] text-muted md:hidden">
+        <MoveHorizontal aria-hidden className="size-4 shrink-0" /> Arraste para o lado para ver o mapa inteiro.
+      </p>
+      <div
+        role="region"
+        aria-label="Mapa das casas (rola para o lado)"
+        tabIndex={0}
+        className="overflow-x-auto overscroll-x-contain rounded-2xl border border-line bg-surface-item focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-lake"
+      >
         <svg
           viewBox={`${x} ${y} ${w} ${h}`}
           role="img"
-          aria-label="Mapa das casas: quem já votou e quem falta"
-          className="block h-auto w-full"
+          aria-label={
+            encerrada
+              ? "Mapa das casas: quem votou e quem não votou"
+              : "Mapa das casas: quem já votou e quem falta"
+          }
+          className="block h-auto w-full max-md:min-w-[720px]"
         >
           <polygon
             points={pontos(CONTORNO_TERRENO)}
@@ -78,7 +102,7 @@ export function MapaVotacao({
           ))}
           {lotes.map((l) => (
             <g key={l.numero}>
-              <title>{`Casa ${l.numero} — ${ROTULO[l.s]}`}</title>
+              <title>{`Casa ${l.numero} — ${rotulo(l.s)}`}</title>
               <rect
                 x={l.x + 1}
                 y={l.y + 1}
@@ -118,7 +142,7 @@ export function MapaVotacao({
                   borderStyle: k === "semCadastro" ? "dashed" : "solid",
                 }}
               />
-              {ROTULO[k]} <b className="text-ink tabular-nums">{conta[k]}</b>
+              {rotulo(k)} <b className="text-ink tabular-nums">{conta[k]}</b>
             </span>
           ))}
       </figcaption>

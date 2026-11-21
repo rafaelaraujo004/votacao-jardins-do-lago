@@ -3,10 +3,12 @@
 /**
  * Comissão: marcar as casas que NÃO podem votar nesta eleição.
  * A lista marcada substitui a anterior ao salvar. O servidor confere tudo
- * (permissão, eleição não encerrada, casas existentes).
+ * (permissão, eleição ainda não aberta, casas existentes).
+ * O prazo aparece no alto: dá para bloquear só até a abertura; aberta, a lista fica
+ * congelada até o encerramento.
  */
 import { useMemo, useState } from "react";
-import { Ban, CircleCheck, Search } from "lucide-react";
+import { Ban, CircleCheck, Clock3, Search } from "lucide-react";
 import { classeEntrada } from "@/components/ui/basicos";
 import { BotaoEnviar, Formulario } from "@/components/ui/formulario";
 import { salvarBloqueiosEleicao } from "@/server/acoes/eleicoes";
@@ -16,10 +18,14 @@ import { cx } from "@/lib/cx";
 export function BloqueioCasas({
   eleicaoId,
   casas,
+  abreEm,
 }: {
   eleicaoId: string;
   casas: CasaDaEleicao[];
+  /** Data e hora da abertura, já escrita no fuso do condomínio ("29/11/2026 às 09:00"): o prazo do bloqueio. */
+  abreEm?: string;
 }) {
+  const algumaVotou = casas.some((c) => c.votou);
   const iniciais = useMemo(
     () => new Set(casas.filter((c) => c.bloqueada).map((c) => c.id)),
     [casas],
@@ -64,10 +70,22 @@ export function BloqueioCasas({
 
       <p className="text-[0.92rem] text-ink-2">
         Marque as casas que <b>não podem votar</b> nesta eleição. A casa
-        bloqueada vê o aviso “não liberada” no lugar da cédula. O ✓ verde marca
-        quem já votou — essa casa não pode mais ser bloqueada (o voto é secreto
-        e não pode ser retirado).
+        bloqueada vê o aviso “não liberada” no lugar da cédula.
+        {/* Antes de abrir ninguém votou: a explicação do ✓ só aparece se alguma casa já votou. */}
+        {algumaVotou
+          ? " O ✓ verde marca quem já votou — essa casa não pode mais ser bloqueada (o voto é secreto e não pode ser retirado)."
+          : null}
       </p>
+
+      {abreEm ? (
+        <p className="flex items-start gap-2.5 rounded-2xl bg-surface-2 p-3 text-[0.92rem] text-ink-2">
+          <Clock3 aria-hidden className="mt-0.5 size-5 shrink-0 text-ink" />
+          <span>
+            <b className="text-ink">Bloqueie até {abreEm}.</b> Quando a votação
+            abrir, a lista fica congelada até o encerramento.
+          </span>
+        </p>
+      ) : null}
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <label className="relative flex-1">

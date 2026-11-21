@@ -44,6 +44,7 @@ import {
 import { EnvioWhatsApp } from "@/components/eleicoes/envio-whatsapp";
 import { EnviarImagensGuia } from "@/components/eleicoes/enviar-imagens-guia";
 import { ImportarContatos } from "@/components/eleicoes/importar-contatos";
+import { ProcurarCasaEnvio } from "@/components/eleicoes/procurar-casa-envio";
 
 export const metadata: Metadata = { title: "Links de voto" };
 
@@ -61,6 +62,7 @@ const FILTROS = [
  * No alto, o passo a passo com imagens: dá para mandar no grupo do condomínio (as 9 imagens
  * ou o PDF único, para quando o WhatsApp não aceita tantas imagens), e cada casa também
  * recebe as imagens no passo 2 do envio (o link wa.me não anexa imagens).
+ * Acima da lista de envio, "Procurar casa" filtra os cartões na hora (junto com o filtro).
  */
 export default async function LinksDeVoto({
   params,
@@ -259,7 +261,8 @@ export default async function LinksDeVoto({
         <p className="text-[0.9rem] text-muted">
           Em cada casa: toque em “1. Mensagem” e depois em “2. Imagens”. O
           WhatsApp abre uma conversa por vez: em casas com dois contatos, toque
-          de novo em 1 para enviar ao 2º contato.
+          de novo em 1 para enviar ao 2º contato. Casa sem telefone ou com
+          número diferente: use “Outro número”.
         </p>
         <SegmentoLinks
           rotulo="Filtrar casas"
@@ -271,28 +274,35 @@ export default async function LinksDeVoto({
             ativo: f.id === filtro.id,
           }))}
         />
-        {lista.length === 0 ? (
-          <EstadoVazio icone={CircleCheck} titulo="Nenhuma casa neste filtro">
-            Escolha outro filtro acima.
-          </EstadoVazio>
-        ) : (
-          <ul className="flex flex-col gap-2.5">
-            {lista.map((l) => (
-              <li key={l.unitId}>
-                <ItemEnvio
-                  linha={l}
-                  eleicaoId={e.id}
-                  base={base}
-                  titulo={e.titulo}
-                  periodo={periodo}
-                  encerrada={encerrada}
-                  condominio={ctx.condominioNome}
-                  modo={e.modo}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
+        {/* Procurar casa: filtra os cartões na hora, junto com o filtro de cima. */}
+        <ProcurarCasaEnvio
+          vazio={
+            <EstadoVazio icone={CircleCheck} titulo="Nenhuma casa neste filtro">
+              Escolha outro filtro acima.
+            </EstadoVazio>
+          }
+          hrefTodas={
+            filtro.id === "todas"
+              ? undefined
+              : `/admin/votacao/${e.id}/links?ver=todas`
+          }
+          itens={lista.map((l) => ({
+            id: l.unitId,
+            rotulo: l.rotulo,
+            cartao: (
+              <ItemEnvio
+                linha={l}
+                eleicaoId={e.id}
+                base={base}
+                titulo={e.titulo}
+                periodo={periodo}
+                encerrada={encerrada}
+                condominio={ctx.condominioNome}
+                modo={e.modo}
+              />
+            ),
+          }))}
+        />
       </section>
     </div>
   );

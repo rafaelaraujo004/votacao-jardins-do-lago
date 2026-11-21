@@ -106,6 +106,8 @@ export const MODULO_DA_ACAO: Record<AcaoAuditada, ModuloSinc | null> = {
   "eleicao.contatos": "eleicoes",
   "eleicao.foto": "eleicoes",
   "eleicao.resultado": "eleicoes",
+  "eleicao.excluir": "eleicoes",
+  "eleicao.limpeza": "eleicoes",
   "eleicao.assinatura": "eleicoes",
   "classificado.criar": "classificados",
   "classificado.editar": "classificados",
@@ -115,11 +117,22 @@ export const MODULO_DA_ACAO: Record<AcaoAuditada, ModuloSinc | null> = {
 };
 
 /**
- * Quais módulos cada tela mostra. Telas de resumo (início do morador, painel do síndico,
- * relatórios, auditoria) e qualquer tela que não esteja aqui acompanham TODOS os módulos.
+ * Telas de RESUMO (Início do morador, Painel da equipe e, por tabela, as telas de /admin sem
+ * entrada própria: relatórios, auditoria, unidades, links): tudo, MENOS a votação. O painel da
+ * votação no topo do Início e do Painel se atualiza sozinho pelo aviso (EVENTO_SINAIS, veja
+ * src/components/eleicoes/painel-destaque.tsx): no dia da eleição, cada voto recarregaria a
+ * tela inteira de todo mundo à toa. A votação em si (/admin/votacao e /votacao) segue o módulo.
+ */
+const RESUMO_SEM_VOTACAO: ModuloSinc[] = MODULOS_SINC.filter((m) => m !== "eleicoes");
+
+/**
+ * Quais módulos cada tela mostra. Qualquer tela que não esteja aqui acompanha TODOS os módulos.
  * Vale o caminho mais específico (ex.: "/admin/reservas" antes de "/admin").
  */
 const TELAS: [caminho: string, modulos: ModuloSinc[]][] = [
+  // Resumos
+  ["/inicio", RESUMO_SEM_VOTACAO],
+  ["/admin", RESUMO_SEM_VOTACAO],
   // Equipe
   ["/portaria", ["portaria", "pessoas", "comunicados", "informacoes"]],
   ["/admin/portaria", ["portaria"]],

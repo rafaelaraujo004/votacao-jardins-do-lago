@@ -15,19 +15,20 @@ import {
   contarErroDoIp,
   cookieDoLink,
   ipEstourado,
+  lerLinkDeVoto,
   limparCodigo,
   painelPorCodigo,
-  votacaoPorCodigo,
 } from "@/server/dados/votacao-links";
 import { votarComCodigo } from "@/server/acoes/votacao-links";
 import { enderecoBase } from "@/server/endereco";
 import { regraTexto, resultadoParaPainel } from "@/lib/eleicoes";
 import { ALTURA_GUIA, CAPA_GUIA, LARGURA_GUIA } from "@/lib/guia-votacao";
-import { diaMes } from "@/lib/enquetes";
+import { dateParaDataHoraLocal, diaMes } from "@/lib/enquetes";
 import { formatarDataHora } from "@/lib/formato";
 import { Alerta } from "@/components/ui/basicos";
 import { Logo, Petalas } from "@/components/ui/marca";
 import { BotaoTema } from "@/components/ui/tema";
+import { BotaoLetra } from "@/components/ui/botao-letra";
 import { classeBotaoFaixa } from "@/components/layout/faixa-topo";
 import { FaixaPetalas } from "@/components/ui/painel";
 import { Cedula } from "@/components/eleicoes/cedula";
@@ -58,10 +59,10 @@ function codigoDoEndereco(bruto: string): string | null {
   return limparCodigo(texto);
 }
 
-/** Lê a votação do link UMA vez por pedido (a prévia do WhatsApp e a página usam a mesma leitura). */
-const lerVotacao = cache(async (codigo: string) => {
+/** Lê o link UMA vez por pedido (a prévia do WhatsApp e a página usam a mesma leitura). */
+const lerLink = cache(async (codigo: string) => {
   const token = (await cookies()).get(cookieDoLink(codigo))?.value ?? null;
-  return votacaoPorCodigo(codigo, { token });
+  return lerLinkDeVoto(codigo, { token });
 });
 
 /**
@@ -77,8 +78,14 @@ export async function generateMetadata({
   const { codigo: bruto } = await params;
   const codigo = codigoDoEndereco(bruto);
   // Endereço fora do formato: a página redireciona; não precisa ler nada.
-  const v = codigo && codigo === bruto ? await lerVotacao(codigo) : null;
-  const titulo = `Votação oficial — ${v?.condominioNome || "Residencial Jardins do Lago"}`;
+  const link = codigo && codigo === bruto ? await lerLink(codigo) : null;
+  const nome =
+    link?.estado === "ok"
+      ? link.votacao.condominioNome
+      : link?.estado === "indisponivel" || link?.estado === "desativado"
+        ? link.condominioNome
+        : "";
+  const titulo = `Votação oficial — ${nome || "Residencial Jardins do Lago"}`;
   const capa = `${await enderecoBase()}${CAPA_GUIA.src}`;
   return {
     title: { absolute: titulo },
@@ -106,6 +113,10 @@ export async function generateMetadata({
  * - Casa ainda não votou e a votação está aberta: mostra a cédula.
  * - Casa já votou (por este ou outro aparelho): "Voto já realizado".
  * - Código inválido/trocado: aviso, com limite de tentativas por endereço.
+ * - Código certo de votação ainda não liberada (rascunho): "ainda não foi liberada" — não é
+ *   tentativa errada, não conta no limite do endereço.
+ * - Algo falhou ao abrir (internet, site atualizando): error.tsx desta pasta ("Abrir o link de
+ *   novo"), nunca a tela de entrada.
  * - PAINEL AO VIVO (pedido de 21/11/2026): quem só tem o link também acompanha quantas casas
  *   já votaram e quantas faltam e, no fim, o resultado com a animação — só números do
  *   condomínio inteiro, nunca quais casas. Fica abaixo da senha/cédula enquanto a casa pode
@@ -123,9 +134,33 @@ export default async function VotarPorLink({
 
   // Link certo sempre abre (muitas casas abrem o link atrás do mesmo endereço de internet).
   // Só links INVÁLIDOS contam no limite do endereço, e só eles são barrados.
-  const v = codigo ? await lerVotacao(codigo) : null;
+  const link = codigo ? await lerLink(codigo) : null;
 
-  if (!v) {
+  if (link?.estado === "indisponivel") {
+    return (
+      <Moldura subtitulo={link.condominioNome}>
+        <Alerta
+          tipo="info"
+          titulo="Esta votação ainda não foi liberada pela comissão"
+        >
+          Guarde esta mensagem e use este mesmo link no dia.
+        </Alerta>
+      </Moldura>
+    );
+  }
+
+  if (link?.estado === "desativado") {
+    return (
+      <Moldura subtitulo={link.condominioNome}>
+        <Alerta tipo="info" titulo="Esta votação já terminou">
+          Os links de voto foram desativados pela comissão depois do resultado. Para ver o resultado, fale com a comissão
+          eleitoral ou entre no portal do residencial.
+        </Alerta>
+      </Moldura>
+    );
+  }
+
+  if (link?.estado !== "ok") {
     const h = await headers();
     const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "desconhecido";
     const bloqueado = await ipEstourado(adminDb(), LIMITE_IP.linkInvalido, ip);
@@ -144,6 +179,7 @@ export default async function VotarPorLink({
     );
   }
 
+  const v = link.votacao;
   const podeVotar = v.situacao === "aberta" && !v.casaVotou && !v.casaBloqueada;
   // Painel ao vivo (números do condomínio inteiro). Se falhar, a página abre sem ele.
   let aoVivo: Awaited<ReturnType<typeof painelPorCodigo>> = null;
@@ -204,8 +240,15 @@ export default async function VotarPorLink({
           </p>
           <p className="text-[0.95rem] text-ink-2">
             O voto da {v.casaRotulo} já foi registrado
-            {v.casaVotouEm ? ` em ${diaMes(v.casaVotouEm, v.fuso)}` : ""}. Cada
-            casa vota uma vez, e o voto não pode ser mudado.
+            {v.casaVotouEm ? ` em ${diaMes(v.casaVotouEm, v.fuso)}` : ""}
+            {/* A hora só depois da senha: assim a pessoa reconhece o próprio voto, e quem tem só o link não sabe a hora. */}
+            {v.casaVotouEm && v.senhaOk ? (
+              <>
+                {" "}
+                às <b>{dateParaDataHoraLocal(v.casaVotouEm, v.fuso).slice(11, 16)}</b>
+              </>
+            ) : null}
+            . Cada casa vota uma vez, e o voto não pode ser mudado.
           </p>
           {v.senhaOk ? (
             <a
@@ -326,11 +369,15 @@ function Moldura({
           tamanho={260}
           className="absolute -right-16 -top-20 opacity-20"
         />
-        <div className="relative mx-auto flex max-w-lg items-center gap-3 px-4 pt-3">
-          <p className="flex min-w-0 flex-1 items-center gap-1.5 truncate text-[0.82rem] text-band-muted">
-            <Lock aria-hidden className="size-3.5" /> Votação oficial
-            {subtitulo ? ` · ${subtitulo}` : ""}
+        <div className="relative mx-auto flex max-w-lg items-center gap-2 px-4 pt-3">
+          <p className="flex min-w-0 flex-1 items-center gap-1.5 text-[0.82rem] text-band-muted">
+            <Lock aria-hidden className="size-3.5 shrink-0" />
+            <span className="truncate">
+              Votação oficial
+              {subtitulo ? ` · ${subtitulo}` : ""}
+            </span>
           </p>
+          <BotaoLetra className={classeBotaoFaixa} />
           <BotaoTema className={classeBotaoFaixa} />
         </div>
       </div>

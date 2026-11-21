@@ -89,6 +89,8 @@ export const ACOES_AUDITADAS = [
   "eleicao.contatos",
   "eleicao.foto",
   "eleicao.resultado", // resultado divulgado a todos (apuração automática)
+  "eleicao.excluir", // votação de TESTE excluída (scripts/excluir-votacao-teste.ts)
+  "eleicao.limpeza", // dados pessoais da votação apagados depois do resultado (LGPD)
   "eleicao.assinatura", // assinatura digital na ata (assinou, removeu, link) — nunca a imagem
   // Classificados
   "classificado.criar",

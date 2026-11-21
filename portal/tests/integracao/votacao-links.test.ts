@@ -1,7 +1,8 @@
 /**
  * Link de voto por casa (sem login) contra o simulador (npm run test:emu):
  * um código por casa, um voto por casa (pelo link ou pelo portal), link trocado deixa de valer,
- * casa bloqueada não vota, contatos importados pelo número da casa.
+ * casa bloqueada não vota, contatos importados pelo número da casa, votação ainda não liberada
+ * (rascunho) não é "link inválido", limites da senha (teto do link, IPv6 pelo bloco /64).
  */
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { getApps, initializeApp } from "firebase-admin/app";
@@ -9,21 +10,28 @@ import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import type { Contexto } from "@/server/contexto";
 import { fotosDaEleicao, gravarEleicao, mudarStatusEleicao, registrarVotoEleicao, salvarBloqueios, salvarFotoCandidato } from "@/server/dados/eleicoes";
 import {
+  LIMITE_IP,
   REGEX_CODIGO,
+  chaveDoIp,
+  codigoConhecido,
   comprovantePorCodigo,
   conferirSenha,
+  contarErroDoIp,
   gerarLinksFaltantes,
   hashSenha,
   tokenDoLink,
   importarContatos,
+  lerLinkDeVoto,
   limparCodigo,
   listarEnvios,
   painelPorCodigo,
   resolverCodigo,
   trocarLink,
+  validadeDoCookie,
   votacaoPorCodigo,
   votarPorCodigo,
 } from "@/server/dados/votacao-links";
+import { refLimite } from "@/server/rate-limit";
 import { calcularPermissoes } from "@/lib/permissoes";
 import { somarUrna, type Candidato } from "@/lib/eleicoes";
 
@@ -200,7 +208,47 @@ describe("links de voto", () => {
     await gerarLinksFaltantes(db, comissao, rascunho);
     const cr = await codigoDa(rascunho, "casa-001");
     expect(await votacaoPorCodigo(cr, { db })).toBeNull();
+    // Mas a página sabe que o código é CERTO: "ainda não foi liberada", sem nada da votação.
+    expect(await lerLinkDeVoto(cr, { db })).toEqual({ estado: "indisponivel", codigo: cr, condominioNome: "Jardins" });
+    expect(await lerLinkDeVoto("ABCDEFGHJK", { db })).toEqual({ estado: "invalido" });
     await expect(votarPorCodigo(cr, await senhaPara(cr), ["sim"], db)).rejects.toThrow(/não encontrada/);
+  });
+
+  it("votação que voltou a rascunho: estado indisponível, não conta no limite do endereço", async () => {
+    // Publicada para amanhã, links enviados, e a comissão volta para rascunho (só antes de abrir).
+    const id = await gravarEleicao(db, comissao, {
+      id: null,
+      titulo: "Eleição do síndico e conselho 2026/2027",
+      cargo: "Chapa única",
+      modo: "chapa",
+      vagas: 2,
+      escolhasPorCasa: 1,
+      permiteBranco: false,
+      regraDesempate: "comissao",
+      abreEm: new Date(Date.now() + 24 * HORA),
+      fechaEm: new Date(Date.now() + 29 * HORA),
+      candidatos: [cand(1), cand(2)],
+    });
+    await mudarStatusEleicao(db, comissao, id, "publicar");
+    await gerarLinksFaltantes(db, comissao, id);
+    const link = (await ref(id).collection("links").doc("casa-001").get()).data()!;
+    expect((await lerLinkDeVoto(link.codigo, { db })).estado).toBe("ok");
+    await mudarStatusEleicao(db, comissao, id, "rascunho");
+
+    expect(await lerLinkDeVoto(link.codigo, { db })).toEqual({ estado: "indisponivel", codigo: link.codigo, condominioNome: "Jardins" });
+    // Painel ao vivo: sem números, mas o código é conhecido (a rota não conta como tentativa errada).
+    expect(await painelPorCodigo(link.codigo, db)).toBeNull();
+    expect(await codigoConhecido(link.codigo, db)).toBe(true);
+    expect(await codigoConhecido("ABCDEFGHJK", db)).toBe(false);
+
+    // Senha (certa ou errada) com a votação em rascunho: explica, sem contar em limite nenhum.
+    for (const senha of [link.senha as string, "000000"]) {
+      const r = await conferirSenha(link.codigo, senha, "ip-rascunho", db);
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.erro).toMatch(/ainda não foi liberada/);
+    }
+    expect((await refLimite(db, LIMITE_IP.senhaErrada.acao, "ip-rascunho").get()).exists).toBe(false);
+    expect((await refLimite(db, "voto.senha.ip", `${link.codigo}:ip-rascunho`).get()).exists).toBe(false);
   });
 
   it("painel ao vivo pelo link (sem login): só números do condomínio e se a PRÓPRIA casa votou", async () => {
@@ -294,7 +342,102 @@ describe("senha do link e comprovante", () => {
     expect(travado.ok).toBe(false);
     if (!travado.ok) expect(travado.erro).toMatch(/15 minutos/);
     // A casa, no aparelho dela, continua conseguindo.
-    expect(await conferirSenha(link.codigo, link.senha, "ip-casa", db)).toEqual({ ok: true, token: tokenDoLink(link.codigo, hashSenha(link.codigo, link.senha)) });
+    expect(await conferirSenha(link.codigo, link.senha, "ip-casa", db)).toMatchObject({ ok: true, token: tokenDoLink(link.codigo, hashSenha(link.codigo, link.senha)) });
+  });
+
+  it("conferirSenha: trava diz o tempo certo e onde pedir ajuda; devolve o encerramento para o cookie", async () => {
+    const id = await chapaAberta();
+    await gerarLinksFaltantes(db, comissao, id);
+    const link = (await ref(id).collection("links").doc("casa-001").get()).data()!;
+    const errada = link.senha === "111111" ? "222222" : "111111";
+    const r1 = await conferirSenha(link.codigo, errada, "ip-a", db);
+    const r2 = await conferirSenha(link.codigo, errada, "ip-a", db);
+    expect(!r1.ok && r1.erro).toMatch(/Restam 4 tentativas/);
+    expect(!r2.ok && r2.erro).toMatch(/Restam 3 tentativas/);
+    for (let i = 0; i < 3; i++) await conferirSenha(link.codigo, errada, "ip-a", db);
+    const travado = await conferirSenha(link.codigo, errada, "ip-a", db);
+    expect(!travado.ok && travado.erro).toMatch(/Espere 15 minutos.*responda a mensagem da comissão no WhatsApp/);
+
+    const certo = await conferirSenha(link.codigo, link.senha, "ip-b", db);
+    expect(certo.ok).toBe(true);
+    const fechaEm = (await ref(id).get()).get("fechaEm").toDate() as Date;
+    if (certo.ok) expect(certo.fechaEm.getTime()).toBe(fechaEm.getTime());
+  });
+
+  it("conferirSenha: teto do link estourado — aparelho sem erro e senha certa entra; quem erra continua contando", async () => {
+    const id = await chapaAberta();
+    await gerarLinksFaltantes(db, comissao, id);
+    const link = (await ref(id).collection("links").doc("casa-002").get()).data()!;
+    const codigo = link.codigo as string;
+    const errada = link.senha === "111111" ? "222222" : "111111";
+    // 29 erros de 6 aparelhos (5+5+5+5+5+4) e 1 erro de um sétimo: o teto (30 por hora) estoura.
+    const erros: [string, number][] = [["v1", 5], ["v2", 5], ["v3", 5], ["v4", 5], ["v5", 5], ["v6", 4], ["ip-um-erro", 1]];
+    for (const [ip, vezes] of erros)
+      for (let i = 0; i < vezes; i++) expect((await conferirSenha(codigo, errada, ip, db)).ok).toBe(false);
+    expect((await refLimite(db, "voto.senha.link", codigo).get()).get("contagem")).toBe(30);
+
+    // Aparelho que nunca errou + senha certa: entra (o teto é para quem erra).
+    expect((await conferirSenha(codigo, link.senha, "ip-casa", db)).ok).toBe(true);
+    // Aparelho que já errou uma vez: espera, mesmo com a senha certa.
+    const umErro = await conferirSenha(codigo, link.senha, "ip-um-erro", db);
+    expect(umErro.ok).toBe(false);
+    if (!umErro.ok) expect(umErro.erro).toMatch(/Espere \d+ minutos?.*WhatsApp/);
+    // Aparelho novo que ERRA: o erro conta (no aparelho e no link) e ele perde a vez —
+    // depois nem a senha certa passa (ninguém testa senhas trocando de aparelho).
+    const novoErra = await conferirSenha(codigo, errada, "ip-novo", db);
+    expect(novoErra.ok).toBe(false);
+    if (!novoErra.ok) expect(novoErra.erro).toMatch(/Espere/);
+    expect((await refLimite(db, "voto.senha.ip", `${codigo}:ip-novo`).get()).get("contagem")).toBe(1);
+    // 32: o palpite certo do aparelho que já tinha errado conta como erro (resposta igual à de
+    // quem errou: não dá para saber se o palpite estava certo) + o erro do aparelho novo.
+    expect((await refLimite(db, "voto.senha.link", codigo).get()).get("contagem")).toBe(32);
+    expect((await conferirSenha(codigo, link.senha, "ip-novo", db)).ok).toBe(false);
+    // Acertar nunca grava erro.
+    expect((await refLimite(db, "voto.senha.ip", `${codigo}:ip-casa`).get()).exists).toBe(false);
+
+    // TETO DURO (40 erros no link): trocar de endereço não adianta mais — ninguém entra, nem um
+    // aparelho novo com a senha certa, até a janela acabar (ou a comissão trocar o link).
+    let n = (await refLimite(db, "voto.senha.link", codigo).get()).get("contagem") as number;
+    for (let i = 0; n < 40; i++, n++) expect((await conferirSenha(codigo, errada, `ip-extra-${i}`, db)).ok).toBe(false);
+    const duro = await conferirSenha(codigo, link.senha, "ip-nunca-errou", db);
+    expect(duro.ok).toBe(false);
+    if (!duro.ok) expect(duro.erro).toMatch(/travado por segurança/);
+    // Depois do teto duro, palpites não contam mais (a resposta não depende da senha).
+    expect((await refLimite(db, "voto.senha.link", codigo).get()).get("contagem")).toBe(40);
+  });
+
+  it("limites por endereço: IPv6 do mesmo bloco /64 conta junto; outro bloco não", async () => {
+    expect(chaveDoIp("2001:DB8:1:2:0:0:0:d")).toBe("2001:db8:1:2::/64");
+    expect(chaveDoIp("[2001:db8:1:2::c]:443")).toBe("2001:db8:1:2::/64");
+    expect(chaveDoIp("2001:db8:1:2::/64")).toBe("2001:db8:1:2::/64"); // chamar de novo não muda
+    expect(chaveDoIp("::ffff:10.0.0.7")).toBe("10.0.0.7");
+    expect(chaveDoIp("10.0.0.7:5678")).toBe("10.0.0.7");
+    expect(chaveDoIp("desconhecido")).toBe("desconhecido");
+
+    const id = await chapaAberta();
+    await gerarLinksFaltantes(db, comissao, id);
+    const link = (await ref(id).collection("links").doc("casa-001").get()).data()!;
+    const codigo = link.codigo as string;
+    const errada = link.senha === "111111" ? "222222" : "111111";
+    // 5 erros de 5 endereços diferentes do MESMO bloco /64: é o mesmo aparelho/casa.
+    for (const ip of ["2001:db8:1:2::a", "2001:db8:1:2::b", "2001:db8:1:2:ffff::1", "[2001:db8:1:2::c]:443", "2001:DB8:1:2:0:0:0:d"])
+      expect((await conferirSenha(codigo, errada, ip, db)).ok).toBe(false);
+    const mesmoBloco = await conferirSenha(codigo, link.senha, "2001:db8:1:2::e", db);
+    expect(mesmoBloco.ok).toBe(false);
+    if (!mesmoBloco.ok) expect(mesmoBloco.erro).toMatch(/Espere/);
+    expect((await conferirSenha(codigo, link.senha, "2001:db8:1:3::1", db)).ok).toBe(true);
+
+    // Limite de links inválidos (página e painel): mesma chave para o bloco inteiro.
+    await contarErroDoIp(db, LIMITE_IP.linkInvalido, "2001:db8:5:6::1");
+    await contarErroDoIp(db, LIMITE_IP.linkInvalido, "2001:db8:5:6:aaaa::2");
+    expect((await refLimite(db, LIMITE_IP.linkInvalido.acao, "2001:db8:5:6::/64").get()).get("contagem")).toBe(2);
+  });
+
+  it("cookie da senha vale até 1 hora depois do encerramento (mínimo 1 h, máximo 24 h)", () => {
+    const agora = new Date("2026-11-29T12:00:00Z");
+    expect(validadeDoCookie(new Date(agora.getTime() + 5 * HORA), agora)).toBe(6 * 3600);
+    expect(validadeDoCookie(new Date(agora.getTime() - 3 * HORA), agora)).toBe(3600);
+    expect(validadeDoCookie(new Date(agora.getTime() + 40 * HORA), agora)).toBe(24 * 3600);
   });
 
   it("conferirSenha: antes de abrir não aceita senha; código inventado dá a mesma resposta de senha errada", async () => {

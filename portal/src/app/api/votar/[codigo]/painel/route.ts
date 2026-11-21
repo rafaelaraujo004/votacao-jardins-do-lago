@@ -6,12 +6,20 @@
  * SIGILO: o mesmo painel público do Início (só números do condomínio inteiro). Nunca QUAIS
  * casas votaram, nunca parcial de votos.
  * Abuso: código que não existe conta no limite do endereço (o mesmo da página do link);
- * código certo nunca é barrado (muitas casas usam o mesmo endereço de internet).
+ * código certo nunca é barrado (muitas casas usam o mesmo endereço de internet), nem quando a
+ * votação ainda não foi liberada (rascunho).
  */
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { adminDb } from "@/server/firebase-admin";
-import { LIMITE_IP, contarErroDoIp, ipEstourado, limparCodigo, painelPorCodigo } from "@/server/dados/votacao-links";
+import {
+  LIMITE_IP,
+  codigoConhecido,
+  contarErroDoIp,
+  ipEstourado,
+  limparCodigo,
+  painelPorCodigo,
+} from "@/server/dados/votacao-links";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +36,10 @@ export async function GET(_: Request, { params }: { params: Promise<{ codigo: st
   try {
     const r = codigo ? await painelPorCodigo(codigo) : null;
     if (!r) {
+      // Código certo de votação que ainda não foi liberada (ou voltou para rascunho): não é
+      // tentativa errada, então não conta no limite do endereço.
+      if (codigo && (await codigoConhecido(codigo)))
+        return NextResponse.json({ painel: null, casa: null, agora: Date.now() }, { status: 404, headers: SEM_CACHE });
       const ip = await ipDoPedido();
       if (await ipEstourado(adminDb(), LIMITE_IP.linkInvalido, ip))
         return NextResponse.json({ erro: "Muitas tentativas." }, { status: 429, headers: SEM_CACHE });

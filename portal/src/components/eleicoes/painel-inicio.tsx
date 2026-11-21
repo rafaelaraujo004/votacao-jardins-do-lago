@@ -16,6 +16,7 @@
 import type { Contexto } from "@/server/contexto";
 import { painelEmDestaque, situacaoDaCasa } from "@/server/dados/eleicoes";
 import { PainelEleicaoVivo, type SituacaoCasaPainel } from "./painel-destaque";
+import { AtualizarAoPublicar } from "./atualizar-ao-publicar";
 
 export async function PainelEleicaoInicio({ ctx, perfil }: { ctx: Contexto; perfil: "morador" | "gestao" }) {
   let destaque: Awaited<ReturnType<typeof painelEmDestaque>> = null;
@@ -24,9 +25,11 @@ export async function PainelEleicaoInicio({ ctx, perfil }: { ctx: Contexto; perf
   } catch (erro) {
     // Se a votação falhar, o Início continua abrindo.
     console.error("Início: não foi possível carregar o painel da votação oficial", erro);
-    return null;
+    // Continua "escutando": no próximo sinal da votação a tela tenta de novo.
+    return <AtualizarAoPublicar />;
   }
-  if (!destaque) return null;
+  // Sem votação agora: fica só "escutando" para mostrar o painel assim que a comissão publicar.
+  if (!destaque) return <AtualizarAoPublicar />;
   const { painel, eleicao } = destaque;
 
   // A situação da casa só importa para quem vota e enquanto a votação não tem resultado.

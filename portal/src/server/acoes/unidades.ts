@@ -35,6 +35,10 @@ export async function cadastrarSequencia(_: Resultado, dados: FormData): Promise
     const numeros = Array.from({ length: v.ate - v.de + 1 }, (_, i) => v.de + i);
     const refs = numeros.map((n) => base.doc(idDaUnidade(n, quadra)));
 
+    // Votação oficial ABERTA: casa nova mudaria quem vota no meio da votação (mesma regra de
+    // ativar/inativar casa). Depois do encerramento, pode cadastrar.
+    await conferirVotacaoAbertaAntesDoCadastro(ctx.condominioId, db);
+
     const criadas = await db.runTransaction(async (tx) => {
       const existentes = await tx.getAll(...refs);
       let total = 0;
@@ -64,8 +68,8 @@ export async function cadastrarSequencia(_: Resultado, dados: FormData): Promise
       return total;
     });
 
-    // Votação agendada: a casa nova entra na lista de casas aptas (com a votação aberta, a lista
-    // fica congelada e a casa nova só vota na próxima).
+    // Votação agendada: a casa nova entra na lista de casas aptas (com a votação aberta, o
+    // cadastro é recusado lá em cima).
     if (criadas > 0) await recalcularAptasDasAgendadas(ctx.condominioId, db);
     revalidatePath("/admin/unidades");
     const jaExistiam = numeros.length - criadas;

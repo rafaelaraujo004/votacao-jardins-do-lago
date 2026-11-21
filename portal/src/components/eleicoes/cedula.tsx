@@ -7,11 +7,23 @@
  * O voto NÃO pode ser mudado: a janela avisa antes de enviar.
  * A escolha não é guardada no navegador (nem no endereço, nem no armazenamento).
  * O servidor confere tudo de novo (votação aberta, casa liberada e que ainda não votou, escolha válida).
+ *
+ * O MORADOR NUNCA FICA NA DÚVIDA se o voto chegou:
+ * - Queda de internet, site atualizado ou servidor demorando (o envio falha sem resposta):
+ *   aviso fixo perto do botão — "Não deu para confirmar se o voto chegou" — com o botão
+ *   "Conferir meu voto", que atualiza a página: se o voto chegou, ela mostra "Voto já realizado".
+ *   Nunca a tela genérica de erro.
+ * - Casa que já votou (ex.: o primeiro envio chegou mas a resposta se perdeu): mostra como
+ *   INFORMAÇÃO ("O voto da sua casa já está registrado"), não como erro.
+ * - Recusa de verdade (votação encerrada, casa bloqueada, senha vencida...): "O voto não foi
+ *   registrado", com o motivo. Em todos os casos a página se atualiza e a tela leva a pessoa
+ *   até o aviso (rola e põe o foco nele).
  */
-import { useActionState, useId, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useActionState, useEffect, useId, useRef, useState, useTransition } from "react";
+import { unstable_rethrow, useRouter } from "next/navigation";
 import {
   CircleSlash,
+  RefreshCw,
   ShieldCheck,
   ThumbsDown,
   ThumbsUp,
@@ -49,6 +61,22 @@ const classeSimNao = (voto: VotoChapa) =>
       : "has-checked:border-danger has-checked:bg-danger-soft has-checked:text-danger has-checked:shadow-afundado",
   );
 
+/** O que aconteceu com o último envio da cédula. */
+type EstadoCedula =
+  | { tipo: "ok"; vez: number }
+  /** O servidor recusou de verdade (motivo em `erro`). */
+  | { tipo: "recusado"; erro: string; vez: number }
+  /** A casa já tinha votado (pode ser este mesmo voto, se a resposta anterior se perdeu). */
+  | { tipo: "ja-votou"; vez: number }
+  /** O envio falhou sem resposta: não dá para saber se o voto chegou. */
+  | { tipo: "incerto"; vez: number }
+  | null;
+
+/** Resposta do servidor dizendo que a casa já votou (portal: "já votou"; link: "já foi realizado"). */
+const JA_VOTOU = /já foi realizado|já votou/i;
+/** Resposta genérica de erro inesperado (executar, em server/acoes/resultado.ts). */
+const FALHA_INESPERADA = /não foi possível salvar agora/i;
+
 type Props = {
   eleicaoId: string;
   /** Ação que grava o voto. Padrão: voto do morador logado. O link de voto passa votarComCodigo. */
@@ -71,25 +99,51 @@ export function Cedula(props: Props) {
   // Chapa: Sim ou Não. Candidatos: lista dos marcados (ou "branco").
   const [voto, setVoto] = useState<VotoChapa | null>(null);
   const [marcados, setMarcados] = useState<string[]>([]);
+  const aviso = useRef<HTMLDivElement>(null);
+  const [conferindo, iniciarConferencia] = useTransition();
 
-  // Depois de enviar: fecha a janela; se deu certo, limpa a escolha da memória e atualiza a página.
+  // Depois de enviar: fecha a janela e atualiza a página em TODOS os casos (ela mostra
+  // "Voto já realizado" se o voto chegou). Se deu certo, limpa a escolha da memória.
   const [estado, enviar] = useActionState(
-    async (
-      anterior: Awaited<ReturnType<typeof votarEleicao>>,
-      dados: FormData,
-    ) => {
-      const r = await (props.acao ?? votarEleicao)(anterior, dados);
+    async (_anterior: EstadoCedula, dados: FormData): Promise<EstadoCedula> => {
+      const vez = Date.now();
+      let r: Awaited<ReturnType<typeof votarEleicao>>;
+      try {
+        r = await (props.acao ?? votarEleicao)(null, dados);
+      } catch (erro) {
+        // Redirecionamentos do Next (ex.: sessão do portal terminou) seguem o caminho normal.
+        unstable_rethrow(erro);
+        r = null;
+      }
       janela.current?.close();
-      if (r?.ok) {
+      // Sem resposta (internet caiu, site atualizado, servidor demorou): não dá para saber.
+      // Não atualiza sozinho (sem internet, a atualização também falharia): o aviso tem o botão.
+      if (!r) return { tipo: "incerto", vez };
+      router.refresh();
+      // Falha inesperada no servidor (resposta genérica): também não dá para garantir nada.
+      if (!r.ok && FALHA_INESPERADA.test(r.erro)) return { tipo: "incerto", vez };
+      if (r.ok) {
         setVoto(null);
         setMarcados([]);
         avisar("sucesso", r.mensagem);
-        router.refresh();
+        return { tipo: "ok", vez };
       }
-      return r;
+      if (JA_VOTOU.test(r.erro)) {
+        avisar("info", "O voto da sua casa já está registrado.");
+        return { tipo: "ja-votou", vez };
+      }
+      avisar("erro", r.erro);
+      return { tipo: "recusado", erro: r.erro, vez };
     },
     null,
   );
+
+  // Aviso novo: leva a pessoa até ele (no celular ele pode ficar fora da tela).
+  useEffect(() => {
+    if (!estado || estado.tipo === "ok") return;
+    aviso.current?.focus({ preventScroll: true });
+    aviso.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [estado]);
 
   const chapa = props.modo === "chapa";
   const valores = chapa ? (voto ? [voto] : []) : marcados;
@@ -100,11 +154,6 @@ export function Cedula(props: Props) {
 
   return (
     <form action={enviar} className="flex flex-col gap-4">
-      {estado && !estado.ok ? (
-        <Alerta tipo="erro" titulo="O voto não foi registrado">
-          {estado.erro}
-        </Alerta>
-      ) : null}
       <input type="hidden" name="id" value={props.eleicaoId} />
       {Object.entries(props.campos ?? {}).map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />
@@ -132,6 +181,51 @@ export function Cedula(props: Props) {
         Vale <b>um voto por casa</b>. Depois de confirmado, o voto{" "}
         <b>não pode ser mudado</b>.
       </p>
+
+      {/* Aviso do último envio, logo acima do botão (onde a pessoa estava olhando). */}
+      {estado && estado.tipo !== "ok" ? (
+        <div
+          ref={aviso}
+          tabIndex={-1}
+          className="scroll-mt-24 rounded-2xl outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-lake"
+        >
+          {estado.tipo === "incerto" ? (
+            <Alerta tipo="aviso" titulo="Não deu para confirmar se o voto chegou">
+              <div className="flex flex-col gap-3">
+                <p>Confira a internet e toque em Conferir meu voto.</p>
+                <Botao
+                  largo
+                  variante="secundario"
+                  carregando={conferindo}
+                  icone={<RefreshCw aria-hidden className="size-5" />}
+                  onClick={() => {
+                    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+                      avisar("erro", "Sem internet agora. Quando a internet voltar, toque de novo em Conferir meu voto.");
+                      return;
+                    }
+                    iniciarConferencia(() => router.refresh());
+                  }}
+                >
+                  {conferindo ? "Conferindo…" : "Conferir meu voto"}
+                </Botao>
+                <p className="text-[0.9rem]">
+                  Se o voto chegou, a página mostra <b>Voto já realizado</b>. Se
+                  a cédula continuar aqui, pode votar de novo: a casa nunca vota
+                  duas vezes, e o portal avisa se o voto já tinha chegado.
+                </p>
+              </div>
+            </Alerta>
+          ) : estado.tipo === "ja-votou" ? (
+            <Alerta tipo="info" titulo="O voto da sua casa já está registrado.">
+              Cada casa vota uma vez. A página vai mostrar a confirmação.
+            </Alerta>
+          ) : (
+            <Alerta tipo="erro" titulo="O voto não foi registrado">
+              {estado.erro}
+            </Alerta>
+          )}
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-1.5">
         <Botao

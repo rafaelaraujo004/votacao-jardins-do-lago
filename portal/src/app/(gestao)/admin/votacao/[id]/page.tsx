@@ -50,6 +50,8 @@ import {
 import { BloqueioCasas } from "@/components/eleicoes/bloqueio-casas";
 import { RevelacaoResultado } from "@/components/eleicoes/revelacao-resultado";
 import { CompartilharResultado } from "@/components/eleicoes/compartilhar-resultado";
+import { DadosPessoaisVotacao } from "@/components/eleicoes/dados-pessoais-votacao";
+import { situacaoDaLimpeza } from "@/server/dados/limpeza-votacao";
 import { ArvoreChapa } from "@/components/eleicoes/arvore-chapa";
 import { FotosChapa } from "@/components/eleicoes/fotos-chapa";
 import {
@@ -138,9 +140,11 @@ export default async function EleicaoGestaoPagina({
   const encerrada = e.situacao === "encerrada";
   // Bloqueio só muda ANTES de abrir; aberta, a lista fica congelada (o servidor também recusa).
   const podeBloquear = bloqueioPodeMudar(e);
-  const [casasDaEleicao, endereco] = await Promise.all([
+  const [casasDaEleicao, endereco, limpeza] = await Promise.all([
     casasParaBloqueio(ctx, e.id),
     enderecoBase(),
+    // Depois do resultado: apagar os dados pessoais da votação (LGPD).
+    e.apuracao ? situacaoDaLimpeza(ctx, e.id) : Promise.resolve(null),
   ]);
   const bloqueadasAgora = casasDaEleicao.filter((c) => c.bloqueada);
   // Mapa: situação de cada casa pelo número do lote (nunca o voto).
@@ -246,7 +250,28 @@ export default async function EleicaoGestaoPagina({
               acao={publicarEleicao}
               campos={{ id: e.id }}
               titulo="Publicar esta votação?"
-              mensagem={`Os moradores passam a ver os candidatos e podem votar de ${formatarDataHora(e.abreEm, ctx.fuso)} até ${formatarDataHora(e.fechaEm, ctx.fuso)}. Depois de abrir, regras e candidatos não mudam mais.`}
+              mensagem={
+                <div className="flex flex-col gap-2">
+                  <p>
+                    Os moradores passam a ver os candidatos e podem votar de{" "}
+                    {formatarDataHora(e.abreEm, ctx.fuso)} até{" "}
+                    {formatarDataHora(e.fechaEm, ctx.fuso)}. Depois de abrir,
+                    regras e candidatos não mudam mais.
+                  </p>
+                  <p className="font-bold text-ink">Antes da abertura:</p>
+                  <ul className="flex list-disc flex-col gap-1 pl-5">
+                    <li>
+                      bloqueie as casas que não podem votar até{" "}
+                      {formatarDataHora(e.abreEm, ctx.fuso)} — quando a votação
+                      abrir, a lista fica congelada até o encerramento;
+                    </li>
+                    <li>
+                      envie os links de voto pelo WhatsApp (em “Links de voto e
+                      WhatsApp”).
+                    </li>
+                  </ul>
+                </div>
+              }
               textoConfirmar="Sim, publicar"
               variante="primario"
             >
@@ -353,6 +378,7 @@ export default async function EleicaoGestaoPagina({
               Relatório final (imprimir ou PDF)
             </BotaoLink>
           </div>
+          {limpeza ? <DadosPessoaisVotacao eleicaoId={e.id} situacao={limpeza} fuso={ctx.fuso} /> : null}
         </section>
       ) : null}
 
@@ -426,7 +452,7 @@ export default async function EleicaoGestaoPagina({
                 ? "Mapa: quem votou e quem não votou"
                 : "Mapa: quem já votou e quem falta"}
             </p>
-            <MapaVotacao situacoes={situacoes} />
+            <MapaVotacao situacoes={situacoes} situacao={e.situacao} />
           </Cartao>
           {!e.apuracao ? (
             <p className="flex items-start gap-2 text-[0.9rem] text-muted">
@@ -455,7 +481,11 @@ export default async function EleicaoGestaoPagina({
             Casas bloqueadas de votar
           </TituloSecao>
           <Cartao>
-            <BloqueioCasas eleicaoId={e.id} casas={casasDaEleicao} />
+            <BloqueioCasas
+              eleicaoId={e.id}
+              casas={casasDaEleicao}
+              abreEm={formatarDataHora(e.abreEm, ctx.fuso)}
+            />
           </Cartao>
         </section>
       ) : !encerrada ? (

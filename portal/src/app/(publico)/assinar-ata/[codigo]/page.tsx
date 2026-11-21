@@ -13,6 +13,7 @@ import { assinarAtaPorCodigo } from "@/server/acoes/assinaturas-ata";
 import { Alerta } from "@/components/ui/basicos";
 import { Logo, Petalas } from "@/components/ui/marca";
 import { BotaoTema } from "@/components/ui/tema";
+import { BotaoLetra } from "@/components/ui/botao-letra";
 import { classeBotaoFaixa } from "@/components/layout/faixa-topo";
 import { FaixaPetalas } from "@/components/ui/painel";
 import { AssinaturaPorLink } from "@/components/eleicoes/quadro-assinatura";
@@ -124,11 +125,15 @@ function Moldura({ children, subtitulo }: { children: React.ReactNode; subtitulo
     <div className="flex min-h-dvh flex-col">
       <div className="relative overflow-hidden bg-band pb-28 pt-[env(safe-area-inset-top)] text-band-fg">
         <Petalas tamanho={260} className="absolute -right-16 -top-20 opacity-20" />
-        <div className="relative mx-auto flex max-w-lg items-center gap-3 px-4 pt-3">
-          <p className="flex min-w-0 flex-1 items-center gap-1.5 truncate text-[0.82rem] text-band-muted">
-            <Lock aria-hidden className="size-3.5" /> Ata da votação
-            {subtitulo ? ` · ${subtitulo}` : ""}
+        <div className="relative mx-auto flex max-w-lg items-center gap-2 px-4 pt-3">
+          <p className="flex min-w-0 flex-1 items-center gap-1.5 text-[0.82rem] text-band-muted">
+            <Lock aria-hidden className="size-3.5 shrink-0" />
+            <span className="truncate">
+              Ata da votação
+              {subtitulo ? ` · ${subtitulo}` : ""}
+            </span>
           </p>
+          <BotaoLetra className={classeBotaoFaixa} />
           <BotaoTema className={classeBotaoFaixa} />
         </div>
       </div>

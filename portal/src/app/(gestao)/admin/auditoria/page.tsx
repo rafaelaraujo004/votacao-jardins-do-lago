@@ -106,6 +106,23 @@ const DESCRICAO: Record<string, { texto: string; icone: LucideIcon }> = {
   "enquete.publicar": { texto: "Publicou enquete", icone: Send },
   "enquete.encerrar": { texto: "Encerrou enquete antes do prazo", icone: Archive },
   "enquete.votar": { texto: "Casa votou em enquete (opção não registrada)", icone: Vote },
+  // Casas (cadastro)
+  "unidade.criar": { texto: "Cadastrou casas", icone: Settings },
+  "unidade.alterar": { texto: "Alterou o cadastro de uma casa", icone: Pencil },
+  // Votação oficial
+  "eleicao.criar": { texto: "Criou votação oficial (rascunho)", icone: Vote },
+  "eleicao.editar": { texto: "Editou rascunho da votação oficial", icone: Pencil },
+  "eleicao.publicar": { texto: "Publicou a votação oficial", icone: Send },
+  "eleicao.rascunho": { texto: "Voltou a votação oficial para rascunho", icone: Archive },
+  "eleicao.votar": { texto: "A casa votou na votação oficial (o voto não fica registrado)", icone: Vote },
+  "eleicao.bloqueio": { texto: "Mudou as casas que podem votar na votação oficial", icone: Ban },
+  "eleicao.links": { texto: "Gerou ou trocou links de voto das casas", icone: KeyRound },
+  "eleicao.contatos": { texto: "Alterou os contatos de WhatsApp da votação", icone: Settings },
+  "eleicao.limpeza": { texto: "Apagou os dados pessoais da votação (LGPD)", icone: Eraser },
+  "eleicao.foto": { texto: "Trocou a foto de um integrante da chapa", icone: Pencil },
+  "eleicao.resultado": { texto: "Resultado da votação oficial divulgado", icone: CircleCheck },
+  "eleicao.excluir": { texto: "Excluiu uma votação de teste", icone: Archive },
+  "eleicao.assinatura": { texto: "Mexeu na assinatura da ata da votação", icone: Pencil },
   // Classificados
   "classificado.criar": { texto: "Enviou anúncio para aprovação", icone: Store },
   "classificado.editar": { texto: "Editou anúncio (voltou para aprovação)", icone: Store },
@@ -126,6 +143,14 @@ export default async function PaginaAuditoria() {
         descricao="Registro de tudo o que é importante: quem fez, o quê e quando. Ninguém pode alterar ou apagar estes registros."
       />
 
+      {!ctx.permissoes.has("eleicoes.gerenciar") ? (
+        <p className="flex items-start gap-2 text-[0.9rem] text-muted">
+          <ScrollText aria-hidden className="mt-0.5 size-4 shrink-0" />
+          Os votos da votação oficial não aparecem nesta lista: o voto é secreto e só a comissão eleitoral acompanha
+          quais casas já votaram.
+        </p>
+      ) : null}
+
       {registros.length === 0 ? (
         <EstadoVazio icone={ScrollText} titulo="Nenhum registro ainda">
           As ações importantes aparecerão aqui assim que acontecerem.
@@ -135,7 +160,10 @@ export default async function PaginaAuditoria() {
           <h2 className="sr-only">Últimos {registros.length} registros</h2>
           <ol className="divide-y divide-line">
             {registros.map((r) => {
-              const d = DESCRICAO[r.acao] ?? { texto: r.acao, icone: ScrollText };
+              // Voto para quem não cuida da votação: linha neutra, sem casa nem pessoa (sigilo).
+              const d = r.sigilo
+                ? { texto: "Uma casa votou na votação oficial", icone: Vote }
+                : (DESCRICAO[r.acao] ?? { texto: r.acao, icone: ScrollText });
               const Icone = d.icone;
               return (
                 <li key={r.id} className="flex items-start gap-3 px-4 py-3.5 sm:items-center">
@@ -146,9 +174,15 @@ export default async function PaginaAuditoria() {
                     <div className="min-w-0 flex-1">
                       <p className="font-bold">{d.texto}</p>
                       <p className="text-[0.92rem] text-muted">
-                        {r.nome ?? "Sistema"}
-                        {r.papel && ehPapel(r.papel) ? ` · ${NOME_DO_PAPEL[r.papel]}` : ""}
-                        {r.alvo ? ` · ${r.alvo}` : ""}
+                        {r.sigilo ? (
+                          "Voto secreto: a casa não aparece aqui."
+                        ) : (
+                          <>
+                            {r.nome ?? "Sistema"}
+                            {r.papel && ehPapel(r.papel) ? ` · ${NOME_DO_PAPEL[r.papel]}` : ""}
+                            {r.alvo ? ` · ${r.alvo}` : ""}
+                          </>
+                        )}
                       </p>
                     </div>
                     <time

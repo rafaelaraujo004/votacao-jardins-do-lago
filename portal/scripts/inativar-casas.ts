@@ -1,10 +1,11 @@
 /**
  * Marca casas como INATIVAS no condomínio REAL (ex.: números que não são casas, como um
- * lote sem construção) e recalcula as "casas aptas" das eleições publicadas que ainda não
- * encerraram — o mesmo cálculo do "Bloquear casas" da comissão (ativas − bloqueadas).
+ * lote sem construção) e recalcula as "casas aptas" (número e lista) das eleições AGENDADAS —
+ * o mesmo cálculo do "Bloquear casas" da comissão (ativas − bloqueadas).
  * Nada é apagado: dá para reativar a casa depois em Unidades.
  *
- * Recusa se alguma dessas casas tiver alguém cadastrado (morador ou equipe) ou já tiver votado.
+ * Recusa se alguma votação estiver ABERTA agora (as casas aptas ficaram congeladas quando ela
+ * abriu), se alguma dessas casas tiver alguém cadastrado (morador ou equipe) ou já tiver votado.
  *
  * Uso (na pasta portal, com as credenciais do .env.production.local):
  *   npx tsx scripts/inativar-casas.ts --casas 194-198 --motivo "Lote sem casa" --conferir
@@ -82,15 +83,26 @@ async function main() {
       .map((m) => Number(alvos.find((a) => a.id === m.get("unitId"))?.get("numero")));
     if (casasComMorador.length) falhar(`Casa ${faixasDeCasas(casasComMorador)} tem pessoa cadastrada: confira antes de inativar.`);
 
-    // Eleições publicadas que ainda não encerraram: nenhuma dessas casas pode ter votado.
+    // Eleições publicadas: com alguma ABERTA agora, não mexe em nada (as casas aptas ficaram
+    // congeladas quando ela abriu — a mesma regra da tela Unidades). Depois do encerramento, pode.
     const eleicoes = await tx.get(cond.collection("elections").where("status", "==", "publicada"));
-    const abertas = eleicoes.docs.filter((e) => {
-      const st = e.get("status") as StatusEleicao;
+    const situacao = (e: (typeof eleicoes.docs)[number]) => {
       const abreEm = e.get("abreEm")?.toDate?.() as Date | undefined;
       const fechaEm = e.get("fechaEm")?.toDate?.() as Date | undefined;
-      return abreEm && fechaEm && situacaoEleicao({ status: st, abreEm, fechaEm }, agora) !== "encerrada";
-    });
-    for (const e of abertas) {
+      if (!abreEm || !fechaEm) return null;
+      return situacaoEleicao({ status: e.get("status") as StatusEleicao, abreEm, fechaEm }, agora);
+    };
+    const aberta = eleicoes.docs.find((e) => situacao(e) === "aberta");
+    if (aberta) {
+      falhar(
+        `A votação "${aberta.get("titulo")}" está ABERTA agora: não dá para inativar casas até o encerramento ` +
+          "(as casas aptas ficaram congeladas quando ela abriu). Rode de novo depois que a votação encerrar.",
+      );
+    }
+    // Só as AGENDADAS acompanham o cadastro (as encerradas não mudam mais).
+    const agendadas = eleicoes.docs.filter((e) => situacao(e) === "agendada");
+    for (const e of agendadas) {
+      // Agendada não tem voto; conferido mesmo assim (corrida no minuto da abertura).
       const votos = await tx.getAll(...alvos.map((a) => e.ref.collection("votantes").doc(a.id)));
       const votaram = votos.filter((v) => v.exists).map((v) => Number(alvos.find((a) => a.id === v.id)?.get("numero")));
       if (votaram.length) falhar(`Casa ${faixasDeCasas(votaram)} já votou em "${e.get("titulo")}": não dá para inativar.`);
@@ -99,19 +111,24 @@ async function main() {
     const jaInativas = alvos.filter((a) => a.get("status") === "inativa").map((a) => Number(a.get("numero")));
     const mudar = alvos.filter((a) => a.get("status") !== "inativa");
     const ativasDepois = unidades.docs.filter((d) => d.get("status") !== "inativa" && !idsAlvo.has(d.id)).length;
-    const novasAptas = abertas.map((e) => {
+    const novasAptas = agendadas.map((e) => {
       const bloqueadas = new Set<string>(Array.isArray(e.get("casasBloqueadas")) ? (e.get("casasBloqueadas") as string[]) : []);
       const aptasIds = unidades.docs
         .filter((d) => d.get("status") !== "inativa" && !idsAlvo.has(d.id) && !bloqueadas.has(d.id))
         .map((d) => d.id)
         .sort();
-      return { e, antes: Number(e.get("casasAptas") ?? 0), aptas: aptasIds.length, aptasIds };
+      const idsAntes = Array.isArray(e.get("casasAptasIds")) ? (e.get("casasAptasIds") as string[]) : null;
+      // Muda se o número mudou ou se a lista congelada é outra (ou ainda não existia).
+      const mudou = Number(e.get("casasAptas") ?? 0) !== aptasIds.length || JSON.stringify(idsAntes) !== JSON.stringify(aptasIds);
+      return { e, antes: Number(e.get("casasAptas") ?? 0), aptas: aptasIds.length, aptasIds, mudou, semLista: !idsAntes };
     });
 
     console.log(`\nProjeto ${projectId} · condomínio ${ID}`);
     console.log(`Casas: ${unidades.size} no cadastro · ficam ativas: ${ativasDepois}`);
     console.log(`Inativar agora: ${mudar.length ? faixasDeCasas(mudar.map((a) => Number(a.get("numero")))) : "nenhuma"}${jaInativas.length ? ` (já estavam inativas: ${faixasDeCasas(jaInativas)})` : ""} · observação: "${MOTIVO}"`);
-    for (const x of novasAptas) console.log(`Eleição "${x.e.get("titulo")}": casas aptas ${x.antes} → ${x.aptas}`);
+    for (const x of novasAptas) {
+      console.log(`Eleição agendada "${x.e.get("titulo")}": casas aptas ${x.antes} → ${x.aptas}${x.semLista ? " (a lista de casas aptas passa a ser guardada)" : ""}`);
+    }
     if (SO_CONFERIR) return { gravou: false };
 
     for (const a of mudar) {
@@ -128,11 +145,12 @@ async function main() {
       });
     }
     for (const x of novasAptas) {
-      if (x.antes === x.aptas) continue;
+      if (!x.mudou) continue;
       tx.update(x.e.ref, {
         casasAptas: x.aptas,
-        // Lista congelada das casas aptas (eleições publicadas a partir de 21/11/2026): acompanha.
-        ...(Array.isArray(x.e.get("casasAptasIds")) ? { casasAptasIds: x.aptasIds } : {}),
+        // Lista congelada das casas aptas: acompanha o cadastro até abrir (e é criada se a
+        // eleição foi publicada antes de ela existir).
+        casasAptasIds: x.aptasIds,
         atualizadoEm: FieldValue.serverTimestamp(),
         atualizadoPor: QUEM.uid,
       });
