@@ -27,6 +27,9 @@ import {
   type Resultado,
 } from "./resultado";
 import { dataHoraLocalParaDate } from "@/lib/enquetes";
+import { ehVotacaoDeTeste } from "@/lib/eleicoes";
+import { redirect } from "next/navigation";
+import { excluirVotacao } from "../dados/excluir-votacao";
 import { formatarDataHora } from "@/lib/formato";
 import { avisarNoCelular } from "../push";
 import {
@@ -93,14 +96,17 @@ export async function publicarEleicao(
     const agora = new Date();
     const e = await mudarStatusEleicao(adminDb(), ctx, id, "publicar", agora);
     revalidar(id);
-    avisarNoCelular(ctx.condominioId, { papeis: ["morador"] }, {
+    // Votação de TESTE (título com "TESTE"): o aviso vai só para a comissão, não para os moradores.
+    const teste = ehVotacaoDeTeste(e.titulo);
+    avisarNoCelular(ctx.condominioId, teste ? { permissao: "eleicoes.gerenciar" } : { papeis: ["morador"] }, {
       titulo: e.abreEm.getTime() > agora.getTime() ? "Votação oficial marcada" : "Votação oficial aberta: vote agora",
       texto: e.abreEm.getTime() > agora.getTime() ? `${e.titulo}: abre ${formatarDataHora(e.abreEm, ctx.fuso)}.` : `${e.titulo}: um voto por casa, secreto.`,
       url: `/votacao/${id}`,
     });
+    const aviso = teste ? " É uma votação de TESTE: o aviso no celular foi só para a comissão." : "";
     return e.abreEm.getTime() > agora.getTime()
-      ? `Votação publicada. Os moradores podem votar a partir de ${formatarDataHora(e.abreEm, ctx.fuso)}.`
-      : "Votação publicada e aberta. Os moradores já podem votar.";
+      ? `Votação publicada. Os moradores podem votar a partir de ${formatarDataHora(e.abreEm, ctx.fuso)}.${aviso}`
+      : `Votação publicada e aberta. Os moradores já podem votar.${aviso}`;
   });
 }
 
@@ -172,5 +178,19 @@ export async function salvarFotoIntegrante(_: Resultado, dados: FormData): Promi
     revalidar(v.id);
     revalidatePath("/votar/[codigo]", "page");
     return v.foto ? `Foto de ${r.nome} atualizada.` : `Foto de ${r.nome} retirada.`;
+  });
+}
+
+/**
+ * Exclui uma votação de TESTE (ou rascunho sem votos) — definitivo. A regra fica no servidor
+ * (src/server/dados/excluir-votacao.ts): a eleição oficial nunca é excluída. Depois volta para a lista.
+ */
+export async function excluirVotacaoDeTeste(_: Resultado, dados: FormData): Promise<Resultado> {
+  return executar(async () => {
+    const ctx = garantirPermissao(await getContexto(), "eleicoes.gerenciar");
+    const { id } = lerFormulario(esquemaIdEleicao, dados);
+    await excluirVotacao(adminDb(), ctx, id);
+    revalidar(id);
+    redirect("/admin/votacao");
   });
 }

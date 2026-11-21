@@ -19,6 +19,7 @@ import {
   STATUS_ELEICAO,
   apurar,
   apurarChapa,
+  ehVotacaoDeTeste,
   porcentagemParticipacao,
   resultadoParaPainel,
   resumoNumerosResultado,
@@ -1345,6 +1346,11 @@ export async function finalizarEleicao(
     // não tem o painel na tela dela: o próprio aviso já traz o resultado.
     const comum = { titulo: `Resultado da votação: ${titulo}`, tag: `resultado-${id}` };
     const texto = `${e.titulo} — ${numeros}.`;
+    // Votação de TESTE: só a comissão recebe o aviso (os moradores não são incomodados).
+    if (ehVotacaoDeTeste(e.titulo)) {
+      await enviarPush(condominioId, { permissao: "eleicoes.gerenciar" }, { ...comum, texto: `${texto} (votação de teste)`, url: `/admin/votacao/${id}` });
+      return { divulgou, apuracao };
+    }
     await Promise.all([
       enviarPush(condominioId, { papeis: ["morador"] }, { ...comum, texto: `${texto} Toque para ver.`, url: "/inicio" }),
       enviarPush(

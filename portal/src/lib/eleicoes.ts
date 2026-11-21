@@ -573,6 +573,16 @@ export function somarUrna(partes: readonly (Record<string, unknown> | null | und
   return total;
 }
 
+/**
+ * VOTAÇÃO DE TESTE = tem a palavra "TESTE" no título (ex.: "Eleição de TESTE").
+ * Para ela: a comissão pode EXCLUIR pela tela (a oficial nunca) e os avisos no celular
+ * (publicação e resultado) vão SÓ para a comissão — um teste no condomínio real não incomoda
+ * os moradores. A votação continua aparecendo no portal como qualquer outra.
+ */
+export function ehVotacaoDeTeste(titulo: string): boolean {
+  return /(^|[^\p{L}\p{N}])teste([^\p{L}\p{N}]|$)/iu.test(titulo);
+}
+
 export function textoEscolhas(escolhasPorCasa: number): string {
   return escolhasPorCasa === 1
     ? "Escolha 1 candidato"

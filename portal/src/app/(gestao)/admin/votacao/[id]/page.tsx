@@ -11,7 +11,9 @@ import {
   Lock,
   MessageCircle,
   Pencil,
+  FlaskConical,
   Send,
+  Trash2,
   Undo2,
 } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
@@ -21,14 +23,17 @@ import {
   obterEleicaoGestao,
 } from "@/server/dados/eleicoes";
 import {
+  excluirVotacaoDeTeste,
   publicarEleicao,
   voltarEleicaoParaRascunho,
 } from "@/server/acoes/eleicoes";
+import { podeExcluirVotacao } from "@/server/dados/excluir-votacao";
 import { enderecoBase } from "@/server/endereco";
 import { casas, participacao } from "@/lib/enquetes";
 import {
   ROTULO_DESEMPATE,
   contarNulos,
+  ehVotacaoDeTeste,
   porcentagemParticipacao,
   resultadoParaPainel,
   textoEscolhas,
@@ -294,6 +299,19 @@ export default async function EleicaoGestaoPagina({
         ) : null}
       </Cartao>
 
+      {ehVotacaoDeTeste(e.titulo) ? (
+        <Alerta tipo="info" titulo="Votação de TESTE">
+          <span className="inline-flex items-start gap-1.5">
+            <FlaskConical aria-hidden className="mt-0.5 size-4 shrink-0" />
+            <span>
+              Tem “TESTE” no título: os avisos no celular (publicação e resultado) vão só para a comissão, e
+              ela pode ser excluída no fim desta tela. Os moradores que abrirem o portal ainda a veem — para
+              testar sem ninguém ver, use o condomínio de demonstração.
+            </span>
+          </span>
+        </Alerta>
+      ) : null}
+
       {rascunho ? (
         <Alerta tipo="aviso" titulo="Ainda é rascunho">
           Os moradores não veem esta votação. Confira os candidatos e toque em
@@ -537,6 +555,32 @@ export default async function EleicaoGestaoPagina({
             : "casas ficaram bloqueadas"}{" "}
           nesta eleição.
         </p>
+      ) : null}
+
+      {podeExcluirVotacao(e, e.votaram > 0) ? (
+        <section aria-labelledby="titulo-excluir" className="flex flex-col gap-3">
+          <TituloSecao id="titulo-excluir">Excluir esta votação</TituloSecao>
+          <Cartao className="flex flex-col gap-3">
+            <p className="text-ink-2">
+              {ehVotacaoDeTeste(e.titulo)
+                ? "Votação de teste: dá para excluir tudo dela (votos de teste, links, senhas e assinaturas). A eleição oficial nunca pode ser excluída."
+                : "Rascunho que nunca recebeu voto: dá para excluir. Depois de publicada (sem “TESTE” no título), a votação não pode mais ser excluída."}
+            </p>
+            <div>
+              <AcaoConfirmada
+                acao={excluirVotacaoDeTeste}
+                campos={{ id: e.id }}
+                titulo={`Excluir “${e.titulo}”?`}
+                mensagem="Apaga esta votação de vez: votos de teste, contagem, links de voto, senhas, fotos e assinaturas. Não dá para desfazer. O registro na auditoria continua."
+                textoConfirmar="Sim, excluir"
+                perigo
+                variante="perigo"
+              >
+                <Trash2 aria-hidden className="size-4" /> Excluir votação
+              </AcaoConfirmada>
+            </div>
+          </Cartao>
+        </section>
       ) : null}
 
       <NotaSigilo />

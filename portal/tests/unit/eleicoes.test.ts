@@ -9,6 +9,7 @@ import {
   dataNascimentoValida,
   minimoParaEleger,
   montarCandidatos,
+  ehVotacaoDeTeste,
   porcentagemParticipacao,
   resultadoParaPainel,
   resumoNumerosResultado,
@@ -523,5 +524,16 @@ describe("tituloResultado (título dos avisos)", () => {
     expect(tituloResultado(apurar(e, { votos: { c1: 2, c2: 2 }, brancos: 0, cedulas: 4 }))).toBe(
       "Resultado: a comissão decide o empate",
     );
+  });
+});
+
+describe("ehVotacaoDeTeste (título com a palavra TESTE)", () => {
+  it("reconhece a palavra TESTE em qualquer lugar do título, sem diferenciar maiúsculas", () => {
+    for (const t of ["Eleição de TESTE", "TESTE — Votação de demonstração", "Eleição do síndico e conselho 2026/2027 - TESTE", "votação teste", "(Teste) eleição"])
+      expect(ehVotacaoDeTeste(t)).toBe(true);
+  });
+  it("não confunde com outras palavras nem marca a eleição oficial", () => {
+    for (const t of ["Eleição do síndico e conselho 2026/2027", "Testemunha da ata", "Contestes", "Atestado", ""])
+      expect(ehVotacaoDeTeste(t)).toBe(false);
   });
 });
