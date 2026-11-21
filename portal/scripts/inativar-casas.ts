@@ -101,8 +101,11 @@ async function main() {
     const ativasDepois = unidades.docs.filter((d) => d.get("status") !== "inativa" && !idsAlvo.has(d.id)).length;
     const novasAptas = abertas.map((e) => {
       const bloqueadas = new Set<string>(Array.isArray(e.get("casasBloqueadas")) ? (e.get("casasBloqueadas") as string[]) : []);
-      const aptas = unidades.docs.filter((d) => d.get("status") !== "inativa" && !idsAlvo.has(d.id) && !bloqueadas.has(d.id)).length;
-      return { e, antes: Number(e.get("casasAptas") ?? 0), aptas };
+      const aptasIds = unidades.docs
+        .filter((d) => d.get("status") !== "inativa" && !idsAlvo.has(d.id) && !bloqueadas.has(d.id))
+        .map((d) => d.id)
+        .sort();
+      return { e, antes: Number(e.get("casasAptas") ?? 0), aptas: aptasIds.length, aptasIds };
     });
 
     console.log(`\nProjeto ${projectId} · condomínio ${ID}`);
@@ -126,7 +129,13 @@ async function main() {
     }
     for (const x of novasAptas) {
       if (x.antes === x.aptas) continue;
-      tx.update(x.e.ref, { casasAptas: x.aptas, atualizadoEm: FieldValue.serverTimestamp(), atualizadoPor: QUEM.uid });
+      tx.update(x.e.ref, {
+        casasAptas: x.aptas,
+        // Lista congelada das casas aptas (eleições publicadas a partir de 21/11/2026): acompanha.
+        ...(Array.isArray(x.e.get("casasAptasIds")) ? { casasAptasIds: x.aptasIds } : {}),
+        atualizadoEm: FieldValue.serverTimestamp(),
+        atualizadoPor: QUEM.uid,
+      });
       tx.create(cond.collection("auditLogs").doc(), {
         condominioId: ID,
         uid: QUEM.uid,

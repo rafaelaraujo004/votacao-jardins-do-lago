@@ -18,6 +18,7 @@ import {
   importarContatos,
   limparCodigo,
   listarEnvios,
+  painelPorCodigo,
   resolverCodigo,
   trocarLink,
   votacaoPorCodigo,
@@ -60,7 +61,8 @@ const HORA = 3_600_000;
 const cand = (n: number): Candidato => ({ id: `c${n}`, numero: n, nome: `Integrante ${n}`, funcao: "Fiscal", casa: "", apresentacao: "", nascimento: null });
 const ref = (id: string) => db.doc(`condominiums/a/elections/${id}`);
 
-async function chapaAberta(): Promise<string> {
+/** Chapa publicada e ABERTA. `bloquear`: casas bloqueadas ainda no rascunho (com a votação aberta não dá mais). */
+async function chapaAberta(bloquear: string[] = []): Promise<string> {
   const id = await gravarEleicao(db, comissao, {
     id: null,
     titulo: "Eleição do síndico e conselho 2026/2027",
@@ -74,6 +76,7 @@ async function chapaAberta(): Promise<string> {
     fechaEm: new Date(Date.now() + 8 * HORA),
     candidatos: [cand(1), cand(2)],
   });
+  if (bloquear.length) await salvarBloqueios(db, comissao, id, { adicionar: bloquear, remover: [] });
   await mudarStatusEleicao(db, comissao, id, "publicar");
   return id;
 }
@@ -168,9 +171,10 @@ describe("links de voto", () => {
   });
 
   it("casa bloqueada não vota pelo link; rascunho não aparece; código inventado não acha nada", async () => {
-    const id = await chapaAberta();
+    // Bloqueio só antes de abrir (decisão de 21/11/2026): bloqueada no rascunho.
+    const id = await chapaAberta(["casa-002"]);
     await gerarLinksFaltantes(db, comissao, id);
-    await salvarBloqueios(db, comissao, id, { adicionar: ["casa-002"], remover: [] });
+    await expect(salvarBloqueios(db, comissao, id, { adicionar: [], remover: ["casa-002"] })).rejects.toThrow(/está aberta/);
     const codigo = await codigoDa(id, "casa-002");
     expect((await votacaoPorCodigo(codigo, { db }))?.casaBloqueada).toBe(true);
     await expect(votarPorCodigo(codigo, await senhaPara(codigo), ["sim"], db)).rejects.toThrow(/não está liberada/);
@@ -197,6 +201,26 @@ describe("links de voto", () => {
     const cr = await codigoDa(rascunho, "casa-001");
     expect(await votacaoPorCodigo(cr, { db })).toBeNull();
     await expect(votarPorCodigo(cr, await senhaPara(cr), ["sim"], db)).rejects.toThrow(/não encontrada/);
+  });
+
+  it("painel ao vivo pelo link (sem login): só números do condomínio e se a PRÓPRIA casa votou", async () => {
+    const id = await chapaAberta();
+    await gerarLinksFaltantes(db, comissao, id);
+    await registrarVotoEleicao(db, contexto("m1", "casa-001", "morador"), id, ["sim"]);
+    const codigo1 = await codigoDa(id, "casa-001");
+    const codigo2 = await codigoDa(id, "casa-002");
+    const r1 = await painelPorCodigo(codigo1, db);
+    expect(r1?.painel.fase).toBe("aberta");
+    expect(r1?.painel.votaram).toBe(1);
+    expect(r1?.painel.faltam).toBe(1);
+    expect(r1?.painel.resultado).toBeNull(); // nada de parcial
+    expect(r1?.casa).toEqual({ votou: true, bloqueada: false });
+    expect((await painelPorCodigo(codigo2, db))?.casa).toEqual({ votou: false, bloqueada: false });
+    // Sigilo: nenhum id nem rótulo de casa no que vai para o navegador.
+    const json = JSON.stringify(r1?.painel);
+    expect(json).not.toMatch(/casa-00|Casa \d/);
+    // Código que não existe: nada.
+    expect(await painelPorCodigo("ABCDEFGHJK", db)).toBeNull();
   });
 
   it("morador não gera nem troca links", async () => {

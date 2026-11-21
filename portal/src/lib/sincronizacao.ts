@@ -105,6 +105,8 @@ export const MODULO_DA_ACAO: Record<AcaoAuditada, ModuloSinc | null> = {
   "eleicao.links": "eleicoes",
   "eleicao.contatos": "eleicoes",
   "eleicao.foto": "eleicoes",
+  "eleicao.resultado": "eleicoes",
+  "eleicao.assinatura": "eleicoes",
   "classificado.criar": "classificados",
   "classificado.editar": "classificados",
   "classificado.aprovar": "classificados",

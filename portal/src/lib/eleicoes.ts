@@ -20,6 +20,14 @@
  *
  * SIGILO: nenhuma cédula individual é guardada. O voto só soma +1 nos contadores
  * (veja src/server/dados/eleicoes.ts).
+ *
+ * Decisões de 21/11/2026 (síndico):
+ * - casas aptas que NÃO votaram contam como votos NULOS (informados no resultado e no
+ *   relatório; não entram na conta da metade mais 1, que é dos votos válidos);
+ * - com a votação ABERTA, a comissão não bloqueia nem desbloqueia casas (só antes de abrir);
+ * - todos (moradores e equipe) acompanham QUANTAS casas já votaram e quantas faltam, sem
+ *   ver QUAIS (o mapa continua só para a comissão);
+ * - ao sair o resultado, todos recebem um aviso com o resultado (chapa eleita ou não).
  */
 
 export const MODOS_ELEICAO = ["chapa", "candidatos"] as const;
@@ -238,6 +246,10 @@ export type Apuracao = {
   brancos: number;
   /** Cédulas contadas (cada casa que votou = 1 cédula). */
   cedulas: number;
+  /** Casas aptas (null = não informado). */
+  casasAptas: number | null;
+  /** Votos NULOS: casas aptas que não votaram (veja contarNulos). */
+  nulos: number;
   /** Empate na última vaga: quem empatou e se a regra decidiu. */
   empate: {
     ids: string[];
@@ -269,6 +281,17 @@ function desempatarPorIdade(
   return ordem.slice(0, restantes).map((c) => c.id);
 }
 
+/**
+ * Votos NULOS = casas aptas que NÃO votaram (decisão do síndico em 21/11/2026).
+ * Aparecem no resultado, no relatório e no aviso final, mas NÃO entram na conta da
+ * "metade mais 1": como na lei eleitoral, a maioria é dos votos válidos (Sim + Não).
+ * Casas bloqueadas não são aptas, então não viram nulos.
+ */
+export function contarNulos(casasAptas: number | null | undefined, votaram: number): number {
+  if (typeof casasAptas !== "number" || !Number.isFinite(casasAptas)) return 0;
+  return Math.max(0, Math.floor(casasAptas) - Math.max(0, Math.floor(votaram)));
+}
+
 export function apurar(
   e: {
     candidatos: readonly Candidato[];
@@ -276,6 +299,7 @@ export function apurar(
     regraDesempate: RegraDesempate;
   },
   contagem: { votos: Record<string, number>; brancos: number; cedulas: number },
+  casasAptas: number | null = null,
 ): Apuracao {
   const n = (v: unknown) =>
     typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.floor(v) : 0;
@@ -328,6 +352,8 @@ export function apurar(
     eleitos,
     brancos: n(contagem.brancos),
     cedulas,
+    casasAptas: typeof casasAptas === "number" ? n(casasAptas) : null,
+    nulos: contarNulos(casasAptas, cedulas),
     empate,
   };
 }
@@ -338,10 +364,14 @@ export type ApuracaoChapa = {
   nao: number;
   /** Casas que votaram (Sim + Não). */
   cedulas: number;
-  /** Votos de Sim necessários: metade mais 1 dos votos dados. */
+  /** Votos de Sim necessários: metade mais 1 dos votos válidos (Sim + Não). */
   minimo: number;
   porcentagemSim: number;
   eleita: boolean;
+  /** Casas aptas (null = não informado). */
+  casasAptas: number | null;
+  /** Votos NULOS: casas aptas que não votaram (não entram na conta da metade mais 1). */
+  nulos: number;
 };
 export type ResultadoApuracao = Apuracao | ApuracaoChapa;
 
@@ -350,27 +380,154 @@ export function minimoParaEleger(votos: number): number {
   return Math.floor(votos / 2) + 1;
 }
 
-/** Chapa: eleita com Sim em pelo menos metade mais 1 dos votos. Sem votos, não é eleita. */
-export function apurarChapa(contagem: {
-  sim: number;
-  nao: number;
-  cedulas: number;
-}): ApuracaoChapa {
+/**
+ * Chapa: eleita com Sim em pelo menos metade mais 1 dos votos VÁLIDOS (Sim + Não).
+ * Sem votos, não é eleita. Os nulos (casas aptas que não votaram) só são informados.
+ */
+export function apurarChapa(
+  contagem: {
+    sim: number;
+    nao: number;
+    cedulas: number;
+  },
+  casasAptas: number | null = null,
+): ApuracaoChapa {
   const n = (v: unknown) =>
     typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.floor(v) : 0;
   const sim = n(contagem.sim);
   const nao = n(contagem.nao);
   const total = sim + nao;
   const minimo = minimoParaEleger(total);
+  const cedulas = n(contagem.cedulas);
   return {
     modo: "chapa",
     sim,
     nao,
-    cedulas: n(contagem.cedulas),
+    cedulas,
     minimo,
     porcentagemSim: total ? Math.round((sim * 100) / total) : 0,
     eleita: total > 0 && sim >= minimo,
+    casasAptas: typeof casasAptas === "number" ? n(casasAptas) : null,
+    nulos: contarNulos(casasAptas, cedulas),
   };
+}
+
+/** Uma linha para avisos (notificação, WhatsApp): "Sim 120 · Não 30 · Nulos 70". */
+export function resumoNumerosResultado(a: ResultadoApuracao): string {
+  const nulos = a.nulos ? ` · Nulos ${a.nulos}` : "";
+  if (a.modo === "chapa") return `Sim ${a.sim} · Não ${a.nao}${nulos}`;
+  return `${a.cedulas} ${a.cedulas === 1 ? "voto" : "votos"} · Brancos ${a.brancos}${nulos}`;
+}
+
+/** Título do resultado para avisos: "Chapa ELEITA" / "Chapa NÃO eleita" / "Eleitos: …". */
+export function tituloResultado(a: ResultadoApuracao): string {
+  if (a.modo === "chapa") return a.eleita ? "Chapa ELEITA" : "Chapa NÃO eleita";
+  const nomes = a.ranking.filter((l) => a.eleitos.includes(l.candidato.id)).map((l) => l.candidato.nome);
+  const empatePendente = !!a.empate && !a.empate.decididos;
+  if (!nomes.length) return "Resultado: a comissão decide o empate";
+  return `Eleitos: ${nomes.join(", ")}${empatePendente ? " (a comissão decide a última vaga)" : ""}`;
+}
+
+// ---------- Painel público (Início de todos) ----------
+
+/**
+ * Fase da eleição em destaque no Início:
+ * - "agendada": publicada, ainda não abriu;
+ * - "aberta": votando agora (mostra só QUANTAS casas votaram, nunca quais);
+ * - "apurando": encerrou, esperando a carência de 2 minutos para abrir a urna;
+ * - "resultado": resultado final disponível.
+ */
+export type FasePainel = "agendada" | "aberta" | "apurando" | "resultado";
+
+/** Resultado no formato do painel (só totais; nada que identifique uma casa). */
+export type ResultadoPainel =
+  | {
+      modo: "chapa";
+      sim: number;
+      nao: number;
+      nulos: number;
+      /** Votos válidos: Sim + Não. */
+      validos: number;
+      minimo: number;
+      eleita: boolean;
+      porcentagemSim: number;
+      porcentagemNao: number;
+    }
+  | {
+      modo: "candidatos";
+      ranking: { numero: number; nome: string; votos: number; eleito: boolean }[];
+      brancos: number;
+      nulos: number;
+      cedulas: number;
+      empate: boolean;
+    };
+
+/**
+ * O que TODO MUNDO do condomínio pode ver da eleição em destaque (moradores e equipe).
+ * Só números do condomínio inteiro: quantas casas votaram e quantas faltam — nunca QUAIS.
+ * Datas em milissegundos (vai para o navegador como JSON).
+ */
+export type PainelEleicao = {
+  id: string;
+  titulo: string;
+  cargo: string;
+  modo: ModoEleicao;
+  fase: FasePainel;
+  abreEm: number;
+  fechaEm: number;
+  /** Quando a urna pode ser aberta (encerramento + carência). */
+  resultadoEm: number;
+  casasAptas: number;
+  votaram: number;
+  faltam: number;
+  /** Porcentagem inteira de casas aptas que votaram. */
+  participacao: number;
+  /** Integrantes (nome e cargo) para o cartão; sem data de nascimento. */
+  integrantes: { nome: string; funcao: string }[];
+  resultado: ResultadoPainel | null;
+  /** Hora do servidor quando o painel foi montado (para o relógio do navegador). */
+  geradoEm: number;
+};
+
+/** Converte a apuração para o painel (tira tudo que não precisa ir ao navegador). */
+export function resultadoParaPainel(a: ResultadoApuracao): ResultadoPainel {
+  if (a.modo === "chapa") {
+    const validos = a.sim + a.nao;
+    return {
+      modo: "chapa",
+      sim: a.sim,
+      nao: a.nao,
+      nulos: a.nulos,
+      validos,
+      minimo: a.minimo,
+      eleita: a.eleita,
+      porcentagemSim: a.porcentagemSim,
+      porcentagemNao: validos ? 100 - a.porcentagemSim : 0,
+    };
+  }
+  const eleitos = new Set(a.eleitos);
+  return {
+    modo: "candidatos",
+    ranking: a.ranking.map((l) => ({
+      numero: l.candidato.numero,
+      nome: l.candidato.nome,
+      votos: l.votos,
+      eleito: eleitos.has(l.candidato.id),
+    })),
+    brancos: a.brancos,
+    nulos: a.nulos,
+    cedulas: a.cedulas,
+    empate: !!a.empate && !a.empate.decididos,
+  };
+}
+
+/** Porcentagem inteira (0–100) de casas que votaram. */
+export function porcentagemParticipacao(votaram: number, aptas: number): number {
+  if (!aptas || aptas <= 0) return 0;
+  const v = Math.max(0, votaram);
+  const p = Math.min(100, Math.round((v * 100) / aptas));
+  // Para quem lê, "100%" quer dizer "todas votaram": com casa faltando, fica no máximo 99%.
+  return v < aptas ? Math.min(p, 99) : p;
 }
 
 // ---------- Textos ----------

@@ -6,8 +6,11 @@ import {
   type DocumentData,
   type Firestore,
 } from "firebase-admin/firestore";
+import { after } from "next/server";
 import { adminDb } from "../firebase-admin";
 import { garantirPermissao, type Contexto } from "../contexto";
+import { enviarPush } from "../push";
+import { PAPEIS } from "@/lib/permissoes";
 import { registrarAuditoria, type AcaoAuditada } from "../auditoria";
 import { ErroDeNegocio } from "../acoes/resultado";
 import {
@@ -16,11 +19,16 @@ import {
   STATUS_ELEICAO,
   apurar,
   apurarChapa,
+  porcentagemParticipacao,
+  resultadoParaPainel,
+  resumoNumerosResultado,
   situacaoEleicao,
   somarUrna,
+  tituloResultado,
   validarEscolha,
   type Candidato,
   type ModoEleicao,
+  type PainelEleicao,
   type ResultadoApuracao,
   type RegraDesempate,
   type SituacaoEleicao,
@@ -72,7 +80,8 @@ export type AcaoEleicao =
   | "eleicao.bloqueio"
   | "eleicao.links"
   | "eleicao.contatos"
-  | "eleicao.foto";
+  | "eleicao.foto"
+  | "eleicao.resultado";
 export function acaoEleicao(a: AcaoEleicao): AcaoAuditada {
   return a;
 }
@@ -124,11 +133,19 @@ export type EleicaoInterna = {
   status: StatusEleicao;
   candidatos: Candidato[];
   casasAptas: number | null;
+  /**
+   * LISTA CONGELADA das casas aptas (ids), gravada ao publicar e ao mudar o bloqueio antes de
+   * abrir. Com ela, inativar/reativar uma casa no cadastro durante a votação não muda quem pode
+   * votar (decisão de 21/11/2026). null = eleição antiga, sem a lista (vale o cadastro atual).
+   */
+  casasAptasIds: string[] | null;
   /** Casas que a comissão bloqueou de votar nesta eleição (ids das unidades). */
   casasBloqueadas: string[];
   criadoPorNome: string;
   criadoEm: Date | null;
   publicadaEm: Date | null;
+  /** Quando o resultado foi divulgado a todos (aviso no celular e no sino). null = ainda não. */
+  resultadoDivulgadoEm: Date | null;
 };
 
 export function paraEleicao(
@@ -166,6 +183,9 @@ export function paraEleicao(
     candidatos: paraCandidatos(d?.candidatos),
     casasAptas:
       typeof d?.casasAptas === "number" ? inteiro(d.casasAptas, 0) : null,
+    casasAptasIds: Array.isArray(d?.casasAptasIds)
+      ? (d.casasAptasIds as unknown[]).filter((x): x is string => typeof x === "string")
+      : null,
     casasBloqueadas: Array.isArray(d?.casasBloqueadas)
       ? (d.casasBloqueadas as unknown[]).filter(
           (x): x is string => typeof x === "string",
@@ -174,6 +194,7 @@ export function paraEleicao(
     criadoPorNome: texto(d?.criadoPorNome),
     criadoEm: data(d?.criadoEm),
     publicadaEm: data(d?.publicadaEm),
+    resultadoDivulgadoEm: data(d?.resultadoDivulgadoEm),
   };
 }
 
@@ -242,9 +263,10 @@ export async function lerApuracao(
   // Urna em documento único, de propósito (veja o comentário em src/lib/eleicoes.ts).
   const snap = await eleicoesDe(ctx, db).doc(e.id).collection("urna").doc("contagem").get();
   const total = somarUrna([snap.data()]);
+  // Nulos = casas aptas que não votaram (contarNulos). Eleição antiga sem casasAptas: sem nulos.
   if (e.modo === "chapa")
-    return apurarChapa({ sim: total.sim, nao: total.nao, cedulas: total.cedulas });
-  return apurar(e, { votos: total.votos, brancos: total.brancos, cedulas: total.cedulas });
+    return apurarChapa({ sim: total.sim, nao: total.nao, cedulas: total.cedulas }, e.casasAptas);
+  return apurar(e, { votos: total.votos, brancos: total.brancos, cedulas: total.cedulas }, e.casasAptas);
 }
 
 // ---------- Comissão (eleicoes.gerenciar) ----------
@@ -271,6 +293,10 @@ export type EleicaoGestao = {
   criadoPorNome: string;
   /** Só depois do encerramento. */
   apuracao: ResultadoApuracao | null;
+  /** Quando o resultado foi divulgado a todos (aviso no celular e no sino). */
+  resultadoDivulgadoEm: Date | null;
+  /** Quando a comissão publicou (linha do tempo da ata). null = rascunho ou eleição antiga. */
+  publicadaEm: Date | null;
 };
 
 export async function listarEleicoesGestao(
@@ -313,6 +339,8 @@ function resumoGestao(e: EleicaoInterna, agora: Date) {
     candidatos: e.candidatos,
     casasBloqueadas: e.casasBloqueadas,
     criadoPorNome: e.criadoPorNome,
+    resultadoDivulgadoEm: e.resultadoDivulgadoEm,
+    publicadaEm: e.publicadaEm,
   };
 }
 
@@ -325,6 +353,7 @@ export async function obterEleicaoGestao(
   const doc = await eleicoesDe(ctx).doc(id).get();
   if (!doc.exists) return null;
   const e = paraEleicao(doc.id, doc.data());
+  garantirFinalizacao(ctx.condominioId, e);
   const [aptasAgora, votaram, apuracao, fotos] = await Promise.all([
     e.casasAptas === null
       ? contarCasasAptas(ctx, adminDb(), e.casasBloqueadas)
@@ -477,7 +506,8 @@ export async function mudarStatusEleicao(
       throw new ErroDeNegocio("Eleição não encontrada. Atualize a página.");
     const e = paraEleicao(doc.id, doc.data());
     const bloqueadas = new Set(e.casasBloqueadas);
-    const aptas = ativas.filter((u) => !bloqueadas.has(u)).length;
+    const aptasIds = ativas.filter((u) => !bloqueadas.has(u)).sort();
+    const aptas = aptasIds.length;
     // Se já existe qualquer voto, a eleição nunca mais muda (nem volta a rascunho).
     if (urna.exists)
       throw new ErroDeNegocio(
@@ -499,6 +529,7 @@ export async function mudarStatusEleicao(
       tx.update(ref, {
         status: "publicada",
         casasAptas: aptas,
+        casasAptasIds: aptasIds,
         publicadaEm: FieldValue.serverTimestamp(),
         publicadaPor: ctx.uid,
       });
@@ -513,6 +544,7 @@ export async function mudarStatusEleicao(
       tx.update(ref, {
         status: "rascunho",
         casasAptas: FieldValue.delete(),
+        casasAptasIds: FieldValue.delete(),
         publicadaEm: FieldValue.delete(),
       });
     }
@@ -592,6 +624,7 @@ async function paraMorador(
   agora: Date,
 ): Promise<EleicaoMorador> {
   const situacao = situacaoEleicao(e, agora);
+  garantirFinalizacao(ctx.condominioId, e);
   const [votoCasa, resultado, fotos] = await Promise.all([
     casaVotou(ctx, e.id),
     apuracaoLiberada(e, agora)
@@ -661,28 +694,6 @@ export async function obterEleicaoMorador(
   const doc = await eleicoesDe(ctx).doc(id).get();
   if (!doc.exists || doc.get("status") !== "publicada") return null;
   return paraMorador(ctx, paraEleicao(doc.id, doc.data()), agora);
-}
-
-/** Para o cartão do Início: a aberta, senão a próxima agendada, senão uma encerrada há até 7 dias. */
-export async function eleicaoDoInicio(
-  ctx: Contexto,
-  agora = new Date(),
-): Promise<EleicaoMorador | null> {
-  if (!ctx.permissoes.has("eleicoes.votar")) return null;
-  const lista = await listarEleicoesMorador(ctx, agora);
-  const semana = 7 * 24 * 60 * 60 * 1000;
-  return (
-    lista.find((e) => e.situacao === "aberta") ??
-    lista
-      .filter((e) => e.situacao === "agendada")
-      .sort((a, b) => a.abreEm.getTime() - b.abreEm.getTime())[0] ??
-    lista.find(
-      (e) =>
-        e.situacao === "encerrada" &&
-        agora.getTime() - e.fechaEm.getTime() < semana,
-    ) ??
-    null
-  );
 }
 
 /**
@@ -818,9 +829,17 @@ export async function gravarVotoDaCasa(
         "Sua casa não está liberada para votar nesta eleição. Fale com a comissão.",
       );
     }
-    if (!casa.exists || casa.get("status") === "inativa") {
+    if (!casa.exists) {
       throw new ErroDeNegocio(
         "Sua casa não está ativa no cadastro. Fale com a administração.",
+      );
+    }
+    // Lista congelada (eleições novas): vale quem era apto ao abrir, não o cadastro de agora.
+    if (e.casasAptasIds ? !e.casasAptasIds.includes(unitId) : casa.get("status") === "inativa") {
+      throw new ErroDeNegocio(
+        e.casasAptasIds
+          ? "Sua casa não estava apta quando a votação foi publicada. Fale com a comissão."
+          : "Sua casa não está ativa no cadastro. Fale com a administração.",
       );
     }
     const escolha = validarEscolha(enviados, e);
@@ -907,9 +926,15 @@ export async function casasParaBloqueio(
 /**
  * Muda o bloqueio de casas: só o que a pessoa MUDOU (adicionar/remover), aplicado sobre a
  * lista atual dentro da transação — assim duas pessoas da comissão não desfazem o trabalho
- * uma da outra. Pode mudar até o encerramento. Uma casa que JÁ VOTOU não pode ser bloqueada
+ * uma da outra. Só pode mudar ANTES de a votação abrir (rascunho ou agendada): aberta ou
+ * encerrada, a lista fica congelada. Uma casa que JÁ VOTOU nunca pode ser bloqueada
  * (o voto é secreto e não pode ser retirado; bloquear deixaria a ata com números errados).
  */
+export function bloqueioPodeMudar(e: { status: StatusEleicao; abreEm: Date; fechaEm: Date }, agora = new Date()): boolean {
+  const s = situacaoEleicao(e, agora);
+  return s === "rascunho" || s === "agendada";
+}
+
 export async function salvarBloqueios(
   db: Firestore,
   ctx: Contexto,
@@ -936,9 +961,16 @@ export async function salvarBloqueios(
     if (!doc.exists)
       throw new ErroDeNegocio("Eleição não encontrada. Atualize a página.");
     const e = paraEleicao(doc.id, doc.data());
-    if (situacaoEleicao(e, agora) === "encerrada")
+    // Decisão de 21/11/2026: bloquear e desbloquear só ANTES de abrir. Com a votação em
+    // andamento, a lista de casas aptas fica congelada (ninguém muda as regras no meio).
+    const situacao = situacaoEleicao(e, agora);
+    if (situacao === "encerrada")
       throw new ErroDeNegocio(
         "A votação já encerrou: o bloqueio não muda mais.",
+      );
+    if (situacao === "aberta")
+      throw new ErroDeNegocio(
+        "A votação está aberta: não dá para bloquear nem desbloquear casas até o encerramento.",
       );
     const atuais = new Set(e.casasBloqueadas);
     const novas = adicionar.filter((u) => !atuais.has(u));
@@ -956,12 +988,14 @@ export async function salvarBloqueios(
     for (const u of novas) atuais.add(u);
     for (const u of remover) atuais.delete(u);
     const lista = [...atuais].sort();
-    const aptas = todas.docs.filter(
-      (d) => d.get("status") !== "inativa" && !atuais.has(d.id),
-    ).length;
+    const aptasIds = todas.docs
+      .filter((d) => d.get("status") !== "inativa" && !atuais.has(d.id))
+      .map((d) => d.id)
+      .sort();
+    const aptas = aptasIds.length;
     tx.update(ref, {
       casasBloqueadas: lista,
-      ...(e.status === "publicada" ? { casasAptas: aptas } : {}),
+      ...(e.status === "publicada" ? { casasAptas: aptas, casasAptasIds: aptasIds } : {}),
       atualizadoEm: FieldValue.serverTimestamp(),
       atualizadoPor: ctx.uid,
     });
@@ -1040,4 +1074,294 @@ export async function salvarFotoCandidato(
     });
     return { nome: c.nome };
   });
+}
+
+// ---------- Painel público: a eleição em destaque no Início de TODOS ----------
+
+/**
+ * A eleição que aparece no topo do Início (moradores e equipe): a aberta; senão a próxima
+ * agendada; senão uma encerrada há até 7 dias. Rascunho nunca aparece.
+ */
+export async function eleicaoEmDestaque(
+  condominioId: string,
+  agora = new Date(),
+  db: Firestore = adminDb(),
+): Promise<EleicaoInterna | null> {
+  const snap = await eleicoesDe({ condominioId }, db).where("status", "==", "publicada").get();
+  const lista = snap.docs.map((d) => paraEleicao(d.id, d.data()));
+  const semana = 7 * 24 * 60 * 60 * 1000;
+  const doisDias = 48 * 60 * 60 * 1000;
+  const encerradas = lista
+    .filter((e) => situacaoEleicao(e, agora) === "encerrada")
+    .sort((a, b) => b.fechaEm.getTime() - a.fechaEm.getTime());
+  return (
+    lista
+      .filter((e) => situacaoEleicao(e, agora) === "aberta")
+      .sort((a, b) => a.fechaEm.getTime() - b.fechaEm.getTime())[0] ??
+    // Resultado que acabou de sair (até 2 dias) vem antes de uma próxima eleição agendada.
+    encerradas.find((e) => agora.getTime() - e.fechaEm.getTime() < doisDias) ??
+    lista
+      .filter((e) => situacaoEleicao(e, agora) === "agendada")
+      .sort((a, b) => a.abreEm.getTime() - b.abreEm.getTime())[0] ??
+    lista
+      .filter((e) => situacaoEleicao(e, agora) === "encerrada" && agora.getTime() - e.fechaEm.getTime() < semana)
+      .sort((a, b) => b.fechaEm.getTime() - a.fechaEm.getTime())[0] ??
+    null
+  );
+}
+
+/**
+ * Monta o PAINEL PÚBLICO de uma eleição (veja PainelEleicao em src/lib/eleicoes.ts).
+ * SIGILO: só totais do condomínio inteiro (quantas casas votaram e quantas faltam) e, depois
+ * do encerramento, a soma dos votos. Nunca QUAIS casas votaram, nunca parcial de votos.
+ */
+export async function montarPainel(
+  condominioId: string,
+  e: EleicaoInterna,
+  agora = new Date(),
+  db: Firestore = adminDb(),
+): Promise<PainelEleicao> {
+  const situacao = situacaoEleicao(e, agora);
+  const liberada = apuracaoLiberada(e, agora);
+  garantirFinalizacao(condominioId, e);
+  const [votaram, apuracao] = await Promise.all([
+    situacao === "agendada" ? Promise.resolve(0) : contarVotantes({ condominioId }, e.id, db),
+    liberada ? lerApuracao({ condominioId }, e, agora, db) : Promise.resolve(null),
+  ]);
+  const casasAptas = e.casasAptas ?? 0;
+  return {
+    id: e.id,
+    titulo: e.titulo,
+    cargo: e.cargo,
+    modo: e.modo,
+    fase: situacao === "agendada" ? "agendada" : situacao === "aberta" ? "aberta" : liberada ? "resultado" : "apurando",
+    abreEm: e.abreEm.getTime(),
+    fechaEm: e.fechaEm.getTime(),
+    resultadoEm: e.fechaEm.getTime() + CARENCIA_APURACAO_MS,
+    casasAptas,
+    votaram,
+    faltam: Math.max(0, casasAptas - votaram),
+    participacao: porcentagemParticipacao(votaram, casasAptas),
+    integrantes: e.candidatos.map((c) => ({ nome: c.nome, funcao: c.funcao })),
+    resultado: apuracao ? resultadoParaPainel(apuracao) : null,
+    geradoEm: agora.getTime(),
+  };
+}
+
+/** Painel da eleição em destaque do condomínio (null = nenhuma eleição para mostrar). */
+export async function painelEmDestaque(
+  condominioId: string,
+  agora = new Date(),
+  db: Firestore = adminDb(),
+): Promise<{ painel: PainelEleicao; eleicao: EleicaoInterna } | null> {
+  const e = await eleicaoEmDestaque(condominioId, agora, db);
+  return e ? { painel: await montarPainel(condominioId, e, agora, db), eleicao: e } : null;
+}
+
+/**
+ * O mesmo painel, guardado por alguns segundos em cada servidor: no dia da eleição muitas
+ * telas perguntam ao mesmo tempo, e o número de casas que votaram não precisa ser relido
+ * a cada pergunta. Ao virar de fase (abriu, encerrou, saiu o resultado), relê na hora.
+ */
+const VALIDADE_PAINEL_MS = 4000;
+type PainelComEleicao = Awaited<ReturnType<typeof painelEmDestaque>>;
+const painelGuardado = new Map<string, { ate: number; valor: PainelComEleicao }>();
+
+async function guardarPainel(chave: string, ler: (agora: Date) => Promise<PainelComEleicao>): Promise<PainelComEleicao> {
+  const agora = Date.now();
+  const g = painelGuardado.get(chave);
+  const p = g?.valor?.painel;
+  const virouFase =
+    !!p &&
+    ((p.fase === "agendada" && agora >= p.abreEm) ||
+      (p.fase === "aberta" && agora >= p.fechaEm) ||
+      (p.fase === "apurando" && agora >= p.resultadoEm));
+  if (g && g.ate > agora && !virouFase) return g.valor;
+  const valor = await ler(new Date(agora));
+  if (painelGuardado.size > 500) painelGuardado.clear();
+  painelGuardado.set(chave, { ate: agora + VALIDADE_PAINEL_MS, valor });
+  return valor;
+}
+
+export function painelEmDestaqueGuardado(condominioId: string): Promise<PainelComEleicao> {
+  return guardarPainel(`destaque:${condominioId}`, (agora) => painelEmDestaque(condominioId, agora));
+}
+
+/**
+ * Painel de UMA eleição (a do link de voto), guardado por alguns segundos como o do Início.
+ * Rascunho ou eleição que não existe → null.
+ */
+export function painelDaEleicaoGuardado(condominioId: string, eleicaoId: string, db: Firestore = adminDb()): Promise<PainelComEleicao> {
+  return guardarPainel(`eleicao:${condominioId}:${eleicaoId}`, async (agora) => {
+    const doc = await eleicoesDe({ condominioId }, db).doc(eleicaoId).get();
+    if (!doc.exists || doc.get("status") !== "publicada") return null;
+    const eleicao = paraEleicao(doc.id, doc.data());
+    return { painel: await montarPainel(condominioId, eleicao, agora, db), eleicao };
+  });
+}
+
+/** Situação da PRÓPRIA casa (nunca o voto). null = a pessoa não é de uma casa. */
+export async function situacaoDaCasa(
+  ctx: Pick<Contexto, "condominioId" | "unitId">,
+  e: Pick<EleicaoInterna, "id" | "casasBloqueadas">,
+  db: Firestore = adminDb(),
+): Promise<{ votou: boolean; bloqueada: boolean } | null> {
+  if (!ctx.unitId) return null;
+  const v = await eleicoesDe(ctx, db).doc(e.id).collection("votantes").doc(ctx.unitId).get();
+  return { votou: v.exists, bloqueada: e.casasBloqueadas.includes(ctx.unitId) };
+}
+
+// ---------- Resultado: divulgação automática para TODOS ----------
+
+/**
+ * DIVULGA O RESULTADO (uma vez só por eleição): depois do encerramento + carência, grava o
+ * resumo do resultado na eleição, registra na auditoria (o que faz as telas abertas se
+ * atualizarem) e manda o aviso no celular para TODAS as pessoas ativas do condomínio.
+ * - Quem chama primeiro faz; as outras chamadas ao mesmo tempo não repetem (a transação confere
+ *   "resultadoDivulgadoEm" de novo antes de gravar).
+ * - Quem dispara: qualquer tela que leia a eleição depois do horário (garantirFinalizacao) e,
+ *   como reserva, a rotina diária /api/eleicoes/finalizar.
+ */
+export async function finalizarEleicao(
+  db: Firestore,
+  condominioId: string,
+  id: string,
+  agora = new Date(),
+): Promise<{ divulgou: boolean; apuracao: ResultadoApuracao | null }> {
+  const ref = eleicoesDe({ condominioId }, db).doc(id);
+  const doc = await ref.get();
+  if (!doc.exists) return { divulgou: false, apuracao: null };
+  const e = paraEleicao(doc.id, doc.data());
+  if (e.status !== "publicada" || e.resultadoDivulgadoEm || !apuracaoLiberada(e, agora))
+    return { divulgou: false, apuracao: null };
+  const apuracao = await lerApuracao({ condominioId }, e, agora, db);
+  const titulo = tituloResultado(apuracao);
+  const numeros = resumoNumerosResultado(apuracao);
+  // Eleição que encerrou há mais de 2 dias (ex.: antiga, de antes desta função existir):
+  // marca como divulgada SEM aviso no celular e sem entrar no sino — ninguém recebe aviso velho.
+  const semAviso = agora.getTime() - e.fechaEm.getTime() > AVISO_ATE_MS;
+  const divulgou = await db.runTransaction(async (tx) => {
+    const atual = await tx.get(ref);
+    if (!atual.exists || atual.get("resultadoDivulgadoEm")) return false;
+    tx.update(ref, {
+      resultadoDivulgadoEm: FieldValue.serverTimestamp(),
+      resultadoFinal: {
+        modo: apuracao.modo,
+        titulo,
+        numeros,
+        cedulas: apuracao.cedulas,
+        casasAptas: apuracao.casasAptas,
+        nulos: apuracao.nulos,
+        semAviso,
+        ...(apuracao.modo === "chapa"
+          ? { sim: apuracao.sim, nao: apuracao.nao, minimo: apuracao.minimo, eleita: apuracao.eleita }
+          : { brancos: apuracao.brancos, eleitos: apuracao.eleitos }),
+      },
+    });
+    registrarAuditoria(db, tx, {
+      condominioId,
+      uid: "sistema:apuracao",
+      nome: "Apuração automática",
+      acao: acaoEleicao("eleicao.resultado"),
+      alvo: `elections/${id}`,
+      detalhes: { titulo: e.titulo, resultado: titulo, numeros, aviso: !semAviso },
+    });
+    return true;
+  });
+  if (divulgou && !semAviso) {
+    // Todo mundo do condomínio. Ao tocar, abre a tela onde o resultado aparece no topo com a
+    // animação: moradores → Início; administração, conselho e reservas → Painel. A portaria
+    // não tem o painel na tela dela: o próprio aviso já traz o resultado.
+    const comum = { titulo: `Resultado da votação: ${titulo}`, tag: `resultado-${id}` };
+    const texto = `${e.titulo} — ${numeros}.`;
+    await Promise.all([
+      enviarPush(condominioId, { papeis: ["morador"] }, { ...comum, texto: `${texto} Toque para ver.`, url: "/inicio" }),
+      enviarPush(
+        condominioId,
+        { papeis: PAPEIS.filter((p) => p !== "morador" && p !== "portaria") },
+        { ...comum, texto: `${texto} Toque para ver.`, url: "/admin" },
+      ),
+      enviarPush(condominioId, { papeis: ["portaria"] }, { ...comum, texto, url: "/" }),
+    ]);
+  }
+  return { divulgou, apuracao };
+}
+
+/** Até quanto tempo depois do encerramento a divulgação ainda manda aviso no celular. */
+export const AVISO_ATE_MS = 48 * 60 * 60 * 1000;
+
+/**
+ * Cadastro de casas x votação (decisão de 21/11/2026): com a votação ABERTA, ativar ou inativar
+ * casa não é permitido (seria bloquear/desbloquear no meio da votação). Chame ANTES de gravar.
+ */
+export async function conferirVotacaoAbertaAntesDoCadastro(condominioId: string, db: Firestore = adminDb(), agora = new Date()): Promise<void> {
+  const snap = await eleicoesDe({ condominioId }, db).where("status", "==", "publicada").get();
+  const aberta = snap.docs.map((d) => paraEleicao(d.id, d.data())).find((e) => situacaoEleicao(e, agora) === "aberta");
+  if (aberta)
+    throw new ErroDeNegocio(
+      `A votação "${aberta.titulo}" está aberta: não dá para ativar nem inativar casas até o encerramento (as casas aptas ficaram congeladas quando ela abriu).`,
+    );
+}
+
+/**
+ * Antes de abrir, a lista congelada de casas aptas das eleições AGENDADAS acompanha o cadastro:
+ * chame DEPOIS de ativar, inativar ou criar casas.
+ */
+export async function recalcularAptasDasAgendadas(condominioId: string, db: Firestore = adminDb()): Promise<void> {
+  const snap = await eleicoesDe({ condominioId }, db).where("status", "==", "publicada").get();
+  const agendadas = snap.docs.filter((d) => situacaoEleicao(paraEleicao(d.id, d.data()), new Date()) === "agendada");
+  if (!agendadas.length) return;
+  const unidades = await base({ condominioId }, db).collection("units").select("status").get();
+  const ativas = unidades.docs.filter((u) => u.get("status") !== "inativa").map((u) => u.id);
+  for (const d of agendadas) {
+    await db.runTransaction(async (tx) => {
+      const atual = await tx.get(d.ref);
+      const e = paraEleicao(atual.id, atual.data());
+      if (e.status !== "publicada" || situacaoEleicao(e, new Date()) !== "agendada") return;
+      const bloqueadas = new Set(e.casasBloqueadas);
+      const aptasIds = ativas.filter((u) => !bloqueadas.has(u)).sort();
+      tx.update(d.ref, { casasAptas: aptasIds.length, casasAptasIds: aptasIds });
+    });
+  }
+}
+
+/**
+ * Se o resultado já pode sair e ainda não foi divulgado, divulga DEPOIS de responder a
+ * quem abriu a tela (after): a tela não espera. Usa sempre a hora REAL (nunca uma hora
+ * simulada de quem chamou).
+ */
+export function garantirFinalizacao(condominioId: string, e: EleicaoInterna): void {
+  if (e.status !== "publicada" || e.resultadoDivulgadoEm || !apuracaoLiberada(e, new Date())) return;
+  const rodar = async () => {
+    try {
+      await finalizarEleicao(adminDb(), condominioId, e.id);
+    } catch (erro) {
+      console.error("Votação: não foi possível divulgar o resultado", erro);
+    }
+  };
+  try {
+    after(rodar);
+  } catch {
+    // Fora de um pedido (ex.: script): divulga na hora.
+    void rodar();
+  }
+}
+
+/** Rotina de reserva: divulga o resultado das eleições encerradas de TODOS os condomínios. */
+export async function finalizarPendentes(db: Firestore = adminDb(), agora = new Date()): Promise<number> {
+  const conds = await db.collection("condominiums").select().get();
+  let divulgadas = 0;
+  for (const c of conds.docs) {
+    const snap = await eleicoesDe({ condominioId: c.id }, db).where("status", "==", "publicada").get();
+    for (const d of snap.docs) {
+      const e = paraEleicao(d.id, d.data());
+      if (e.resultadoDivulgadoEm || !apuracaoLiberada(e, agora)) continue;
+      try {
+        if ((await finalizarEleicao(db, c.id, e.id, agora)).divulgou) divulgadas++;
+      } catch (erro) {
+        console.error("Votação: rotina não conseguiu divulgar", c.id, e.id, erro);
+      }
+    }
+  }
+  return divulgadas;
 }

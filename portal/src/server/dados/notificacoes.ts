@@ -163,19 +163,64 @@ async function votacaoOficial(ctx: Contexto, agora: Date): Promise<Notificacao[]
         tom: "destaque",
       });
     } else if (situacao === "encerrada" && dentroDaJanela(e.fechaEm, agora, 7)) {
-      lista.push({
-        id: `votacao:${e.id}:encerrada`,
-        tipo: "votacao",
-        titulo: "Votação oficial encerrada",
-        texto: `${e.titulo}: veja o resultado.`,
-        href,
-        quando: ms(e.fechaEm),
-        acao: false,
-        tom: "neutro",
-      });
+      const final = resultadoFinalDe(d.data());
+      lista.push(
+        final && e.resultadoDivulgadoEm
+          ? {
+              id: `votacao:${e.id}:resultado`,
+              tipo: "votacao",
+              titulo: `Resultado da votação: ${final.titulo}`,
+              texto: `${e.titulo}: ${final.numeros}.`,
+              href,
+              quando: ms(e.resultadoDivulgadoEm),
+              acao: false,
+              tom: final.eleita === false ? "neutro" : "ok",
+            }
+          : {
+              id: `votacao:${e.id}:encerrada`,
+              tipo: "votacao",
+              titulo: "Votação oficial encerrada",
+              texto: `${e.titulo}: veja o resultado.`,
+              href,
+              quando: ms(e.fechaEm),
+              acao: false,
+              tom: "neutro",
+            },
+      );
     }
   }
   return lista;
+}
+
+/** Resumo do resultado gravado na divulgação (finalizarEleicao). */
+function resultadoFinalDe(d: DocumentData | undefined): { titulo: string; numeros: string; eleita: boolean | null } | null {
+  const r = d?.resultadoFinal;
+  // Divulgada sem aviso (eleição antiga): não entra no sino.
+  if (!r || typeof r !== "object" || typeof r.titulo !== "string" || r.semAviso === true) return null;
+  return { titulo: r.titulo, numeros: texto(r.numeros), eleita: typeof r.eleita === "boolean" ? r.eleita : null };
+}
+
+/**
+ * Equipe (síndico, conselho, portaria, reservas): o RESULTADO da votação oficial também chega
+ * no sino de todos, nos 7 dias depois da divulgação. A comissão abre a tela da votação; os
+ * demais, o próprio Início (onde o resultado aparece no topo).
+ */
+async function resultadoVotacaoEquipe(ctx: Contexto, agora: Date): Promise<Notificacao[]> {
+  const snap = await base(ctx).collection("elections").where("status", "==", "publicada").limit(20).get();
+  const inicio = ctx.permissoes.has("area.gestao") ? "/admin" : ctx.permissoes.has("area.portaria") ? "/portaria" : "/";
+  return snap.docs
+    .map((d) => ({ e: paraEleicao(d.id, d.data()), final: resultadoFinalDe(d.data()) }))
+    .filter(({ e, final }) => final && e.resultadoDivulgadoEm && dentroDaJanela(e.resultadoDivulgadoEm, agora, 7))
+    .map(({ e, final }) => ({
+      id: `votacao:${e.id}:resultado`,
+      tipo: "votacao",
+      titulo: `Resultado da votação: ${final!.titulo}`,
+      texto: `${e.titulo}: ${final!.numeros}.`,
+      href: ctx.permissoes.has("eleicoes.gerenciar") ? `/admin/votacao/${e.id}` : inicio,
+      quando: ms(e.resultadoDivulgadoEm),
+      acao: false,
+      tom: final!.eleita === false ? "neutro" : "ok",
+    }));
 }
 
 async function enquetesAbertas(ctx: Contexto, agora: Date): Promise<Notificacao[]> {
@@ -350,6 +395,7 @@ export async function notificacoesDaPessoa(ctx: Contexto, agora = new Date()): P
       : [],
     p.has("solicitacoes.gerenciar") ? semFalhar("as solicitações abertas", () => solicitacoesAbertas(ctx)) : [],
     morador && p.has("eleicoes.votar") ? semFalhar("a votação oficial", () => votacaoOficial(ctx, agora)) : [],
+    !morador ? semFalhar("o resultado da votação", () => resultadoVotacaoEquipe(ctx, agora)) : [],
     morador && p.has("enquetes.votar") ? semFalhar("as enquetes", () => enquetesAbertas(ctx, agora)) : [],
     morador && p.has("comunicados.ver") ? semFalhar("os comunicados", () => comunicadosRecentes(ctx, agora)) : [],
     morador && p.has("documentos.ver") ? semFalhar("os documentos", () => documentosRecentes(ctx, agora)) : [],

@@ -144,7 +144,7 @@ describe("registrarVotoEleicao", () => {
   it("recusa: sem casa, casa inativa, antes de abrir, depois de fechar, rascunho e escolha inválida", async () => {
     const id = await aberta();
     await expect(registrarVotoEleicao(db, contexto("x", null, "morador"), id, ["c1"])).rejects.toThrow(/não está ligado/);
-    await expect(registrarVotoEleicao(db, contexto("m3", "casa-3", "morador"), id, ["c1"])).rejects.toThrow(/não está ativa/);
+    await expect(registrarVotoEleicao(db, contexto("m3", "casa-3", "morador"), id, ["c1"])).rejects.toThrow(/não estava apta|não está ativa/);
     await expect(registrarVotoEleicao(db, contexto("m1", "casa-1", "morador"), id, ["c9"])).rejects.toThrow(/não existe/);
     await expect(registrarVotoEleicao(db, contexto("m1", "casa-1", "morador"), id, ["c1", "c2"])).rejects.toThrow(/só 1/);
     await expect(registrarVotoEleicao(db, contexto("m1", "casa-1", "morador"), id, ["c1"], new Date(Date.now() - 2 * HORA))).rejects.toThrow(/ainda não abriu/);
@@ -257,28 +257,80 @@ describe("chapa única", () => {
   });
 });
 
+/*
+ * Bloqueio (decisão de 21/11/2026): a comissão bloqueia e desbloqueia casas só ANTES de a
+ * votação abrir (rascunho ou agendada). Com a votação aberta, a lista fica congelada.
+ * Por isso os testes criam a eleição AGENDADA (abre daqui a 1 hora), mexem no bloqueio
+ * com a hora real e votam com a hora simulada DENTRO do horário (registrarVotoEleicao e
+ * salvarBloqueios aceitam a hora como último parâmetro).
+ */
 describe("bloqueio de casas", () => {
-  it("casa bloqueada não vota; as outras votam; casas aptas descontam as bloqueadas", async () => {
-    const id = await aberta({ modo: "chapa" });
+  /** Chapa publicada que abre daqui a 1 hora e fecha daqui a 9 horas. */
+  async function agendada(): Promise<{ id: string; dentro: Date }> {
+    const agora = Date.now();
+    const id = await eleicao(new Date(agora + HORA), new Date(agora + 9 * HORA), { modo: "chapa" });
+    await mudarStatusEleicao(db, comissao, id, "publicar");
+    // Uma hora simulada com a votação ABERTA (2 horas depois de agora).
+    return { id, dentro: new Date(agora + 2 * HORA) };
+  }
+
+  it("casa bloqueada antes de abrir não vota; as outras votam; casas aptas descontam as bloqueadas", async () => {
+    const { id, dentro } = await agendada();
     expect((await ref(id).get()).get("casasAptas")).toBe(2);
     const r = await salvarBloqueios(db, comissao, id, { adicionar: ["casa-1", "casa-inexistente"], remover: [] });
     expect(r).toEqual({ bloqueadas: 1, casasAptas: 1 });
     expect((await ref(id).get()).get("casasBloqueadas")).toEqual(["casa-1"]);
+    expect((await ref(id).get()).get("casasAptas")).toBe(1);
 
-    await expect(registrarVotoEleicao(db, contexto("m1", "casa-1", "morador"), id, ["sim"])).rejects.toThrow(/não está liberada/);
-    await registrarVotoEleicao(db, contexto("m2", "casa-2", "morador"), id, ["sim"]);
+    await expect(registrarVotoEleicao(db, contexto("m1", "casa-1", "morador"), id, ["sim"], dentro)).rejects.toThrow(/não está liberada/);
+    await registrarVotoEleicao(db, contexto("m2", "casa-2", "morador"), id, ["sim"], dentro);
+    expect(await urnaDe(id)).toEqual({ cedulas: 1, sim: 1, nao: 0, brancos: 0, votos: {} });
+  });
 
-    // Desbloqueou: a casa volta a poder votar.
-    await salvarBloqueios(db, comissao, id, { adicionar: [], remover: ["casa-1"] });
-    await registrarVotoEleicao(db, contexto("m1", "casa-1", "morador"), id, ["nao"]);
+  it("desbloqueada antes de abrir, a casa volta a poder votar", async () => {
+    const { id, dentro } = await agendada();
+    await salvarBloqueios(db, comissao, id, { adicionar: ["casa-1"], remover: [] });
+    const r = await salvarBloqueios(db, comissao, id, { adicionar: [], remover: ["casa-1"] });
+    expect(r).toEqual({ bloqueadas: 0, casasAptas: 2 });
+    expect((await ref(id).get()).get("casasBloqueadas")).toEqual([]);
+
+    await registrarVotoEleicao(db, contexto("m1", "casa-1", "morador"), id, ["nao"], dentro);
+    await registrarVotoEleicao(db, contexto("m2", "casa-2", "morador"), id, ["sim"], dentro);
     expect(await urnaDe(id)).toEqual({ cedulas: 2, sim: 1, nao: 1, brancos: 0, votos: {} });
+  });
 
-    // Casa que já votou não pode ser bloqueada (a ata ficaria com números errados).
+  it("com a votação ABERTA, bloquear e desbloquear são recusados e a lista não muda", async () => {
+    const { id, dentro } = await agendada();
+    await salvarBloqueios(db, comissao, id, { adicionar: ["casa-1"], remover: [] });
+
+    await expect(salvarBloqueios(db, comissao, id, { adicionar: ["casa-2"], remover: [] }, dentro)).rejects.toThrow(/está aberta/);
+    await expect(salvarBloqueios(db, comissao, id, { adicionar: [], remover: ["casa-1"] }, dentro)).rejects.toThrow(/está aberta/);
+    // Mesmo "sem mudança nenhuma" a lista não é regravada com a votação aberta.
+    await expect(salvarBloqueios(db, comissao, id, { adicionar: [], remover: [] }, dentro)).rejects.toThrow(/está aberta/);
+
+    const doc = await ref(id).get();
+    expect(doc.get("casasBloqueadas")).toEqual(["casa-1"]);
+    expect(doc.get("casasAptas")).toBe(1);
+    // Só o bloqueio de antes de abrir foi registrado.
+    const logs = await db.collection("condominiums/a/auditLogs").where("acao", "==", "eleicao.bloqueio").get();
+    expect(logs.size).toBe(1);
+
+    // Também numa eleição aberta pela hora real (sem hora simulada).
+    const real = await aberta({ modo: "chapa" });
+    await expect(salvarBloqueios(db, comissao, real, { adicionar: ["casa-1"], remover: [] })).rejects.toThrow(/está aberta/);
+    expect((await ref(real).get()).get("casasBloqueadas") ?? []).toEqual([]);
+  });
+
+  it("casa que já votou não pode ser bloqueada (corrida no minuto da abertura)", async () => {
+    const { id } = await agendada();
+    // Simula um voto que entrou no mesmo instante em que a comissão tentou bloquear.
+    await ref(id).collection("votantes").doc("casa-2").set({ unidadeRotulo: "Casa 2" });
     await expect(salvarBloqueios(db, comissao, id, { adicionar: ["casa-2"], remover: [] })).rejects.toThrow(/já votou/);
+    expect((await ref(id).get()).get("casasBloqueadas") ?? []).toEqual([]);
   });
 
   it("duas pessoas da comissão: uma não desfaz o bloqueio da outra", async () => {
-    const id = await aberta({ modo: "chapa" });
+    const { id } = await agendada();
     await salvarBloqueios(db, comissao, id, { adicionar: ["casa-1"], remover: [] });
     // A outra pessoa, com a tela antiga, só bloqueia a casa 2.
     await salvarBloqueios(db, comissao, id, { adicionar: ["casa-2"], remover: [] });

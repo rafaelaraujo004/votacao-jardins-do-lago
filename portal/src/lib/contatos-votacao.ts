@@ -182,11 +182,14 @@ export function mensagemConvite(o: {
     "1. Toque no link abaixo.",
     `2. Digite a senha: ${o.senha}`,
     o.modo === "candidatos"
-      ? "3. Escolha seu candidato e toque em Confirmar."
-      : "3. Escolha SIM ou NÃO para a chapa e toque em Confirmar.",
-    "4. Pronto! Se quiser, baixe o comprovante.",
+      ? "3. Escolha seu candidato e toque em Revisar meu voto."
+      : "3. Escolha SIM ou NÃO para a chapa e toque em Revisar meu voto.",
+    "4. Toque em Confirmar voto. Pronto! Se quiser, baixe o comprovante.",
     "",
     o.link,
+    "",
+    // As imagens vão logo depois, no passo 2 do envio (o link wa.me não anexa imagens).
+    "Logo abaixo vão as imagens do passo a passo. No link também tem essa ajuda.",
     "",
     "Vale UM voto por casa e o voto é secreto. Não repasse o link nem a senha para pessoas de fora da sua casa.",
   ].join("\n");

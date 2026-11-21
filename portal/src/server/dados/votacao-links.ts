@@ -15,10 +15,13 @@ import {
   contarVotantes,
   data,
   eleicoesDe,
+  garantirFinalizacao,
   gravarVotoDaCasa,
   lerApuracao,
+  painelDaEleicaoGuardado,
   paraEleicao,
   semNascimento,
+  situacaoDaCasa,
   texto,
 } from "./eleicoes";
 import {
@@ -489,6 +492,7 @@ export async function votacaoPorCodigo(
     return null;
   const e = paraEleicao(doc.id, doc.data());
   const situacao = situacaoEleicao(e, agora);
+  garantirFinalizacao(alvo.condominioId, e);
   const resultado = apuracaoLiberada(e, agora)
     ? await Promise.all([
         lerApuracao(ctx, e, agora),
@@ -522,6 +526,41 @@ export async function votacaoPorCodigo(
     resultado,
     senhaOk: tokenConfere(codigo, opcoes.token, alvo),
   };
+}
+
+/**
+ * PAINEL AO VIVO PELO LINK (sem login): quantas casas votaram, quantas faltam e, no fim, o
+ * resultado — o MESMO painel público do Início (só números do condomínio inteiro) — mais a
+ * situação da PRÓPRIA casa do link (votou / bloqueada, nunca o voto). Não precisa da senha:
+ * não mostra nada da casa além do que a página do link já mostra.
+ * O código é guardado por 1 minuto em cada servidor (a página pergunta a cada 30 s);
+ * condomínio suspenso ou rascunho → null.
+ */
+const VALIDADE_CODIGO_MS = 60_000;
+const codigoGuardado = new Map<string, { ate: number; alvo: Alvo | null }>();
+
+export async function painelPorCodigo(
+  codigo: string,
+  db: Firestore = adminDb(),
+): Promise<{ painel: import("@/lib/eleicoes").PainelEleicao; casa: { votou: boolean; bloqueada: boolean } } | null> {
+  const agora = Date.now();
+  let g = codigoGuardado.get(codigo);
+  if (!g || g.ate <= agora) {
+    let alvo = await resolverCodigo(db, codigo);
+    if (alvo) {
+      const cond = await db.collection("condominiums").doc(alvo.condominioId).get();
+      if (!cond.exists || cond.get("status") === "suspenso") alvo = null;
+    }
+    if (codigoGuardado.size > 2000) codigoGuardado.clear();
+    g = { ate: agora + VALIDADE_CODIGO_MS, alvo };
+    codigoGuardado.set(codigo, g);
+  }
+  if (!g.alvo) return null;
+  const { condominioId, eleicaoId, unitId } = g.alvo;
+  const r = await painelDaEleicaoGuardado(condominioId, eleicaoId, db);
+  if (!r) return null;
+  const casa = await situacaoDaCasa({ condominioId, unitId }, r.eleicao, db);
+  return { painel: r.painel, casa: casa ?? { votou: false, bloqueada: false } };
 }
 
 /** O cookie do link confere com a senha ATUAL deste link? (assinatura do servidor) */

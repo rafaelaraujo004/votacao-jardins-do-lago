@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
@@ -15,10 +16,13 @@ import {
   cookieDoLink,
   ipEstourado,
   limparCodigo,
+  painelPorCodigo,
   votacaoPorCodigo,
 } from "@/server/dados/votacao-links";
 import { votarComCodigo } from "@/server/acoes/votacao-links";
-import { regraTexto } from "@/lib/eleicoes";
+import { enderecoBase } from "@/server/endereco";
+import { regraTexto, resultadoParaPainel } from "@/lib/eleicoes";
+import { ALTURA_GUIA, CAPA_GUIA, LARGURA_GUIA } from "@/lib/guia-votacao";
 import { diaMes } from "@/lib/enquetes";
 import { formatarDataHora } from "@/lib/formato";
 import { Alerta } from "@/components/ui/basicos";
@@ -29,23 +33,83 @@ import { FaixaPetalas } from "@/components/ui/painel";
 import { Cedula } from "@/components/eleicoes/cedula";
 import { ArvoreChapa } from "@/components/eleicoes/arvore-chapa";
 import { SenhaLink } from "@/components/eleicoes/senha-link";
+import { GuiaComoVotar } from "@/components/eleicoes/guia-como-votar";
+import { RevelacaoResultado } from "@/components/eleicoes/revelacao-resultado";
+import { PainelEleicaoVivo } from "@/components/eleicoes/painel-destaque";
 import {
   EtiquetaEleicao,
   ListaCandidatos,
   ResultadoEleicao,
 } from "@/components/eleicoes/pecas";
 
-export const metadata: Metadata = {
-  title: "Votação oficial",
-  robots: { index: false, follow: false },
-};
 export const dynamic = "force-dynamic";
+
+const DESCRICAO =
+  "Toque no link, digite a senha da sua casa e vote. Veja o passo a passo com imagens.";
+
+/** Código do endereço, já limpo (null se não parece um código). */
+function codigoDoEndereco(bruto: string): string | null {
+  let texto = bruto;
+  try {
+    texto = decodeURIComponent(bruto);
+  } catch {
+    /* endereço mal escrito: tratado como código inválido */
+  }
+  return limparCodigo(texto);
+}
+
+/** Lê a votação do link UMA vez por pedido (a prévia do WhatsApp e a página usam a mesma leitura). */
+const lerVotacao = cache(async (codigo: string) => {
+  const token = (await cookies()).get(cookieDoLink(codigo))?.value ?? null;
+  return votacaoPorCodigo(codigo, { token });
+});
+
+/**
+ * Prévia do link no WhatsApp: título genérico, a capa do passo a passo (endereço completo,
+ * o WhatsApp não entende caminho relativo) e uma frase de ajuda.
+ * NUNCA a casa nem a senha: a prévia aparece para qualquer pessoa que vê a conversa.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ codigo: string }>;
+}): Promise<Metadata> {
+  const { codigo: bruto } = await params;
+  const codigo = codigoDoEndereco(bruto);
+  // Endereço fora do formato: a página redireciona; não precisa ler nada.
+  const v = codigo && codigo === bruto ? await lerVotacao(codigo) : null;
+  const titulo = `Votação oficial — ${v?.condominioNome || "Residencial Jardins do Lago"}`;
+  const capa = `${await enderecoBase()}${CAPA_GUIA.src}`;
+  return {
+    title: { absolute: titulo },
+    description: DESCRICAO,
+    robots: { index: false, follow: false },
+    openGraph: {
+      type: "website",
+      locale: "pt_BR",
+      title: titulo,
+      description: DESCRICAO,
+      images: [
+        {
+          url: capa,
+          width: LARGURA_GUIA,
+          height: ALTURA_GUIA,
+          alt: CAPA_GUIA.alt,
+        },
+      ],
+    },
+  };
+}
 
 /**
  * LINK DE VOTO DA CASA (sem login). O código no endereço diz a casa e a eleição.
  * - Casa ainda não votou e a votação está aberta: mostra a cédula.
  * - Casa já votou (por este ou outro aparelho): "Voto já realizado".
  * - Código inválido/trocado: aviso, com limite de tentativas por endereço.
+ * - PAINEL AO VIVO (pedido de 21/11/2026): quem só tem o link também acompanha quantas casas
+ *   já votaram e quantas faltam e, no fim, o resultado com a animação — só números do
+ *   condomínio inteiro, nunca quais casas. Fica abaixo da senha/cédula enquanto a casa pode
+ *   votar (votar vem primeiro) e logo abaixo do cabeçalho nos outros casos.
  */
 export default async function VotarPorLink({
   params,
@@ -53,20 +117,13 @@ export default async function VotarPorLink({
   params: Promise<{ codigo: string }>;
 }) {
   const { codigo: bruto } = await params;
-  let texto = bruto;
-  try {
-    texto = decodeURIComponent(bruto);
-  } catch {
-    /* endereço mal escrito: tratado como código inválido */
-  }
-  const codigo = limparCodigo(texto);
+  const codigo = codigoDoEndereco(bruto);
   // Link digitado com minúsculas/traços: vai para o endereço certo (o cookie da senha depende dele).
   if (codigo && codigo !== bruto) redirect(`/votar/${codigo}`);
 
   // Link certo sempre abre (muitas casas abrem o link atrás do mesmo endereço de internet).
   // Só links INVÁLIDOS contam no limite do endereço, e só eles são barrados.
-  const token = codigo ? ((await cookies()).get(cookieDoLink(codigo))?.value ?? null) : null;
-  const v = codigo ? await votacaoPorCodigo(codigo, { token }) : null;
+  const v = codigo ? await lerVotacao(codigo) : null;
 
   if (!v) {
     const h = await headers();
@@ -88,6 +145,30 @@ export default async function VotarPorLink({
   }
 
   const podeVotar = v.situacao === "aberta" && !v.casaVotou && !v.casaBloqueada;
+  // Painel ao vivo (números do condomínio inteiro). Se falhar, a página abre sem ele.
+  let aoVivo: Awaited<ReturnType<typeof painelPorCodigo>> = null;
+  try {
+    aoVivo = await painelPorCodigo(v.codigo);
+  } catch (erro) {
+    console.error("Link de voto: não foi possível montar o painel ao vivo", erro);
+  }
+  const painelVivo = aoVivo ? (
+    <PainelEleicaoVivo
+      inicial={aoVivo.painel}
+      casaInicial={aoVivo.casa}
+      hrefDetalhe={null}
+      perfil="link"
+      agoraServidor={aoVivo.painel.geradoEm}
+      fuso={v.fuso}
+      endereco={`/api/votar/${v.codigo}/painel`}
+      intervaloSegundos={30}
+      atualizarPaginaNaVirada
+    />
+  ) : null;
+  // Passo a passo com imagens: na hora de votar e enquanto a votação não abre.
+  const mostrarGuia =
+    podeVotar ||
+    (v.situacao === "agendada" && !v.casaVotou && !v.casaBloqueada);
 
   return (
     <Moldura subtitulo={v.condominioNome}>
@@ -112,6 +193,8 @@ export default async function VotarPorLink({
           </span>
         </div>
       </div>
+
+      {podeVotar ? null : painelVivo}
 
       {v.casaVotou ? (
         <div className="flex flex-col items-center gap-2 rounded-2xl bg-ok-soft p-5 text-center text-pine">
@@ -158,9 +241,12 @@ export default async function VotarPorLink({
         </Alerta>
       ) : null}
 
+      {/* Casa que já votou: senha para o comprovante (e, depois do encerramento, o resultado abaixo). */}
       {v.casaVotou && !v.senhaOk ? (
         <SenhaLink codigo={v.codigo} motivo="comprovante" />
-      ) : podeVotar && !v.senhaOk ? (
+      ) : null}
+
+      {podeVotar && !v.senhaOk ? (
         <SenhaLink codigo={v.codigo} />
       ) : podeVotar ? (
         <Cedula
@@ -173,15 +259,30 @@ export default async function VotarPorLink({
           permiteBranco={v.permiteBranco}
           fotos={v.fotos}
         />
+      ) : v.resultado && painelVivo ? (
+        // O resultado (gráfico, regra, revelação) está no painel ao vivo, lá em cima.
+        v.modo === "chapa" ? (
+          <div className="flex flex-col gap-3">
+            <h2 className="font-bold">Integrantes da chapa</h2>
+            <ArvoreChapa candidatos={v.candidatos} fotos={v.fotos} />
+          </div>
+        ) : null
       ) : v.resultado ? (
         <div className="flex flex-col gap-3">
           <h2 className="font-bold">Resultado final</h2>
+          <RevelacaoResultado
+            eleicaoId={v.eleicaoId}
+            titulo={v.titulo}
+            resultado={resultadoParaPainel(v.resultado.apuracao)}
+            casasAptas={v.resultado.casasAptas}
+            votaram={v.resultado.votaram}
+          />
           <ResultadoEleicao apuracao={v.resultado.apuracao} vagas={v.vagas} />
           {v.modo === "chapa" ? (
             <ArvoreChapa candidatos={v.candidatos} fotos={v.fotos} />
           ) : null}
         </div>
-      ) : (
+      ) : v.casaVotou && !v.senhaOk ? null : (
         <div className="flex flex-col gap-3">
           <h2 className="font-bold">
             {v.modo === "chapa" ? "Integrantes da chapa" : "Candidatos"}
@@ -193,6 +294,10 @@ export default async function VotarPorLink({
           )}
         </div>
       )}
+
+      {podeVotar ? painelVivo : null}
+
+      {mostrarGuia ? <GuiaComoVotar /> : null}
 
       <p className="flex items-start gap-2 text-[0.88rem] text-muted">
         <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0 text-pine" />

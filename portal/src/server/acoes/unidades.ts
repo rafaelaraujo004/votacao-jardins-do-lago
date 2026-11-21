@@ -8,6 +8,7 @@ import { garantirPermissao, getContexto } from "../contexto";
 import { registrarAuditoria } from "../auditoria";
 import { ErroDeNegocio, executar, lerFormulario, type Resultado } from "./resultado";
 import { idDaUnidade } from "../dados/unidades";
+import { conferirVotacaoAbertaAntesDoCadastro, recalcularAptasDasAgendadas } from "../dados/eleicoes";
 import { idDocumento } from "@/lib/validacao";
 
 const texto = (max: number) => z.string().trim().max(max, `Use no máximo ${max} caracteres.`);
@@ -63,6 +64,9 @@ export async function cadastrarSequencia(_: Resultado, dados: FormData): Promise
       return total;
     });
 
+    // Votação agendada: a casa nova entra na lista de casas aptas (com a votação aberta, a lista
+    // fica congelada e a casa nova só vota na próxima).
+    if (criadas > 0) await recalcularAptasDasAgendadas(ctx.condominioId, db);
     revalidatePath("/admin/unidades");
     const jaExistiam = numeros.length - criadas;
     if (criadas === 0) throw new ErroDeNegocio("Todas essas unidades já estavam cadastradas. Nada foi alterado.");
@@ -88,6 +92,11 @@ export async function salvarUnidade(_: Resultado, dados: FormData): Promise<Resu
     const db = adminDb();
     const ref = db.collection("condominiums").doc(ctx.condominioId).collection("units").doc(v.id);
 
+    // Votação oficial ABERTA: ativar ou inativar casa seria bloquear/desbloquear no meio da votação.
+    const antes = await ref.get();
+    const mudouSituacao = antes.exists && String(antes.get("status") ?? "ativa") !== v.status;
+    if (mudouSituacao) await conferirVotacaoAbertaAntesDoCadastro(ctx.condominioId, db);
+
     await db.runTransaction(async (tx) => {
       const atual = await tx.get(ref);
       if (!atual.exists) throw new ErroDeNegocio("Esta unidade não foi encontrada. Atualize a página.");
@@ -109,6 +118,8 @@ export async function salvarUnidade(_: Resultado, dados: FormData): Promise<Resu
       });
     });
 
+    // Votação agendada: a lista de casas aptas acompanha o cadastro até abrir.
+    if (mudouSituacao) await recalcularAptasDasAgendadas(ctx.condominioId, db);
     revalidatePath("/admin/unidades");
     revalidatePath(`/admin/unidades/${v.id}`);
     return "Unidade atualizada.";

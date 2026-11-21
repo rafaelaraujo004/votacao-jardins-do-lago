@@ -5,10 +5,15 @@ import { describe, expect, it } from "vitest";
 import {
   apurar,
   apurarChapa,
+  contarNulos,
   dataNascimentoValida,
   minimoParaEleger,
   montarCandidatos,
+  porcentagemParticipacao,
+  resultadoParaPainel,
+  resumoNumerosResultado,
   situacaoEleicao,
+  tituloResultado,
   validarEscolha,
   type Candidato,
 } from "@/lib/eleicoes";
@@ -319,5 +324,204 @@ describe("contadores da urna", () => {
   it("urna vazia soma zero", async () => {
     const { somarUrna } = await import("@/lib/eleicoes");
     expect(somarUrna([])).toEqual({ cedulas: 0, sim: 0, nao: 0, brancos: 0, votos: {} });
+  });
+});
+
+// ---------- Decisões de 21/11/2026: votos nulos, painel público e avisos ----------
+
+describe("contarNulos (casas aptas que não votaram)", () => {
+  it("sem o número de casas aptas (eleição antiga), não há nulos", () => {
+    expect(contarNulos(null, 5)).toBe(0);
+    expect(contarNulos(undefined, 5)).toBe(0);
+    expect(contarNulos(Number.NaN, 5)).toBe(0);
+  });
+  it("aptas menos as que votaram; nunca negativo", () => {
+    expect(contarNulos(220, 110)).toBe(110);
+    expect(contarNulos(3, 3)).toBe(0);
+    expect(contarNulos(10, 12)).toBe(0);
+    expect(contarNulos(5, -3)).toBe(5);
+    expect(contarNulos(10.7, 3.2)).toBe(7);
+  });
+});
+
+describe("apurarChapa com casas aptas (nulos)", () => {
+  it("220 aptas, 60 Sim e 50 Não: eleita (metade mais 1 dos VÁLIDOS) com 110 nulos", () => {
+    expect(apurarChapa({ sim: 60, nao: 50, cedulas: 110 }, 220)).toEqual({
+      modo: "chapa",
+      sim: 60,
+      nao: 50,
+      cedulas: 110,
+      minimo: 56,
+      porcentagemSim: 55,
+      eleita: true,
+      casasAptas: 220,
+      nulos: 110,
+    });
+  });
+  it("10 Sim e 10 Não: empate não elege, mesmo com 200 nulos", () => {
+    expect(apurarChapa({ sim: 10, nao: 10, cedulas: 20 }, 220)).toMatchObject({ eleita: false, minimo: 11, nulos: 200 });
+  });
+  it("sem votos: não eleita e todas as aptas são nulos", () => {
+    expect(apurarChapa({ sim: 0, nao: 0, cedulas: 0 }, 220)).toMatchObject({ eleita: false, nulos: 220, porcentagemSim: 0 });
+  });
+  it("os nulos NÃO mudam o resultado (a conta é só de Sim + Não)", () => {
+    for (const c of [
+      { sim: 2, nao: 1, cedulas: 3 },
+      { sim: 1, nao: 1, cedulas: 2 },
+      { sim: 6, nao: 4, cedulas: 10 },
+      { sim: 4, nao: 6, cedulas: 10 },
+    ]) {
+      const semAptas = apurarChapa(c);
+      const comAptas = apurarChapa(c, 220);
+      expect(comAptas.eleita).toBe(semAptas.eleita);
+      expect(comAptas.minimo).toBe(semAptas.minimo);
+      expect(comAptas.porcentagemSim).toBe(semAptas.porcentagemSim);
+    }
+    // Só 3 de 220 casas votaram (2 Sim, 1 Não): eleita, com 217 nulos.
+    expect(apurarChapa({ sim: 2, nao: 1, cedulas: 3 }, 220)).toMatchObject({ eleita: true, nulos: 217 });
+  });
+  it("sem casas aptas informadas: casasAptas null e nenhum nulo", () => {
+    expect(apurarChapa({ sim: 6, nao: 4, cedulas: 10 })).toMatchObject({ casasAptas: null, nulos: 0 });
+  });
+});
+
+describe("apurar (candidatos) com casas aptas (nulos)", () => {
+  const base = { candidatos: [cand(1), cand(2), cand(3), cand(4)], vagas: 2, regraDesempate: "comissao" as const };
+  const contagem = { votos: { c1: 2, c2: 5, c3: 1 }, brancos: 2, cedulas: 10 };
+
+  it("nulos = aptas menos cédulas; a porcentagem continua sobre as cédulas", () => {
+    const a = apurar(base, contagem, 25);
+    expect(a.casasAptas).toBe(25);
+    expect(a.nulos).toBe(15);
+    expect(a.eleitos).toEqual(["c2", "c1"]);
+    expect(a.ranking[0].porcentagem).toBe(50);
+  });
+  it("sem aptas: null e 0 nulos; aptas menor que cédulas: 0 nulos", () => {
+    expect(apurar(base, contagem)).toMatchObject({ casasAptas: null, nulos: 0 });
+    expect(apurar(base, contagem, 8)).toMatchObject({ casasAptas: 8, nulos: 0 });
+  });
+});
+
+describe("resultadoParaPainel (o que vai para o Início de todos)", () => {
+  it("chapa: Sim, Não, nulos, válidos e as duas porcentagens", () => {
+    expect(resultadoParaPainel(apurarChapa({ sim: 60, nao: 50, cedulas: 110 }, 220))).toEqual({
+      modo: "chapa",
+      sim: 60,
+      nao: 50,
+      nulos: 110,
+      validos: 110,
+      minimo: 56,
+      eleita: true,
+      porcentagemSim: 55,
+      porcentagemNao: 45,
+    });
+  });
+  it("chapa sem votos: porcentagens 0 (não 100 para o Não)", () => {
+    expect(resultadoParaPainel(apurarChapa({ sim: 0, nao: 0, cedulas: 0 }, 3))).toEqual({
+      modo: "chapa",
+      sim: 0,
+      nao: 0,
+      nulos: 3,
+      validos: 0,
+      minimo: 1,
+      eleita: false,
+      porcentagemSim: 0,
+      porcentagemNao: 0,
+    });
+  });
+  it("chapa: Sim + Não somam sempre 100%", () => {
+    const p = resultadoParaPainel(apurarChapa({ sim: 1, nao: 2, cedulas: 3 }));
+    expect(p).toMatchObject({ porcentagemSim: 33, porcentagemNao: 67 });
+  });
+  it("candidatos: ranking só com número, nome, votos e eleito; empate pendente aparece", () => {
+    const base = { candidatos: [cand(1), cand(2), cand(3), cand(4)], vagas: 2, regraDesempate: "comissao" as const };
+    const p = resultadoParaPainel(apurar(base, { votos: { c1: 5, c2: 3, c3: 3 }, brancos: 1, cedulas: 12 }, 20));
+    expect(p).toEqual({
+      modo: "candidatos",
+      ranking: [
+        { numero: 1, nome: "Candidato 1", votos: 5, eleito: true },
+        { numero: 2, nome: "Candidato 2", votos: 3, eleito: false },
+        { numero: 3, nome: "Candidato 3", votos: 3, eleito: false },
+        { numero: 4, nome: "Candidato 4", votos: 0, eleito: false },
+      ],
+      brancos: 1,
+      nulos: 8,
+      cedulas: 12,
+      empate: true,
+    });
+  });
+  it("candidatos: empate resolvido pela idade não fica pendente e a data de nascimento não vai junto", () => {
+    const e = {
+      candidatos: [cand(1, "1980-01-01"), cand(2, "1990-01-01"), cand(3, "1955-07-10")],
+      vagas: 2,
+      regraDesempate: "idade" as const,
+    };
+    const p = resultadoParaPainel(apurar(e, { votos: { c1: 6, c2: 3, c3: 3 }, brancos: 0, cedulas: 12 }));
+    expect(p.modo === "candidatos" && p.empate).toBe(false);
+    expect(p.modo === "candidatos" && p.ranking.map((l) => l.eleito)).toEqual([true, false, true]);
+    expect(JSON.stringify(p)).not.toMatch(/nascimento|1955|1980|1990|"c\d"/);
+  });
+});
+
+describe("porcentagemParticipacao", () => {
+  it("porcentagem inteira de casas aptas que votaram", () => {
+    expect(porcentagemParticipacao(2, 3)).toBe(67);
+    expect(porcentagemParticipacao(1, 3)).toBe(33);
+    expect(porcentagemParticipacao(110, 220)).toBe(50);
+    expect(porcentagemParticipacao(3, 3)).toBe(100);
+    expect(porcentagemParticipacao(0, 3)).toBe(0);
+  });
+  it("faltando casa, nunca mostra 100% (219 de 220 = 99%)", () => {
+    expect(porcentagemParticipacao(219, 220)).toBe(99);
+    expect(porcentagemParticipacao(220, 220)).toBe(100);
+  });
+  it("nunca passa de 100, nunca negativa; sem casas aptas é 0", () => {
+    expect(porcentagemParticipacao(4, 3)).toBe(100);
+    expect(porcentagemParticipacao(-2, 10)).toBe(0);
+    expect(porcentagemParticipacao(5, 0)).toBe(0);
+  });
+});
+
+describe("resumoNumerosResultado (linha dos avisos)", () => {
+  const base = { candidatos: [cand(1), cand(2), cand(3), cand(4)], vagas: 2, regraDesempate: "comissao" as const };
+
+  it("chapa: Sim, Não e os nulos (só quando existem)", () => {
+    expect(resumoNumerosResultado(apurarChapa({ sim: 60, nao: 50, cedulas: 110 }, 220))).toBe("Sim 60 · Não 50 · Nulos 110");
+    expect(resumoNumerosResultado(apurarChapa({ sim: 6, nao: 4, cedulas: 10 }))).toBe("Sim 6 · Não 4");
+    expect(resumoNumerosResultado(apurarChapa({ sim: 2, nao: 1, cedulas: 3 }, 3))).toBe("Sim 2 · Não 1");
+  });
+  it("candidatos: votos (singular/plural), brancos e nulos", () => {
+    expect(resumoNumerosResultado(apurar(base, { votos: { c1: 1 }, brancos: 0, cedulas: 1 }))).toBe("1 voto · Brancos 0");
+    expect(resumoNumerosResultado(apurar(base, { votos: { c1: 2, c2: 5, c3: 1 }, brancos: 2, cedulas: 10 }, 25))).toBe(
+      "10 votos · Brancos 2 · Nulos 15",
+    );
+  });
+});
+
+describe("tituloResultado (título dos avisos)", () => {
+  it("chapa: ELEITA ou NÃO eleita", () => {
+    expect(tituloResultado(apurarChapa({ sim: 60, nao: 50, cedulas: 110 }, 220))).toBe("Chapa ELEITA");
+    expect(tituloResultado(apurarChapa({ sim: 10, nao: 10, cedulas: 20 }, 220))).toBe("Chapa NÃO eleita");
+    expect(tituloResultado(apurarChapa({ sim: 0, nao: 0, cedulas: 0 }, 220))).toBe("Chapa NÃO eleita");
+  });
+  it("candidatos: nomes dos eleitos na ordem do resultado", () => {
+    const base = { candidatos: [cand(1), cand(2), cand(3), cand(4)], vagas: 2, regraDesempate: "comissao" as const };
+    expect(tituloResultado(apurar(base, { votos: { c1: 2, c2: 5, c3: 1 }, brancos: 2, cedulas: 10 }))).toBe(
+      "Eleitos: Candidato 2, Candidato 1",
+    );
+    const idade = {
+      candidatos: [cand(1, "1980-01-01"), cand(2, "1990-01-01"), cand(3, "1955-07-10")],
+      vagas: 2,
+      regraDesempate: "idade" as const,
+    };
+    expect(tituloResultado(apurar(idade, { votos: { c1: 6, c2: 3, c3: 3 }, brancos: 0, cedulas: 12 }))).toBe(
+      "Eleitos: Candidato 1, Candidato 3",
+    );
+  });
+  it("candidatos: ninguém eleito por empate: a comissão decide", () => {
+    const e = { candidatos: [cand(1), cand(2)], vagas: 1, regraDesempate: "comissao" as const };
+    expect(tituloResultado(apurar(e, { votos: { c1: 2, c2: 2 }, brancos: 0, cedulas: 4 }))).toBe(
+      "Resultado: a comissão decide o empate",
+    );
   });
 });

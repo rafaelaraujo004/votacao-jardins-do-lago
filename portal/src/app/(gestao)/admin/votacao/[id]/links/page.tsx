@@ -1,7 +1,16 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Ban, CircleCheck, Link2, RefreshCw } from "lucide-react";
+import {
+  ArrowLeft,
+  Ban,
+  CircleCheck,
+  Download,
+  Images,
+  Link2,
+  RefreshCw,
+} from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { obterEleicaoGestao } from "@/server/dados/eleicoes";
 import { listarEnvios, type LinhaEnvio } from "@/server/dados/votacao-links";
@@ -11,6 +20,13 @@ import {
 } from "@/server/acoes/votacao-links";
 import { enderecoBase } from "@/server/endereco";
 import { formatarTelefone, mensagemConvite } from "@/lib/contatos-votacao";
+import {
+  ALTURA_GUIA,
+  IMAGENS_GUIA,
+  LARGURA_GUIA,
+  PDF_GUIA,
+  textoGuiaGrupo,
+} from "@/lib/guia-votacao";
 import { formatarDataHora } from "@/lib/formato";
 import { idDocumento } from "@/lib/validacao";
 import {
@@ -26,6 +42,7 @@ import {
   TituloSecao,
 } from "@/components/ui/painel";
 import { EnvioWhatsApp } from "@/components/eleicoes/envio-whatsapp";
+import { EnviarImagensGuia } from "@/components/eleicoes/enviar-imagens-guia";
 import { ImportarContatos } from "@/components/eleicoes/importar-contatos";
 
 export const metadata: Metadata = { title: "Links de voto" };
@@ -41,6 +58,9 @@ const FILTROS = [
 /**
  * Comissão: importar os contatos (lista do Word), gerar um LINK DE VOTO por casa e enviar pelo
  * WhatsApp (1º e 2º contato). Mostra só QUEM votou, nunca o voto.
+ * No alto, o passo a passo com imagens: dá para mandar no grupo do condomínio (as 9 imagens
+ * ou o PDF único, para quando o WhatsApp não aceita tantas imagens), e cada casa também
+ * recebe as imagens no passo 2 do envio (o link wa.me não anexa imagens).
  */
 export default async function LinksDeVoto({
   params,
@@ -74,6 +94,12 @@ export default async function LinksDeVoto({
   });
   const periodo = `de ${formatarDataHora(e.abreEm, ctx.fuso)} até ${formatarDataHora(e.fechaEm, ctx.fuso)}`;
   const encerrada = e.situacao === "encerrada";
+  // Texto do grupo: o mesmo para as imagens e para o PDF.
+  const textoGrupo = textoGuiaGrupo({
+    condominio: ctx.condominioNome,
+    titulo: e.titulo,
+    periodo,
+  });
 
   return (
     <div className="flex max-w-3xl flex-col gap-6">
@@ -125,6 +151,62 @@ export default async function LinksDeVoto({
         />
       </div>
 
+      <section aria-labelledby="titulo-guia" className="flex flex-col gap-3">
+        <TituloSecao id="titulo-guia">Passo a passo com imagens</TituloSecao>
+        <Cartao className="flex flex-col gap-3">
+          <ul
+            aria-label="Imagens do passo a passo"
+            className="-mx-1 flex max-w-full snap-x gap-2 overflow-x-auto px-1 pb-2"
+          >
+            {IMAGENS_GUIA.map((img) => (
+              <li key={img.src} className="w-20 shrink-0 snap-start sm:w-24">
+                <Image
+                  src={img.src}
+                  alt={img.alt}
+                  title={img.titulo}
+                  width={LARGURA_GUIA}
+                  height={ALTURA_GUIA}
+                  sizes="96px"
+                  loading="lazy"
+                  className="h-auto w-full rounded-xl border border-line"
+                />
+              </li>
+            ))}
+          </ul>
+          <p className="flex items-start gap-2 text-[0.9rem] text-ink-2">
+            <Images aria-hidden className="mt-0.5 size-4 shrink-0 text-pine" />
+            <span>
+              Cada casa também recebe estas imagens no passo 2, logo depois da
+              mensagem com o link. Se o WhatsApp não aceitar as{" "}
+              {IMAGENS_GUIA.length} imagens, vai o PDF (1 arquivo,{" "}
+              {PDF_GUIA.paginas} páginas).
+            </span>
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            <EnviarImagensGuia
+              variante="primario"
+              rotulo="Mandar no grupo do condomínio"
+              className="w-full sm:w-fit"
+              texto={textoGrupo}
+            />
+            <EnviarImagensGuia
+              formato="pdf"
+              variante="secundario"
+              rotulo="Mandar em PDF no grupo"
+              className="w-full sm:w-fit"
+              texto={textoGrupo}
+            />
+            <a
+              href={PDF_GUIA.src}
+              download={PDF_GUIA.arquivo}
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full px-3 font-bold text-lake hover:shadow-afundado"
+            >
+              <Download aria-hidden className="size-4" /> Baixar o PDF
+            </a>
+          </div>
+        </Cartao>
+      </section>
+
       <section
         aria-labelledby="titulo-contatos"
         className="flex flex-col gap-3"
@@ -175,8 +257,9 @@ export default async function LinksDeVoto({
           3. Enviar pelo WhatsApp
         </TituloSecao>
         <p className="text-[0.9rem] text-muted">
-          O WhatsApp abre uma conversa por vez: em casas com dois contatos,
-          toque de novo para enviar ao 2º contato.
+          Em cada casa: toque em “1. Mensagem” e depois em “2. Imagens”. O
+          WhatsApp abre uma conversa por vez: em casas com dois contatos, toque
+          de novo em 1 para enviar ao 2º contato.
         </p>
         <SegmentoLinks
           rotulo="Filtrar casas"
@@ -267,7 +350,7 @@ function ItemEnvio({
         ) : null}
       </div>
       {link && !l.votou && !encerrada ? (
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-end justify-between gap-2">
           <EnvioWhatsApp
             eleicaoId={eleicaoId}
             unitId={l.unitId}

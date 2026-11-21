@@ -77,6 +77,9 @@ describe("numeroDaCasa e mensagem", () => {
     const m = mensagemConvite({ nome: "ana souza", casa: "Casa 12", titulo: "Eleição 2026/2027", link: "https://x/votar/ABC", senha: "482913", periodo: "hoje" });
     expect(m).toContain("2. Digite a senha: 482913");
     expect(m).toContain("SIM ou NÃO");
+    // Os mesmos passos da tela e das imagens: Revisar meu voto → Confirmar voto.
+    expect(m).toContain("toque em Revisar meu voto");
+    expect(m).toContain("4. Toque em Confirmar voto");
     const m2 = mensagemConvite({ nome: "", casa: "Casa 1", titulo: "T", link: "L", senha: "1", periodo: "p", condominio: "Outro", modo: "candidatos" });
     expect(m2).toMatch(/^Olá! Votação oficial do Outro/);
     expect(m2).toContain("Escolha seu candidato");
@@ -84,6 +87,13 @@ describe("numeroDaCasa e mensagem", () => {
     expect(m).toMatch(/^Olá, Ana!/);
     expect(m).toContain("https://x/votar/ABC");
     expect(m).toMatch(/UM voto por casa/);
+  });
+  it("avisa que as imagens do passo a passo vão junto, antes do aviso final", () => {
+    const m = mensagemConvite({ nome: "Ana", casa: "Casa 12", titulo: "T", link: "https://x/votar/ABC", senha: "482913", periodo: "hoje" });
+    const imagens = m.indexOf("imagens do passo a passo");
+    expect(imagens).toBeGreaterThan(m.indexOf("https://x/votar/ABC"));
+    expect(imagens).toBeLessThan(m.indexOf("UM voto por casa"));
+    expect(m).toMatch(/No link também tem essa ajuda/);
   });
 });
 

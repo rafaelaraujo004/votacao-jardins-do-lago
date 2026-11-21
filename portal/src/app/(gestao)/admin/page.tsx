@@ -14,6 +14,7 @@ import type { Permissao } from "@/lib/permissoes";
 import { hojeISO } from "@/lib/formato";
 import { cx } from "@/lib/cx";
 import { InformacoesUteisPainel } from "@/components/informacoes/informacoes-uteis-painel";
+import { PainelEleicaoInicio } from "@/components/eleicoes/painel-inicio";
 import { ResumoFinanceiroPainel } from "@/components/financeiro/resumo-painel";
 import { Etiqueta, TituloPagina } from "@/components/ui/basicos";
 import { BlocoNumero, TituloSecao, type TomModulo } from "@/components/ui/painel";
@@ -135,6 +136,11 @@ export default async function PainelGestao() {
         descricao="Resumo do cadastro e o que está esperando a administração."
         acoes={somenteConsulta ? <Etiqueta tom="info" icone={Eye}>Somente consulta</Etiqueta> : null}
       />
+
+      {/* Votação oficial em destaque (toda a equipe acompanha QUANTAS casas votaram, nunca quais).
+          O link para acompanhar no mapa aparece só para quem gerencia a votação. */}
+      {/* Sem Suspense de propósito: vem junto com o topo (não empurra a tela depois). */}
+      <PainelEleicaoInicio ctx={ctx} perfil="gestao" />
 
       {/* Pendências: cada número leva à tela onde se resolve. */}
       {pendencias.length ? (

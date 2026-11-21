@@ -5,6 +5,7 @@
 import {
   CalendarClock,
   CircleCheck,
+  CircleMinus,
   CircleX,
   Lock,
   PencilLine,
@@ -147,7 +148,7 @@ export function NotaSigilo({ className }: { className?: string }) {
 
 /**
  * Quadro do resultado (depois do encerramento): votos de cada candidato,
- * eleitos (com ícone, não só cor), brancos e o aviso de empate.
+ * eleitos (com ícone, não só cor), brancos, nulos (casas aptas que não votaram) e o aviso de empate.
  */
 export function ResultadoEleicao({
   apuracao,
@@ -163,9 +164,13 @@ export function ResultadoEleicao({
   );
 }
 
-/** Chapa: Sim e Não, o mínimo para eleger (metade mais 1) e se foi eleita. */
+/**
+ * Chapa: Sim, Não e Nulos, o mínimo para eleger (metade mais 1 dos votos VÁLIDOS) e se foi eleita.
+ * Nulos = casas aptas que não votaram (decisão de 21/11/2026): aparecem, mas não entram na conta.
+ */
 function ResultadoChapa({ apuracao: a }: { apuracao: ApuracaoChapa }) {
   const total = a.sim + a.nao;
+  const nulos = Math.max(0, a.nulos || 0);
   return (
     <div className="flex flex-col gap-4">
       <div
@@ -184,11 +189,14 @@ function ResultadoChapa({ apuracao: a }: { apuracao: ApuracaoChapa }) {
             {a.eleita ? "Chapa eleita" : "Chapa não eleita"}
           </p>
           <p className="text-[0.9rem] text-ink-2">
-            Precisava de {a.minimo} {a.minimo === 1 ? "voto" : "votos"} Sim
-            (metade mais 1 de {total}) e teve {a.sim}.
+            {total === 0
+              ? "Nenhuma casa votou: sem votos, a chapa não é eleita."
+              : `Precisava de ${a.minimo} ${a.minimo === 1 ? "voto" : "votos"} Sim (metade mais 1 dos ${total} ${total === 1 ? "voto válido" : "votos válidos"}) e teve ${a.sim}.`}
           </p>
         </div>
       </div>
+      {/* A barra é só dos votos VÁLIDOS (Sim | Não), igual às porcentagens escritas embaixo;
+          os nulos ficam no terceiro bloco, à parte (não entram na conta). */}
       <div
         className="afundado flex h-4 overflow-hidden rounded-full"
         aria-hidden
@@ -202,10 +210,11 @@ function ResultadoChapa({ apuracao: a }: { apuracao: ApuracaoChapa }) {
           style={{ width: `${total ? (a.nao * 100) / total : 0}%` }}
         />
       </div>
-      <div className="grid grid-cols-2 gap-2.5">
-        <p className="flex items-center gap-2 rounded-2xl bg-surface-item p-3">
-          <ThumbsUp aria-hidden className="size-5 text-pine" />
-          <span>
+      {/* Três blocos no celular (360px): ícone em cima, número e nome embaixo. */}
+      <div className="grid grid-cols-3 gap-2">
+        <p className="flex min-w-0 flex-col gap-1 rounded-2xl bg-surface-item p-2.5 sm:flex-row sm:items-center sm:gap-2 sm:p-3">
+          <ThumbsUp aria-hidden className="size-5 shrink-0 text-pine" />
+          <span className="min-w-0">
             <b className="block font-display text-[1.4rem] leading-none tabular-nums">
               {a.sim}
             </b>
@@ -214,9 +223,9 @@ function ResultadoChapa({ apuracao: a }: { apuracao: ApuracaoChapa }) {
             </span>
           </span>
         </p>
-        <p className="flex items-center gap-2 rounded-2xl bg-surface-item p-3">
-          <ThumbsDown aria-hidden className="size-5 text-danger" />
-          <span>
+        <p className="flex min-w-0 flex-col gap-1 rounded-2xl bg-surface-item p-2.5 sm:flex-row sm:items-center sm:gap-2 sm:p-3">
+          <ThumbsDown aria-hidden className="size-5 shrink-0 text-danger" />
+          <span className="min-w-0">
             <b className="block font-display text-[1.4rem] leading-none tabular-nums">
               {a.nao}
             </b>
@@ -225,7 +234,20 @@ function ResultadoChapa({ apuracao: a }: { apuracao: ApuracaoChapa }) {
             </span>
           </span>
         </p>
+        <p className="flex min-w-0 flex-col gap-1 rounded-2xl bg-surface-item p-2.5 sm:flex-row sm:items-center sm:gap-2 sm:p-3">
+          <CircleMinus aria-hidden className="size-5 shrink-0 text-muted" />
+          <span className="min-w-0">
+            <b className="block font-display text-[1.4rem] leading-none tabular-nums">
+              {nulos}
+            </b>
+            <span className="text-[0.88rem] text-ink-2">Nulos</span>
+          </span>
+        </p>
       </div>
+      <p className="flex items-start gap-2 text-[0.88rem] text-muted">
+        <CircleMinus aria-hidden className="mt-0.5 size-4 shrink-0" />
+        <span>Nulos: casas aptas que não votaram — não entram na conta.</span>
+      </p>
     </div>
   );
 }
@@ -304,7 +326,12 @@ function ResultadoCandidatos({
         {apuracao.cedulas === 1 ? "cédula" : "cédulas"} ·{" "}
         <b className="text-ink">{apuracao.brancos}</b>{" "}
         {apuracao.brancos === 1 ? "voto em branco" : "votos em branco"} ·{" "}
+        <b className="text-ink">{Math.max(0, apuracao.nulos || 0)}</b>{" "}
+        {apuracao.nulos === 1 ? "voto nulo" : "votos nulos"} ·{" "}
         {vagas} {vagas === 1 ? "vaga" : "vagas"}
+      </p>
+      <p className="-mt-2 text-[0.85rem] text-muted">
+        Nulos: casas aptas que não votaram — não entram na conta.
       </p>
 
       {apuracao.empate ? (

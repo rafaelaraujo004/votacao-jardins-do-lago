@@ -88,6 +88,8 @@ export const ACOES_AUDITADAS = [
   "eleicao.links",
   "eleicao.contatos",
   "eleicao.foto",
+  "eleicao.resultado", // resultado divulgado a todos (apuração automática)
+  "eleicao.assinatura", // assinatura digital na ata (assinou, removeu, link) — nunca a imagem
   // Classificados
   "classificado.criar",
   "classificado.editar",

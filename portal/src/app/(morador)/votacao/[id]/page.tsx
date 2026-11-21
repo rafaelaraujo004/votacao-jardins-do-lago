@@ -5,7 +5,7 @@ import { Download, EyeOff } from "lucide-react";
 import { exigirPermissao } from "@/server/contexto";
 import { obterEleicaoMorador } from "@/server/dados/eleicoes";
 import { casas, diaMes, participacao } from "@/lib/enquetes";
-import { regraTexto } from "@/lib/eleicoes";
+import { regraTexto, resultadoParaPainel } from "@/lib/eleicoes";
 import { formatarDataHora } from "@/lib/formato";
 import { idDocumento } from "@/lib/validacao";
 import { Alerta, Cartao } from "@/components/ui/basicos";
@@ -18,12 +18,15 @@ import {
 } from "@/components/eleicoes/pecas";
 import { Cedula } from "@/components/eleicoes/cedula";
 import { ArvoreChapa } from "@/components/eleicoes/arvore-chapa";
+import { GuiaComoVotar } from "@/components/eleicoes/guia-como-votar";
+import { RevelacaoResultado } from "@/components/eleicoes/revelacao-resultado";
 
 export const metadata: Metadata = { title: "Votação oficial" };
 
 /**
  * Uma eleição para o morador: a cédula (quando aberta e a casa ainda não votou),
- * a confirmação de que a casa votou (nunca em quem) e o resultado no encerramento.
+ * a confirmação de que a casa votou (nunca em quem) e o resultado no encerramento
+ * (com a revelação animada). Perto da cédula, o passo a passo com imagens ("Como votar?").
  */
 export default async function EleicaoMoradorPagina({
   params,
@@ -42,6 +45,10 @@ export default async function EleicaoMoradorPagina({
 
   const podeVotar =
     e.situacao === "aberta" && !e.casaVotou && !!ctx.unitId && !e.casaBloqueada;
+  // Passo a passo com imagens: na hora de votar e enquanto a votação não abre.
+  const mostrarGuia =
+    podeVotar ||
+    (e.situacao === "agendada" && !e.casaVotou && !e.casaBloqueada);
 
   return (
     <div className="flex flex-col gap-5">
@@ -110,6 +117,8 @@ export default async function EleicaoMoradorPagina({
         </Alerta>
       ) : null}
 
+      {mostrarGuia ? <GuiaComoVotar cartao /> : null}
+
       {e.resultado ? (
         <section
           aria-labelledby="titulo-resultado"
@@ -121,6 +130,13 @@ export default async function EleicaoMoradorPagina({
           >
             Resultado final
           </TituloSecao>
+          <RevelacaoResultado
+            eleicaoId={e.id}
+            titulo={e.titulo}
+            resultado={resultadoParaPainel(e.resultado.apuracao)}
+            casasAptas={e.resultado.casasAptas}
+            votaram={e.resultado.votaram}
+          />
           <Cartao>
             <ResultadoEleicao apuracao={e.resultado.apuracao} vagas={e.vagas} />
           </Cartao>

@@ -10,7 +10,7 @@ import { exigirPermissao, type Contexto } from "@/server/contexto";
 import type { Permissao } from "@/lib/permissoes";
 import { WidgetComunicados } from "@/components/comunicados/widget-inicio";
 import { WidgetEnquetes } from "@/components/enquetes/widget-inicio";
-import { WidgetEleicao } from "@/components/eleicoes/widget-inicio";
+import { PainelEleicaoInicio } from "@/components/eleicoes/painel-inicio";
 import { WidgetSolicitacoes } from "@/components/solicitacoes/widget-inicio";
 import { WidgetInformacoesInicio } from "@/components/informacoes/widget-inicio";
 import { WidgetDocumentos } from "@/components/documentos/widget-inicio";
@@ -190,6 +190,12 @@ export default async function InicioMorador() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Votação oficial: BEM NO TOPO, acima da foto, enquanto houver uma agendada ou aberta
+          (e o resultado nos 7 dias seguintes), com os números ao vivo. Sem votação, não aparece nada. */}
+      {/* Sem Suspense de propósito: o painel é o primeiro bloco e vem junto com o topo (se
+          aparecesse depois, empurraria a tela para baixo enquanto a pessoa já ia tocar). */}
+      <PainelEleicaoInicio ctx={ctx} perfil="morador" />
+
       {/* Identidade (foto + endereço), a saudação e a PRESTAÇÃO DE CONTAS com gráfico, na primeira tela.
           Celular: foto → saudação → contas → endereço. Telas maiores: foto | endereço, depois saudação e contas. */}
       <div className="grid gap-4 sm:grid-cols-2">
@@ -215,13 +221,6 @@ export default async function InicioMorador() {
           <ResumoInicio ctx={ctx} className="order-3 sm:order-4 sm:col-span-2" />
         </Suspense>
       </div>
-
-      {/* Votação oficial: logo abaixo da saudação, ACIMA de todos os outros avisos,
-          enquanto houver uma agendada ou aberta (e o resultado nos 7 dias seguintes).
-          Sem votação, não aparece nada. */}
-      <Suspense fallback={null}>
-        <WidgetEleicao ctx={ctx} />
-      </Suspense>
 
       {/* Comunicados recentes (o urgente aparece cedo) */}
       <Suspense fallback={<BlocoCarregando altura="h-28" />}>
