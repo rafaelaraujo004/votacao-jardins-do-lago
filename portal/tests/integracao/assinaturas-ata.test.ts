@@ -204,7 +204,7 @@ describe("assinar pelo link", () => {
       vaga: "testemunha",
       papel: "Testemunha",
       resultado: "Chapa ELEITA",
-      numeros: "Sim 2 · Não 0 · Nulos 1",
+      numeros: "Sim 2 · Não 0 · Sem votar 1",
       votaram: 2,
       casasAptas: 3,
       participacao: 67,

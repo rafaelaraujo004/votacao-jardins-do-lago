@@ -486,14 +486,14 @@ describe("resumoNumerosResultado (linha dos avisos)", () => {
   const base = { candidatos: [cand(1), cand(2), cand(3), cand(4)], vagas: 2, regraDesempate: "comissao" as const };
 
   it("chapa: Sim, Não e os nulos (só quando existem)", () => {
-    expect(resumoNumerosResultado(apurarChapa({ sim: 60, nao: 50, cedulas: 110 }, 220))).toBe("Sim 60 · Não 50 · Nulos 110");
+    expect(resumoNumerosResultado(apurarChapa({ sim: 60, nao: 50, cedulas: 110 }, 220))).toBe("Sim 60 · Não 50 · Sem votar 110");
     expect(resumoNumerosResultado(apurarChapa({ sim: 6, nao: 4, cedulas: 10 }))).toBe("Sim 6 · Não 4");
     expect(resumoNumerosResultado(apurarChapa({ sim: 2, nao: 1, cedulas: 3 }, 3))).toBe("Sim 2 · Não 1");
   });
   it("candidatos: votos (singular/plural), brancos e nulos", () => {
     expect(resumoNumerosResultado(apurar(base, { votos: { c1: 1 }, brancos: 0, cedulas: 1 }))).toBe("1 voto · Brancos 0");
     expect(resumoNumerosResultado(apurar(base, { votos: { c1: 2, c2: 5, c3: 1 }, brancos: 2, cedulas: 10 }, 25))).toBe(
-      "10 votos · Brancos 2 · Nulos 15",
+      "10 votos · Brancos 2 · Sem votar 15",
     );
   });
 });

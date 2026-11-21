@@ -165,8 +165,8 @@ export function ResultadoEleicao({
 }
 
 /**
- * Chapa: Sim, Não e Nulos, o mínimo para eleger (metade mais 1 dos votos VÁLIDOS) e se foi eleita.
- * Nulos = casas aptas que não votaram (decisão de 21/11/2026): aparecem, mas não entram na conta.
+ * Chapa: Sim, Não e Sem votar, o mínimo para eleger (metade mais 1 dos votos VÁLIDOS) e se foi eleita.
+ * "Sem votar" (no código, nulos) = casas aptas que não votaram (decisão de 21/11/2026): aparecem, mas não entram na conta.
  */
 function ResultadoChapa({ apuracao: a }: { apuracao: ApuracaoChapa }) {
   const total = a.sim + a.nao;
@@ -240,13 +240,13 @@ function ResultadoChapa({ apuracao: a }: { apuracao: ApuracaoChapa }) {
             <b className="block font-display text-[1.4rem] leading-none tabular-nums">
               {nulos}
             </b>
-            <span className="text-[0.88rem] text-ink-2">Nulos</span>
+            <span className="text-[0.88rem] text-ink-2">Sem votar</span>
           </span>
         </p>
       </div>
       <p className="flex items-start gap-2 text-[0.88rem] text-muted">
         <CircleMinus aria-hidden className="mt-0.5 size-4 shrink-0" />
-        <span>Nulos: casas aptas que não votaram — não entram na conta.</span>
+        <span>Sem votar: casas aptas que não votaram — não entram na conta.</span>
       </p>
     </div>
   );
@@ -327,11 +327,11 @@ function ResultadoCandidatos({
         <b className="text-ink">{apuracao.brancos}</b>{" "}
         {apuracao.brancos === 1 ? "voto em branco" : "votos em branco"} ·{" "}
         <b className="text-ink">{Math.max(0, apuracao.nulos || 0)}</b>{" "}
-        {apuracao.nulos === 1 ? "voto nulo" : "votos nulos"} ·{" "}
+        sem votar ·{" "}
         {vagas} {vagas === 1 ? "vaga" : "vagas"}
       </p>
       <p className="-mt-2 text-[0.85rem] text-muted">
-        Nulos: casas aptas que não votaram — não entram na conta.
+        Sem votar: casas aptas que não votaram — não entram na conta.
       </p>
 
       {apuracao.empate ? (

@@ -71,7 +71,7 @@ const plural = (n: number, um: string, varios: string) =>
 /**
  * Texto do resultado para o grupo do WhatsApp (montado aqui, no servidor).
  * Só totais do condomínio inteiro — nunca quais casas votaram.
- * Nulos = casas aptas que não votaram (decisão do síndico em 21/11/2026): aparecem,
+ * "Sem votar" (no código, nulos) = casas aptas que não votaram (decisão do síndico em 21/11/2026): aparecem,
  * mas não entram na conta da metade mais 1.
  */
 function textoResultadoGrupo(p: {
@@ -89,9 +89,9 @@ function textoResultadoGrupo(p: {
     return [
       `🗳️ *Resultado — ${titulo}*`,
       r.eleita ? "✅ Chapa ELEITA" : "❌ Chapa NÃO eleita",
-      `Sim: ${r.sim} (${r.porcentagemSim}%) · Não: ${r.nao} (${r.porcentagemNao}%) · Nulos: ${p.nulos}`,
+      `Sim: ${r.sim} (${r.porcentagemSim}%) · Não: ${r.nao} (${r.porcentagemNao}%) · Sem votar: ${p.nulos}`,
       participou,
-      "Regra: eleita com metade mais 1 dos votos válidos (Sim + Não). Nulos são as casas que não votaram e não entram na conta.",
+      "Regra: eleita com metade mais 1 dos votos válidos (Sim + Não). “Sem votar” são as casas que não votaram e não entram na conta.",
       `Veja no portal: ${p.endereco}`,
     ].join("\n");
   }
@@ -105,9 +105,9 @@ function textoResultadoGrupo(p: {
     r.empate
       ? "⚖️ Houve empate na última vaga: a comissão decide e registra na ata."
       : null,
-    `Brancos: ${r.brancos} · Nulos: ${p.nulos}`,
+    `Brancos: ${r.brancos} · Sem votar: ${p.nulos}`,
     participou,
-    "Nulos são as casas que não votaram.",
+    "“Sem votar” são as casas que não votaram.",
     `Veja no portal: ${p.endereco}`,
   ]
     .filter((l) => l !== null)
@@ -120,7 +120,7 @@ function textoResultadoGrupo(p: {
  * Nunca mostra o voto de uma casa nem parcial antes do fim.
  *
  * Decisões de 21/11/2026: com a votação ABERTA o bloqueio de casas fica congelado
- * (só leitura); depois do encerramento, "Faltam" vira "Nulos"; o resultado ganha a
+ * (só leitura); depois do encerramento, "Faltam" vira "Sem votar"; o resultado ganha a
  * revelação animada, o envio para o grupo e o relatório final.
  */
 export default async function EleicaoGestaoPagina({
@@ -159,7 +159,7 @@ export default async function EleicaoGestaoPagina({
     );
   }
   const faltam = Math.max(0, e.casasAptas - e.votaram);
-  // Nulos: casas aptas que não votaram (só aparece depois do encerramento).
+  // "Sem votar" (no código, nulos): casas aptas que não votaram (só aparece depois do encerramento).
   const nulos = contarNulos(e.casasAptas, e.votaram);
   const resultado = e.apuracao ? resultadoParaPainel(e.apuracao) : null;
   const textoGrupo = resultado
@@ -212,7 +212,7 @@ export default async function EleicaoGestaoPagina({
           <p>
             <b className="text-ink">Regras:</b> chapa única · cada casa responde
             Sim ou Não · eleita com metade mais 1 dos votos válidos (Sim + Não)
-            · casas que não votarem contam como nulos e ficam fora da conta
+            · casas que não votarem aparecem como “sem votar” e ficam fora da conta
           </p>
         ) : (
           <>
@@ -293,7 +293,7 @@ export default async function EleicaoGestaoPagina({
               />
               <span>
                 <b className="text-ink">
-                  {plural(nulos, "voto nulo", "votos nulos")}
+                  {plural(nulos, "casa sem votar", "casas sem votar")}
                 </b>{" "}
                 (casas aptas que não votaram).{" "}
                 {e.modo === "chapa"
@@ -406,7 +406,7 @@ export default async function EleicaoGestaoPagina({
             />
             {encerrada ? (
               <BlocoNumero
-                rotulo="Nulos"
+                rotulo="Sem votar"
                 valor={nulos}
                 detalhe="não votaram"
                 cor="ink"

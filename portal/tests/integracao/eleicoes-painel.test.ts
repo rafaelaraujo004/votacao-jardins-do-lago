@@ -266,7 +266,7 @@ describe("finalizarEleicao (divulga o resultado uma vez só)", () => {
     expect(doc.get("resultadoFinal")).toEqual({
       modo: "chapa",
       titulo: "Chapa ELEITA",
-      numeros: "Sim 2 · Não 0 · Nulos 1",
+      numeros: "Sim 2 · Não 0 · Sem votar 1",
       cedulas: 2,
       casasAptas: 3,
       nulos: 1,
@@ -284,7 +284,7 @@ describe("finalizarEleicao (divulga o resultado uma vez só)", () => {
     const log = logs.docs[0].data();
     expect(log.uid).toBe("sistema:apuracao");
     expect(log.alvo).toBe(`elections/${id}`);
-    expect(log.detalhes).toEqual({ aviso: true, titulo: "Eleição do síndico 2026", resultado: "Chapa ELEITA", numeros: "Sim 2 · Não 0 · Nulos 1" });
+    expect(log.detalhes).toEqual({ aviso: true, titulo: "Eleição do síndico 2026", resultado: "Chapa ELEITA", numeros: "Sim 2 · Não 0 · Sem votar 1" });
     expect(JSON.stringify(log)).not.toMatch(/casa-\d|Casa \d|unidade/i);
 
     // Chamar de novo não divulga outra vez.
@@ -300,7 +300,7 @@ describe("finalizarEleicao (divulga o resultado uma vez só)", () => {
     expect(r.apuracao).toMatchObject({ modo: "chapa", eleita: false, nulos: 3, casasAptas: 3 });
     expect((await ref(id).get()).get("resultadoFinal")).toMatchObject({
       titulo: "Chapa NÃO eleita",
-      numeros: "Sim 0 · Não 0 · Nulos 3",
+      numeros: "Sim 0 · Não 0 · Sem votar 3",
       eleita: false,
       nulos: 3,
     });

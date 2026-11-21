@@ -370,7 +370,7 @@ export type AtaPorLink = {
   papel: string;
   /** "Chapa ELEITA" / "Eleitos: …" */
   resultado: string;
-  /** "Sim 30 · Não 5 · Nulos 3" */
+  /** "Sim 30 · Não 5 · Sem votar 3" */
   numeros: string;
   votaram: number;
   casasAptas: number;

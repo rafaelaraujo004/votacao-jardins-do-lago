@@ -22,8 +22,9 @@
  * (veja src/server/dados/eleicoes.ts).
  *
  * Decisões de 21/11/2026 (síndico):
- * - casas aptas que NÃO votaram contam como votos NULOS (informados no resultado e no
- *   relatório; não entram na conta da metade mais 1, que é dos votos válidos);
+ * - casas aptas que NÃO votaram aparecem como "SEM VOTAR" (no resultado, no relatório e no
+ *   aviso; não entram na conta da metade mais 1, que é dos votos válidos). No código o número
+ *   se chama `nulos` (nome antigo), mas na tela é sempre "sem votar" — nunca "voto nulo";
  * - com a votação ABERTA, a comissão não bloqueia nem desbloqueia casas (só antes de abrir);
  * - todos (moradores e equipe) acompanham QUANTAS casas já votaram e quantas faltam, sem
  *   ver QUAIS (o mapa continua só para a comissão);
@@ -248,7 +249,7 @@ export type Apuracao = {
   cedulas: number;
   /** Casas aptas (null = não informado). */
   casasAptas: number | null;
-  /** Votos NULOS: casas aptas que não votaram (veja contarNulos). */
+  /** Casas aptas que NÃO votaram — na tela, "Sem votar" (veja contarNulos). */
   nulos: number;
   /** Empate na última vaga: quem empatou e se a regra decidiu. */
   empate: {
@@ -282,7 +283,8 @@ function desempatarPorIdade(
 }
 
 /**
- * Votos NULOS = casas aptas que NÃO votaram (decisão do síndico em 21/11/2026).
+ * "SEM VOTAR" = casas aptas que NÃO votaram (decisão de 21/11/2026; o usuário pediu esse nome em
+ * vez de "nulos" — o número continua se chamando `nulos` no código).
  * Aparecem no resultado, no relatório e no aviso final, mas NÃO entram na conta da
  * "metade mais 1": como na lei eleitoral, a maioria é dos votos válidos (Sim + Não).
  * Casas bloqueadas não são aptas, então não viram nulos.
@@ -370,7 +372,7 @@ export type ApuracaoChapa = {
   eleita: boolean;
   /** Casas aptas (null = não informado). */
   casasAptas: number | null;
-  /** Votos NULOS: casas aptas que não votaram (não entram na conta da metade mais 1). */
+  /** Casas aptas que não votaram — na tela, "Sem votar" (não entram na conta da metade mais 1). */
   nulos: number;
 };
 export type ResultadoApuracao = Apuracao | ApuracaoChapa;
@@ -412,9 +414,9 @@ export function apurarChapa(
   };
 }
 
-/** Uma linha para avisos (notificação, WhatsApp): "Sim 120 · Não 30 · Nulos 70". */
+/** Uma linha para avisos (notificação, WhatsApp): "Sim 120 · Não 30 · Sem votar 70". */
 export function resumoNumerosResultado(a: ResultadoApuracao): string {
-  const nulos = a.nulos ? ` · Nulos ${a.nulos}` : "";
+  const nulos = a.nulos ? ` · Sem votar ${a.nulos}` : "";
   if (a.modo === "chapa") return `Sim ${a.sim} · Não ${a.nao}${nulos}`;
   return `${a.cedulas} ${a.cedulas === 1 ? "voto" : "votos"} · Brancos ${a.brancos}${nulos}`;
 }

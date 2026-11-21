@@ -107,7 +107,7 @@ function Amostra({ parte, id }: { parte: Parte; id: string }) {
 }
 
 /**
- * Gráfico 1: barra empilhada com TODAS as casas aptas (Sim, Não e Nulos).
+ * Gráfico 1: barra empilhada com TODAS as casas aptas (Sim, Não e Sem votar).
  * As porcentagens aqui são das casas aptas (não dos votos válidos).
  */
 function BarraCasasAptas({ partes }: { partes: Parte[] }) {
@@ -123,7 +123,7 @@ function BarraCasasAptas({ partes }: { partes: Parte[] }) {
   return (
     <figure className={quebraNao}>
       <figcaption className="mb-2 font-bold">
-        1. Todas as casas aptas ({total}): Sim, Não e Nulos
+        1. Todas as casas aptas ({total}): Sim, Não e Sem votar
       </figcaption>
       <div className="relative">
         <svg
@@ -208,7 +208,7 @@ function RoscaParticipacao({
   const partes: Parte[] = [
     { rotulo: "Votaram", valor: votaram, cor: VERDE },
     {
-      rotulo: "Não votaram (nulos)",
+      rotulo: "Sem votar",
       valor: naoVotaram,
       cor: CINZA,
       listrado: true,
@@ -395,7 +395,7 @@ function SimNaoComLinha({
         </li>
       </ul>
       <p className="mt-1 text-[0.82rem] text-[#5e6e65]">
-        Porcentagens sobre os votos válidos (Sim + Não). Os nulos ficam fora
+        Porcentagens sobre os votos válidos (Sim + Não). As casas sem votar ficam fora
         desta conta.
       </p>
     </figure>
@@ -569,7 +569,7 @@ export default async function AtaVotacao({
     a?.ranking.find((l) => l.candidato.id === cid)?.candidato.nome ?? "";
   const linha = "flex justify-between gap-4 border-b border-[#d0d6d2] py-1.5";
 
-  // Nulos: casas aptas que não votaram (mesma conta da tela da comissão).
+  // "Sem votar" (no código, nulos): casas aptas que não votaram (mesma conta da tela da comissão).
   const nulos = contarNulos(e.casasAptas, e.votaram);
   const participacaoPct = porcentagemParticipacao(e.votaram, e.casasAptas);
   const validos = chapa ? chapa.sim + chapa.nao : 0;
@@ -709,7 +709,7 @@ export default async function AtaVotacao({
           </>
         ) : null}
         <div className={linha}>
-          <span>Votos nulos (casas aptas que não votaram)</span>
+          <span>Sem votar (casas aptas que não votaram)</span>
           <strong>{nulos}</strong>
         </div>
         {a ? (
@@ -757,7 +757,7 @@ export default async function AtaVotacao({
           <>
             <p className="mb-2 text-xl font-bold">
               {chapa.eleita ? "CHAPA ELEITA" : "CHAPA NÃO ELEITA"} — Sim:{" "}
-              {chapa.sim} · Não: {chapa.nao} · Nulos: {nulos} (mínimo para
+              {chapa.sim} · Não: {chapa.nao} · Sem votar: {nulos} (mínimo para
               eleger: {chapa.minimo})
             </p>
             <table className="w-full border-collapse text-[0.95rem]">
@@ -830,7 +830,7 @@ export default async function AtaVotacao({
               partes={[
                 { rotulo: "Sim", valor: chapa.sim, cor: VERDE },
                 { rotulo: "Não", valor: chapa.nao, cor: VERMELHO },
-                { rotulo: "Nulos", valor: nulos, cor: CINZA, listrado: true },
+                { rotulo: "Sem votar", valor: nulos, cor: CINZA, listrado: true },
               ]}
             />
             <RoscaParticipacao
@@ -864,12 +864,12 @@ export default async function AtaVotacao({
           cédula individual foi guardada.
         </p>
         <p>
-          Votos nulos: são as casas aptas que não votaram até o encerramento.
-          Eles aparecem nesta ata, mas{" "}
+          Sem votar: são as casas aptas que não votaram até o encerramento.
+          Elas aparecem nesta ata, mas{" "}
           {chapa
             ? "não entram na conta da metade mais 1, que considera só os votos válidos (Sim + Não)."
             : "não mudam a contagem dos candidatos."}{" "}
-          Casas bloqueadas pela comissão não eram aptas e não contam como nulos.
+          Casas bloqueadas pela comissão não eram aptas e não contam como “sem votar”.
         </p>
       </div>
 
@@ -946,7 +946,7 @@ export default async function AtaVotacao({
           </p>
           <ListaAnexo titulo="Casas que votaram" casas={anexoVotaram} />
           <ListaAnexo
-            titulo="Casas que não votaram (nulos)"
+            titulo="Casas sem votar"
             casas={anexoNulos}
           />
           <ListaAnexo

@@ -6,7 +6,7 @@
  * Um botão "Ver a revelação do resultado" abre uma janela em tela cheia com uma sequência
  * curta (~5 s), pensada para o momento em que o condomínio inteiro descobre o resultado:
  * 1. "Apurando…" com as cédulas sendo contadas (suspense);
- * 2. as barras Sim / Não / Nulos crescem e os números sobem;
+ * 2. as barras Sim / Não / Sem votar crescem e os números sobem;
  * 3. a manchete: "CHAPA ELEITA!" carimbada, com confetes — ou, se não foi eleita, uma
  *    revelação calma "Chapa NÃO eleita", sem confete;
  * 4. o placar final, a regra (metade mais 1 dos votos válidos) e a participação.
@@ -73,7 +73,7 @@ function marcarVistaNoAparelho(id: string) {
 function resumoResultado(r: ResultadoPainel): string {
   if (r.modo === "chapa") {
     const titulo = r.eleita ? "Chapa eleita!" : "Chapa não eleita.";
-    return `${titulo} Sim ${r.sim}, Não ${r.nao}, Nulos ${r.nulos}.`;
+    return `${titulo} Sim ${r.sim}, Não ${r.nao}, sem votar ${r.nulos}.`;
   }
   const eleitos = r.ranking.filter((l) => l.eleito).map((l) => l.nome);
   const base = eleitos.length ? `Eleitos: ${eleitos.join(", ")}.` : "Nenhum eleito definido.";

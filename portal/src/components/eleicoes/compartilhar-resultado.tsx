@@ -2,7 +2,7 @@
 
 /**
  * Comissão: mandar o RESULTADO da votação no grupo do condomínio pelo WhatsApp.
- * O texto vem pronto do servidor (só totais: Sim, Não, Nulos e participação — nunca
+ * O texto vem pronto do servidor (só totais: Sim, Não, Sem votar e participação — nunca
  * quais casas votaram). O link do WhatsApp vai SEM número: a pessoa escolhe o grupo.
  * "Copiar texto" serve para colar em outro lugar (ou se o WhatsApp não abrir).
  */

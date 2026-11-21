@@ -3,7 +3,7 @@
 /**
  * GRÁFICO DO RESULTADO da votação oficial (só existe depois do encerramento).
  *
- * - Chapa: uma barra com TODAS as casas aptas dividida em Sim | Não | Nulos (nulos = casas
+ * - Chapa: uma barra com TODAS as casas aptas dividida em Sim | Não | Sem votar (no código, nulos = casas
  *   aptas que não votaram), a legenda com número e porcentagem de cada parte e, embaixo,
  *   a barra só dos votos VÁLIDOS (Sim + Não) com a linha da "metade mais 1" — é nela que
  *   se decide se a chapa foi eleita.
@@ -159,12 +159,12 @@ function GraficoChapa({
   className?: string;
 }) {
   const nulos = Math.max(0, r.nulos || 0);
-  // Base = todas as casas aptas (Sim + Não + Nulos). Se a comissão não informou as aptas, as que votaram.
+  // Base = todas as casas aptas (Sim + Não + Sem votar). Se a comissão não informou as aptas, as que votaram.
   const base = Math.max(casasAptas, r.sim + r.nao + nulos);
   const partes: Parte[] = [
     { chave: "sim", rotulo: "Sim", valor: r.sim, barra: "bg-pine", textoBarra: "text-on-pine", icone: ThumbsUp, corIcone: "text-pine" },
     { chave: "nao", rotulo: "Não", valor: r.nao, barra: "bg-danger", textoBarra: "text-on-danger", icone: ThumbsDown, corIcone: "text-danger" },
-    { chave: "nulos", rotulo: "Nulos", valor: nulos, barra: "bg-line-strong", textoBarra: "text-ink", icone: CircleMinus, corIcone: "text-muted" },
+    { chave: "nulos", rotulo: "Sem votar", valor: nulos, barra: "bg-line-strong", textoBarra: "text-ink", icone: CircleMinus, corIcone: "text-muted" },
   ];
   const resumo = partes.map((p) => `${p.rotulo}: ${p.valor} (${pct(p.valor, base)}%)`).join("; ");
   const linhaMinimo = r.validos > 0 ? Math.min(100, (r.minimo * 100) / r.validos) : 0;
@@ -172,7 +172,7 @@ function GraficoChapa({
   return (
     <figure className={cx("flex min-w-0 flex-col gap-3", className)}>
       <figcaption className="sr-only">
-        Resultado entre as {base} casas aptas. {resumo}. Nulos são casas que não votaram.
+        Resultado entre as {base} casas aptas. {resumo}. “Sem votar” são as casas que não votaram.
       </figcaption>
 
       <div aria-hidden className="flex items-baseline justify-between gap-2 text-[0.84rem] text-muted">
@@ -293,7 +293,7 @@ function GraficoCandidatos({
       <p className="text-[0.9rem] text-ink-2">
         <b className="text-ink">{r.cedulas}</b> {r.cedulas === 1 ? "cédula" : "cédulas"} ·{" "}
         <b className="text-ink">{r.brancos}</b> em branco · <b className="text-ink">{nulos}</b>{" "}
-        {nulos === 1 ? "nulo" : "nulos"}
+        sem votar
       </p>
     </figure>
   );
@@ -335,7 +335,7 @@ export function RegraDoResultado({
       ) : null}
       <p className="flex items-start gap-2">
         <CircleMinus aria-hidden className="mt-0.5 size-5 shrink-0 text-muted" />
-        <span>Nulos = casas que não votaram; não entram na conta.</span>
+        <span>Sem votar = casas que não votaram; não entram na conta.</span>
       </p>
       <p className="flex items-start gap-2">
         <House aria-hidden className="mt-0.5 size-5 shrink-0 text-destaque" />
