@@ -42,7 +42,7 @@ Uma fase só é "concluída" com: tela funcionando, validação, integração re
 ## Fase 3 — Portaria (entregue)
 
 - **Morador** (`/visitas`): autoriza visita (um dia ou vários dias), recebe um código de 6 caracteres (ex.: `K7M-4PX`) para copiar ou mandar pelo WhatsApp; cancela autorizações. `/encomendas`: vê o que chegou e o que já retirou.
-- **Portaria** (`/portaria`): valida código, registra entrada (com ou sem código, confirmando com o morador por telefone), quem está dentro, saída, esperados hoje, encomendas (registrar e entregar) e **reservas de hoje**. Atualiza sozinha a cada 60 s.
+- **Portaria** (`/portaria`): central com botões que abrem cada seção (Validar código, Visitante sem código, Encomendas, Dentro agora, Esperados hoje). Registra entrada (com ou sem código, confirmando com o morador por telefone), saída e encomendas (registrar e entregar), com botões de **avisar a casa pelo WhatsApp** ("a visita está a caminho" e "chegou encomenda"). Desde 21/11/2026 a portaria **não vê as reservas**. Atualiza sozinha a cada 60 s.
 - **Administração** (`/admin/portaria`): histórico de entradas, saídas e encomendas; botão **"Remover nomes antigos agora"** (LGPD, 90 dias).
 - **Decisão do uso do código**: autorização de **um dia** vale **uma vez só** (vira "usada" na entrada); autorização com **período** (ex.: pedreiro a semana toda) vale várias vezes dentro do período, mas a mesma pessoa não "entra" duas vezes sem ter saído.
 - No banco fica só o HMAC do código (segredo `PORTARIA_SEGREDO_CODIGO`).

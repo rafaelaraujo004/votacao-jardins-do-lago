@@ -7,7 +7,7 @@ Fonte única: `src/lib/permissoes.ts`.
 | Perfil | Tela inicial | Resumo |
 |---|---|---|
 | Morador | `/inicio` | Entra com **usuário** (código de 6 caracteres) + senha. Serviços da própria casa; financeiro só o que foi publicado |
-| Portaria | `/portaria` | Visitantes, entradas/saídas, encomendas, reservas do dia. **Nunca** financeiro |
+| Portaria | `/portaria` | Visitantes, entradas/saídas, encomendas e avisos às casas pelo WhatsApp (vê o telefone das casas com encomenda aguardando ou visitante dentro). **Não** vê reservas (desde 21/11/2026). **Nunca** financeiro |
 | Síndico / Administração (`admin`) | `/admin` | Tudo |
 | Conselho (`conselheiro`) | `/admin` | Consulta: financeiro, relatórios, unidades, comunicados, documentos. Sem edição por padrão |
 | Responsável pelas reservas (`reservas`) | `/admin/reservas` | Acesso de equipe (e-mail e senha) **só da agenda de reservas**: vê a agenda e aprova/recusa pedidos (`area.gestao`, `reservas.ver_todas`, `reservas.gerenciar`). Nada de financeiro, pessoas ou auditoria. Pode receber como extra `areas.configurar` e `informacoes.ver`. Recebe no sino os pedidos das áreas em que o síndico a marcou como responsável |
@@ -45,7 +45,7 @@ Não existe área pública. Todas as páginas, ações e exportações exigem se
 | `/contatos` | `informacoes.ver` |
 | `/reservas` (morador) | agenda: `area.morador` (só "Ocupado", sem casas); **pedir e cancelar** reserva: `reservas.fazer` |
 | `/admin/informacoes` | `informacoes.gerenciar` (só o admin; a portaria pode receber como extra) |
-| `/portaria` | `portaria.operar` (reservas de hoje: `reservas.ver_todas`) |
+| `/portaria` | `portaria.operar` (encomendas: `encomendas.registrar`) |
 | `/admin/portaria` | `visitantes.ver_todos`; o botão de limpeza LGPD exige também `moradores.gerenciar` (só o admin) |
 | `/admin/reservas` | `reservas.ver_todas` para ver; `reservas.gerenciar` para aprovar, recusar, reservar, bloquear e cancelar |
 | `/admin/reservas/areas` | `areas.configurar` (inclui escolher **quem aprova os pedidos** de cada área — só síndico ou responsável pelas reservas ativos — e as fotos da área) |

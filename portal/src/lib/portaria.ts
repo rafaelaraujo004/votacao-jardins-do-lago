@@ -222,6 +222,54 @@ export function linkWhatsApp(mensagem: string): string {
   return `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
 }
 
+/** Link que abre a conversa com UM telefone (formato 55DDNNNNNNNNN) e a mensagem já escrita. */
+export function linkWhatsAppPara(telefone: string, mensagem: string): string {
+  const numero = telefone.replace(/\D/g, "");
+  return `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
+}
+
+/** Primeiro nome para a saudação ("MARIA DAS GRAÇAS / JOÃO" → "Maria"). */
+function primeiroNomeDe(nome: string): string {
+  const p = nome.split(/[\s/\\]+/).find((x) => x.length > 1) ?? "";
+  return p ? p[0].toLocaleUpperCase("pt-BR") + p.slice(1).toLocaleLowerCase("pt-BR") : "";
+}
+
+/**
+ * Mensagem que a PORTARIA manda ao morador quando o visitante JÁ PASSOU pela portaria e está
+ * indo para a casa. É o texto que a portaria do Jardins do Lago já usa (enviado pelo síndico em
+ * 21/11/2026), sem mudar nada.
+ */
+export function mensagemVisitaACaminho(): string {
+  return [
+    "Olá, 👋",
+    "A sua visita está a caminho.🙂",
+    "Não esqueça de orientá-la quanto ao retorno, evitando infrações e até mesmo acidentes. 😀",
+    "Desde já obrigado (a).",
+  ].join("\n");
+}
+
+/** Mensagem que a PORTARIA manda ao morador avisando que chegou uma encomenda. */
+export function mensagemEncomenda(p: {
+  /** Nome de quem vai receber a mensagem (para a saudação). Pode ficar vazio. */
+  nomeContato: string;
+  destinatario: string;
+  unidadeRotulo: string;
+  tipo: string;
+  observacao: string;
+  condominio: string;
+}): string {
+  const primeiro = primeiroNomeDe(p.nomeContato);
+  const ola = primeiro ? `Olá, ${primeiro}!` : "Olá!";
+  const delivery = p.tipo === "delivery";
+  const oQue = delivery ? "um delivery (comida)" : p.tipo === "envelope" ? "um envelope" : p.tipo === "caixa" ? "uma caixa" : "uma encomenda";
+  return [
+    `${ola} Aqui é a portaria do ${p.condominio || "Residencial Jardins do Lago"}.`,
+    `📦 Chegou ${oQue} para *${p.destinatario}* (${p.unidadeRotulo}).`,
+    ...(p.observacao ? [`Obs.: ${p.observacao}`] : []),
+    delivery ? "Venha buscar na portaria, por favor." : "Pode retirar na portaria.",
+  ].join("\n");
+}
+
 // ---------- Busca de casa ----------
 
 export type CasaParaBusca = { id: string; rotulo: string; numero: number; quadra: string | null };

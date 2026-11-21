@@ -16,6 +16,9 @@ import {
   hashDoCodigo,
   limiteDeRetencao,
   linkWhatsApp,
+  linkWhatsAppPara,
+  mensagemEncomenda,
+  mensagemVisitaACaminho,
   mensagemWhatsApp,
   motivoParaRecusarEntrada,
   normalizarCodigo,
@@ -223,5 +226,42 @@ describe("validação dos formulários", () => {
       casa: "casa-012",
       aba: "encomendas",
     });
+  });
+});
+
+describe("aviso de encomenda pelo WhatsApp", () => {
+  const base = { destinatario: "João Silva", unidadeRotulo: "Casa 12", observacao: "", condominio: "Residencial Jardins do Lago" };
+
+  it("cumprimenta pelo primeiro nome e diz o que chegou, para quem e de qual casa", () => {
+    const m = mensagemEncomenda({ ...base, nomeContato: "MARIA DAS GRAÇAS / JOÃO", tipo: "caixa" });
+    expect(m).toContain("Olá, Maria!");
+    expect(m).toContain("portaria do Residencial Jardins do Lago");
+    expect(m).toContain("Chegou uma caixa para *João Silva* (Casa 12)");
+    expect(m).toContain("Pode retirar na portaria.");
+    expect(m).not.toContain("Obs.:");
+  });
+
+  it("sem nome do contato, só 'Olá!'; observação aparece; delivery pede para buscar", () => {
+    const m = mensagemEncomenda({ ...base, nomeContato: "", tipo: "delivery", observacao: "iFood" });
+    expect(m.startsWith("Olá! ")).toBe(true);
+    expect(m).toContain("Chegou um delivery (comida)");
+    expect(m).toContain("Obs.: iFood");
+    expect(m).toContain("Venha buscar na portaria");
+  });
+
+  it("o link abre a conversa com o telefone da casa e a mensagem já escrita", () => {
+    const link = linkWhatsAppPara("5594991234567", "Olá! Chegou & pronto");
+    expect(link).toBe("https://wa.me/5594991234567?text=Ol%C3%A1!%20Chegou%20%26%20pronto");
+  });
+});
+
+describe("aviso de visita a caminho pelo WhatsApp", () => {
+  it("usa exatamente o texto que a portaria já manda", () => {
+    expect(mensagemVisitaACaminho().split("\n")).toEqual([
+      "Olá, 👋",
+      "A sua visita está a caminho.🙂",
+      "Não esqueça de orientá-la quanto ao retorno, evitando infrações e até mesmo acidentes. 😀",
+      "Desde já obrigado (a).",
+    ]);
   });
 });

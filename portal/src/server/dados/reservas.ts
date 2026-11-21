@@ -319,36 +319,6 @@ export async function minhasReservas(ctx: Contexto, agora = new Date()): Promise
 
 // ---------- Para outros módulos ----------
 
-export type ReservaDaPortaria = {
-  id: string;
-  areaNome: string;
-  unidadeRotulo: string;
-  faixaRotulo: string;
-  status: "pendente" | "confirmada" | "bloqueada";
-  inicio: string;
-  fim: string;
-};
-
-/** Reservas ativas de um dia ("AAAA-MM-DD"), para a tela da portaria. */
-export async function reservasDoDia(ctx: Contexto, data: string): Promise<ReservaDaPortaria[]> {
-  garantirUmaDas(ctx, ["reservas.ver_todas"]);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return [];
-  const snap = await base(ctx).collection("reservations").where("data", "==", data).get();
-  return snap.docs
-    .map((d) => paraReserva(d.id, d.data()))
-    .filter((r) => ocupaHorario(r.status))
-    .sort((a, b) => a.inicio.localeCompare(b.inicio) || a.areaNome.localeCompare(b.areaNome, "pt-BR"))
-    .map((r) => ({
-      id: r.id,
-      areaNome: r.areaNome,
-      unidadeRotulo: r.status === "bloqueada" ? `Fechado: ${r.motivo || "uso do residencial"}` : (r.unidadeRotulo ?? "—"),
-      faixaRotulo: descreverFaixa({ rotulo: r.faixaRotulo, inicio: r.inicio, fim: r.fim }),
-      status: r.status as ReservaDaPortaria["status"],
-      inicio: r.inicio,
-      fim: r.fim,
-    }));
-}
-
 /**
  * Eventos de reservas de um mês (mes de 1 a 12) no formato da agenda do Início.
  * - Reservas confirmadas de qualquer casa aparecem SEM dizer qual casa (privacidade).

@@ -119,7 +119,7 @@ export const MODULO_DA_ACAO: Record<AcaoAuditada, ModuloSinc | null> = {
  */
 const TELAS: [caminho: string, modulos: ModuloSinc[]][] = [
   // Equipe
-  ["/portaria", ["portaria", "reservas", "pessoas", "comunicados", "informacoes"]],
+  ["/portaria", ["portaria", "pessoas", "comunicados", "informacoes"]],
   ["/admin/portaria", ["portaria"]],
   ["/admin/reservas", ["reservas"]],
   ["/admin/financeiro", ["financeiro"]],

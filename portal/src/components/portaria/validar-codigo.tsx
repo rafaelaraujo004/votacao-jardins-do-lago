@@ -12,9 +12,22 @@ import { Alerta } from "@/components/ui/basicos";
 import { Botao } from "@/components/ui/botao";
 import { BotaoEnviar, Formulario } from "@/components/ui/formulario";
 import { descreverPeriodo, formatarCodigo, nomeTipoVisita } from "@/lib/portaria";
+import type { ContatoDaCasa } from "@/server/dados/portaria";
+import { AvisoDepoisDaEntrada, acharEntrada, type EntradaDentro, type EntradaProcurada } from "./aviso-entrada";
 
-export function ValidarCodigo() {
+export function ValidarCodigo({
+  dentro,
+  contatos,
+  condominio,
+}: {
+  /** Quem está dentro (para achar a entrada que acabou de ser registrada e oferecer o aviso). */
+  dentro: EntradaDentro[];
+  contatos: Record<string, ContatoDaCasa[]>;
+  condominio: string;
+}) {
   const [estado, consultar] = useActionState(consultarCodigo, null);
+  const [procurada, setProcurada] = useState<EntradaProcurada | null>(null);
+  const recente = acharEntrada(dentro, procurada);
   const [limpoNaVez, setLimpoNaVez] = useState<number | null>(null);
   const [digitado, setDigitado] = useState("");
   const campo = useRef<HTMLInputElement>(null);
@@ -31,6 +44,7 @@ export function ValidarCodigo() {
 
   return (
     <div className="flex flex-col gap-4">
+      {recente ? <AvisoDepoisDaEntrada entrada={recente} contatos={contatos} condominio={condominio} aoFechar={() => setProcurada(null)} /> : null}
       <form action={consultar} className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex flex-1 flex-col gap-1.5">
           <label htmlFor="codigo-acesso" className="font-bold">
@@ -90,6 +104,7 @@ export function ValidarCodigo() {
             <Formulario
               acao={registrarEntradaComCodigo}
               aoSalvar={() => {
+                setProcurada({ nome: atual.visita.nome, unidadeRotulo: atual.visita.unidadeRotulo });
                 limpar();
                 router.refresh();
               }}

@@ -435,6 +435,57 @@ export async function registrarEncomenda(_: Resultado, dados: FormData): Promise
   });
 }
 
+/**
+ * Chamada pelo botão "Avisar no WhatsApp" depois de abrir a conversa: só anota que a casa foi
+ * avisada (para o próximo porteiro saber). Não muda a encomenda nem passa pela auditoria
+ * (como marcar uma mensagem como enviada).
+ */
+export async function marcarAvisoEncomenda(id: string): Promise<Resultado> {
+  return executar(async () => {
+    const ctx = garantirPermissao(await getContexto(), "encomendas.registrar");
+    if (typeof id !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(id)) throw new ErroDeNegocio("Encomenda inválida.");
+    const db = adminDb();
+    const ref = col(ctx.condominioId, "packages").doc(id);
+    await db.runTransaction(async (tx) => {
+      const d = await tx.get(ref);
+      if (!d.exists) throw new ErroDeNegocio("Encomenda não encontrada. Atualize a página.");
+      if (d.get("status") !== "aguardando") return; // já entregue: nada a anotar
+      tx.update(ref, {
+        avisadoEm: FieldValue.serverTimestamp(),
+        avisadoPor: ctx.uid,
+        avisadoPorNome: ctx.nome,
+        avisos: FieldValue.increment(1),
+      });
+    });
+    revalidatePath("/portaria");
+    return "Aviso anotado.";
+  });
+}
+
+/**
+ * Botão "Avisar: a visita está a caminho": só anota que a casa foi avisada pelo WhatsApp
+ * (campo de controle da entrada; o registro da entrada em si não muda).
+ */
+export async function marcarAvisoVisita(id: string): Promise<Resultado> {
+  return executar(async () => {
+    const ctx = garantirPermissao(await getContexto(), "portaria.operar");
+    if (typeof id !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(id)) throw new ErroDeNegocio("Entrada inválida.");
+    const db = adminDb();
+    const ref = col(ctx.condominioId, "accessEvents").doc(id);
+    await db.runTransaction(async (tx) => {
+      const d = await tx.get(ref);
+      if (!d.exists || d.get("tipo") !== "entrada") throw new ErroDeNegocio("Entrada não encontrada. Atualize a página.");
+      tx.update(ref, {
+        avisadoEm: FieldValue.serverTimestamp(),
+        avisadoPor: ctx.uid,
+        avisadoPorNome: ctx.nome,
+      });
+    });
+    revalidatePath("/portaria");
+    return "Aviso anotado.";
+  });
+}
+
 export async function entregarEncomenda(_: Resultado, dados: FormData): Promise<Resultado> {
   return executar(async () => {
     const ctx = garantirPermissao(await getContexto(), "encomendas.registrar");

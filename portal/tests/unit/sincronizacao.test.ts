@@ -34,8 +34,9 @@ describe("MODULO_DA_ACAO", () => {
 });
 
 describe("modulosDaTela", () => {
-  it("a portaria acompanha visitas, reservas e casas", () => {
-    expect(modulosDaTela("/portaria")).toEqual(expect.arrayContaining(["portaria", "reservas", "pessoas"]));
+  it("a portaria acompanha visitas, encomendas e casas (não as reservas)", () => {
+    expect(modulosDaTela("/portaria")).toEqual(expect.arrayContaining(["portaria", "pessoas"]));
+    expect(modulosDaTela("/portaria")).not.toContain("reservas");
   });
 
   it("telas de um assunto só acompanham esse assunto", () => {

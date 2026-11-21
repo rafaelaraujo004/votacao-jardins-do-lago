@@ -85,7 +85,7 @@ const PADRAO_PORTARIA: Permissao[] = [
   "portaria.operar",
   "visitantes.ver_todos",
   "encomendas.registrar",
-  "reservas.ver_todas",
+  // Sem "reservas.ver_todas": a portaria não precisa ver as reservas (decisão de 21/11/2026).
   "unidades.ver",
   "comunicados.ver",
   "documentos.ver",

@@ -4,6 +4,7 @@ import { adminDb, usaEmuladores } from "../firebase-admin";
 import { garantirPermissao, type Contexto } from "../contexto";
 import { registrarAuditoria, type AcaoAuditada } from "../auditoria";
 import { hojeISO } from "@/lib/formato";
+import { lerTelefones } from "@/lib/contatos-votacao";
 import {
   limiteDeRetencao,
   NOME_ANONIMIZADO,
@@ -22,8 +23,9 @@ import {
  * Coleções (dentro de condominiums/{c}):
  * - visitors      autorizações dos moradores (só o HMAC do código fica gravado)
  * - accessEvents  entradas e saídas. O registro nunca é apagado nem reescrito; só os
- *                 campos de controle mudam: "dentro"/"saidaEm"/"saidaId" (quando a pessoa sai)
- *                 e o nome, que vira "Nome removido (LGPD)" depois de 90 dias.
+ *                 campos de controle mudam: "dentro"/"saidaEm"/"saidaId" (quando a pessoa sai),
+ *                 "avisadoEm"/"avisadoPorNome" (a portaria avisou a casa pelo WhatsApp que a
+ *                 visita está a caminho) e o nome, que vira "Nome removido (LGPD)" depois de 90 dias.
  * - packages      encomendas (aguardando → entregue)
  */
 
@@ -132,6 +134,9 @@ export type EventoAcesso = {
   saidaEm: Date | null;
   registradoPor: string;
   anonimizado: boolean;
+  /** Quando a portaria avisou a casa pelo WhatsApp que a visita está a caminho (null = não avisou). */
+  avisadoEm: Date | null;
+  avisadoPor: string;
 };
 
 function paraEvento(d: FirebaseFirestore.DocumentSnapshot): EventoAcesso {
@@ -148,6 +153,8 @@ function paraEvento(d: FirebaseFirestore.DocumentSnapshot): EventoAcesso {
     saidaEm: quando(d.get("saidaEm")),
     registradoPor: texto(d.get("registradoPorNome")),
     anonimizado: d.get("anonimizado") === true,
+    avisadoEm: quando(d.get("avisadoEm")),
+    avisadoPor: texto(d.get("avisadoPorNome")),
   };
 }
 
@@ -190,6 +197,9 @@ export type Encomenda = {
   entregueEm: Date | null;
   entreguePor: string;
   retiradoPor: string;
+  /** Última vez que a portaria avisou a casa pelo WhatsApp (null = ainda não avisou). */
+  avisadoEm: Date | null;
+  avisadoPor: string;
 };
 
 function paraEncomenda(d: FirebaseFirestore.DocumentSnapshot): Encomenda {
@@ -206,6 +216,8 @@ function paraEncomenda(d: FirebaseFirestore.DocumentSnapshot): Encomenda {
     entregueEm: quando(d.get("entregueEm")),
     entreguePor: texto(d.get("entreguePorNome")),
     retiradoPor: texto(d.get("retiradoPor")),
+    avisadoEm: quando(d.get("avisadoEm")),
+    avisadoPor: texto(d.get("avisadoPorNome")),
   };
 }
 
@@ -216,6 +228,56 @@ export async function encomendasAguardando(ctx: Contexto): Promise<Encomenda[]> 
   garantirPermissao(ctx, "encomendas.registrar");
   const snap = await base(ctx).collection("packages").where("status", "==", "aguardando").limit(300).get();
   return snap.docs.map(paraEncomenda).sort(maisAntigaPrimeiro);
+}
+
+/** Um telefone de uma casa para a portaria avisar pelo WhatsApp (formato 55DDNNNNNNNNN). */
+export type ContatoDaCasa = { nome: string; telefone: string };
+
+/** No máximo quantos telefones por casa aparecem no botão. */
+const MAX_CONTATOS_CASA = 4;
+
+/**
+ * Telefones das casas para o botão "Avisar no WhatsApp" das encomendas.
+ * Ordem: moradores ATIVOS da casa (telefone e "outro telefone" do cadastro) e, depois, a
+ * lista de contatos do residencial (a mesma da votação). Sem números repetidos.
+ * Só para quem registra encomendas (a portaria já liga para os moradores).
+ */
+export async function contatosDasCasas(ctx: Contexto, unitIds: readonly string[]): Promise<Record<string, ContatoDaCasa[]>> {
+  garantirPermissao(ctx, "encomendas.registrar");
+  const ids = [...new Set(unitIds.filter((u) => /^[A-Za-z0-9_-]{1,64}$/.test(u)))];
+  if (!ids.length) return {};
+  const pedacos: string[][] = [];
+  for (let i = 0; i < ids.length; i += 30) pedacos.push(ids.slice(i, i + 30));
+  const [membros, lista] = await Promise.all([
+    Promise.all(
+      pedacos.map((p) => base(ctx).collection("members").where("unitId", "in", p).select("unitId", "nome", "papel", "status", "telefone", "telefone2").get()),
+    ),
+    adminDb().getAll(...ids.map((u) => base(ctx).collection("contatosVotacao").doc(u))),
+  ]);
+  const porCasa: Record<string, ContatoDaCasa[]> = {};
+  const juntar = (unitId: string, nome: string, telefones: string[]) => {
+    const atuais = (porCasa[unitId] ??= []);
+    for (const telefone of telefones) {
+      if (atuais.length >= MAX_CONTATOS_CASA) return;
+      if (!atuais.some((c) => c.telefone === telefone)) atuais.push({ nome, telefone });
+    }
+  };
+  const moradores = membros
+    .flatMap((s) => s.docs)
+    .filter((d) => d.get("papel") === "morador" && d.get("status") === "ativo")
+    .sort((a, b) => texto(a.get("nome")).localeCompare(texto(b.get("nome")), "pt-BR"));
+  for (const d of moradores) {
+    const brutos = `${texto(d.get("telefone"))} / ${texto(d.get("telefone2"))}`;
+    juntar(texto(d.get("unitId")), texto(d.get("nome")), lerTelefones(brutos).telefones);
+  }
+  for (const d of lista) {
+    if (!d.exists) continue;
+    const telefones = Array.isArray(d.get("telefones"))
+      ? (d.get("telefones") as unknown[]).filter((t): t is string => typeof t === "string" && /^55\d{10,11}$/.test(t))
+      : [];
+    juntar(d.id, texto(d.get("nome")), telefones);
+  }
+  return porCasa;
 }
 
 /** Encomendas da casa do morador: as que aguardam e as 10 últimas entregues. */
